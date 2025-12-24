@@ -7,9 +7,9 @@ interface IntroScreenProps {
 export function IntroScreen({ onStart }: IntroScreenProps) {
   return (
     <div className="animate-fade-in">
-      <h2 className="text-2xl mb-4">Find your stage</h2>
+      <h1 className="text-3xl md:text-4xl font-heading text-primary mb-4">THE MAP™</h1>
       <p className="text-muted-foreground mb-6">
-        Discover where you are on your journey and get personalized guidance.
+        This is a diagnostic. Answer honestly. Your clarity starts here.
       </p>
       <QuizButton onClick={onStart}>Start</QuizButton>
     </div>
