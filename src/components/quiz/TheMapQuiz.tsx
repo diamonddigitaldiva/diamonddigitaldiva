@@ -55,13 +55,12 @@ export function TheMapQuiz() {
   return (
     <div className="min-h-screen flex flex-col py-8 px-4">
       <div className="container max-w-2xl mx-auto">
-        <header className="mb-6">
-          <h1 className="text-4xl md:text-5xl font-heading text-primary tracking-wide">
-            THE MAP™
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            This is a diagnostic. Answer honestly.
-          </p>
+        <header className="mb-6 text-center">
+          <img 
+            src="https://diamonddigitaldiva.com/wp-content/uploads/2024/01/DDD-Logo.png" 
+            alt="Diamond Digital Diva logo" 
+            className="mx-auto mb-5 max-w-[180px] h-auto"
+          />
         </header>
 
         <main className="quiz-card">
@@ -89,6 +88,10 @@ export function TheMapQuiz() {
             />
           )}
         </main>
+
+        <footer className="text-center text-sm text-muted-foreground mt-5 opacity-70">
+          Diamond Digital Diva
+        </footer>
       </div>
     </div>
   );
