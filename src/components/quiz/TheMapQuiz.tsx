@@ -4,6 +4,7 @@ import { QuizScreen } from "./QuizScreen";
 import { LeadScreen } from "./LeadScreen";
 import { ResultScreen } from "./ResultScreen";
 import { QUESTIONS, computeResults } from "@/lib/quizData";
+import logo from "@/assets/diamond-digital-diva-logo.png";
 
 type Screen = "intro" | "quiz" | "lead" | "result";
 
@@ -57,7 +58,7 @@ export function TheMapQuiz() {
       <div className="container max-w-2xl mx-auto">
         <header className="mb-6 text-center">
           <img 
-            src="https://diamonddigitaldiva.com/wp-content/uploads/2024/01/DDD-Logo.png" 
+            src={logo}
             alt="Diamond Digital Diva logo" 
             className="mx-auto mb-5 max-w-[180px] h-auto"
           />
