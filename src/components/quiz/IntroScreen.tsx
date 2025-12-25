@@ -6,7 +6,7 @@ interface IntroScreenProps {
 
 export function IntroScreen({ onStart }: IntroScreenProps) {
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in text-center">
       <h1 className="text-3xl md:text-4xl font-heading text-primary mb-2">THE MAP™</h1>
       <p className="text-lg text-muted-foreground mb-4">
         The Messaging & Positioning Diagnostic System
