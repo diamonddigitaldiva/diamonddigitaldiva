@@ -3,7 +3,8 @@ import { IntroScreen } from "./IntroScreen";
 import { QuizScreen } from "./QuizScreen";
 import { LeadScreen } from "./LeadScreen";
 import { ResultScreen } from "./ResultScreen";
-import { QUESTIONS, computeResults } from "@/lib/quizData";
+import { QUESTIONS, computeResults, STAGE_NAMES } from "@/lib/quizData";
+import { sendQuizResultsToWebhook } from "@/lib/webhook";
 import logo from "@/assets/diamond-digital-diva-logo.png";
 
 type Screen = "intro" | "quiz" | "lead" | "result";
@@ -46,10 +47,21 @@ export function TheMapQuiz() {
     setQuestionIndex(QUESTIONS.length - 1);
   };
 
-  const handleLeadSubmit = (firstName: string, email: string) => {
+  const handleLeadSubmit = async (firstName: string, email: string) => {
     setLeadData({ firstName, email });
     const computed = computeResults(answers);
     setResults(computed);
+    
+    // Send results to webhook
+    sendQuizResultsToWebhook({
+      firstName,
+      email,
+      primaryStage: STAGE_NAMES[computed.primary] || computed.primary,
+      secondaryStage: computed.secondary ? STAGE_NAMES[computed.secondary] : null,
+      timestamp: new Date().toISOString(),
+      source: window.location.origin,
+    });
+    
     setScreen("result");
   };
 
