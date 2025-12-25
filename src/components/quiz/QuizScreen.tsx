@@ -23,15 +23,15 @@ export function QuizScreen({
 
   return (
     <div className="animate-fade-in">
-      {/* Progress Bar */}
+{/* Progress Bar */}
       <div className="h-2 bg-secondary border border-border rounded-full overflow-hidden mb-6">
         <div
-          className="h-full bg-primary transition-all duration-300 ease-out"
+          className="h-full bg-charcoal transition-all duration-300 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      <h2 className="text-xl md:text-2xl mb-6">{question.text}</h2>
+      <h2 className="text-xl md:text-2xl text-charcoal mb-6">{question.text}</h2>
 
       {/* Options */}
       <div className="flex flex-col gap-3 mb-6">
@@ -40,11 +40,10 @@ export function QuizScreen({
             key={key}
             onClick={() => onSelectAnswer(key)}
             className={cn(
-              "quiz-option",
+              "quiz-option text-charcoal",
               selectedAnswer === key && "selected"
             )}
           >
-            <div className="text-xs opacity-60 mb-1">{key}</div>
             <div className="text-sm">{value}</div>
           </div>
         ))}
