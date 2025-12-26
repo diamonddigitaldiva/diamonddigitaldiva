@@ -49,7 +49,7 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
             type="text"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="w-full mt-2 px-4 py-3 rounded-lg border border-border bg-secondary text-foreground font-input focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full mt-2 px-4 py-3 rounded-lg border-2 border-soft-blush bg-secondary text-foreground font-input focus:outline-none focus:ring-2 focus:ring-soft-blush/50"
             placeholder="Your first name"
           />
         </label>
@@ -60,17 +60,17 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full mt-2 px-4 py-3 rounded-lg border border-border bg-secondary text-foreground font-input focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full mt-2 px-4 py-3 rounded-lg border-2 border-soft-blush bg-secondary text-foreground font-input focus:outline-none focus:ring-2 focus:ring-soft-blush/50"
             placeholder="your@email.com"
           />
         </label>
       </div>
 
       <div className="flex justify-between gap-3">
-        <QuizButton variant="ghost" onClick={onBack}>
+        <QuizButton variant="ghost" onClick={onBack} className="border-soft-blush hover:bg-soft-blush/20">
           Back
         </QuizButton>
-        <QuizButton onClick={handleSubmit}>Get My Result</QuizButton>
+        <QuizButton onClick={handleSubmit} className="bg-charcoal hover:bg-charcoal/90 border-2 border-soft-blush">Get My Result</QuizButton>
       </div>
     </div>
   );
