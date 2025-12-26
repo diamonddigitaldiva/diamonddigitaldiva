@@ -86,11 +86,11 @@
 
 @layer components {
   .quiz-option {
-    @apply border border-border rounded-xl p-4 cursor-pointer bg-secondary transition-all duration-200 hover:border-accent;
+    @apply border-2 border-soft-blush/50 rounded-xl p-4 cursor-pointer bg-secondary transition-all duration-200 hover:border-soft-blush hover:bg-soft-blush/10;
   }
 
   .quiz-option.selected {
-    @apply border-primary bg-cream;
+    @apply border-soft-blush bg-soft-blush/20;
   }
 
   .quiz-card {

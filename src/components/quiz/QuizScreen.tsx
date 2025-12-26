@@ -55,10 +55,11 @@ export function QuizScreen({
           variant="ghost"
           onClick={onBack}
           disabled={questionIndex === 0}
+          className="border-soft-blush hover:bg-soft-blush/20"
         >
           Back
         </QuizButton>
-        <QuizButton onClick={onNext} disabled={!selectedAnswer}>
+        <QuizButton onClick={onNext} disabled={!selectedAnswer} className="bg-charcoal hover:bg-charcoal/90 border-2 border-soft-blush">
           Next
         </QuizButton>
       </div>
