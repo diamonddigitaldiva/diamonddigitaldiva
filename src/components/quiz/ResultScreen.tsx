@@ -16,16 +16,16 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName }: Result
       </p>
 
       <div className="space-y-4 mb-8">
-        <div className="p-6 bg-gradient-to-br from-charcoal to-charcoal/90 rounded-2xl shadow-lg">
-          <div className="text-xs text-white/70 uppercase tracking-wider mb-2">Primary Match</div>
+        <div className="p-6 bg-gradient-to-br from-charcoal to-charcoal/90 rounded-2xl shadow-lg border-2 border-soft-blush/50">
+          <div className="text-xs text-soft-blush uppercase tracking-wider mb-2">Primary Match</div>
           <div className="font-heading text-xl md:text-2xl text-white">
             {STAGE_NAMES[primaryStage]}
           </div>
         </div>
 
         {secondaryStage && (
-          <div className="p-5 bg-secondary rounded-xl border-2 border-charcoal/20">
-            <div className="text-xs text-charcoal/60 uppercase tracking-wider mb-2">Secondary Match</div>
+          <div className="p-5 bg-soft-blush/30 rounded-xl border-2 border-soft-blush">
+            <div className="text-xs text-charcoal/70 uppercase tracking-wider mb-2">Secondary Match</div>
             <div className="font-heading text-lg text-charcoal">
               {STAGE_NAMES[secondaryStage]}
             </div>
