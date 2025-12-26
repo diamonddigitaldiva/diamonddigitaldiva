@@ -59,7 +59,7 @@ export function QuizScreen({
         >
           Back
         </QuizButton>
-        <QuizButton onClick={onNext} disabled={!selectedAnswer} className="bg-charcoal hover:bg-charcoal/90 border-2 border-soft-blush">
+        <QuizButton onClick={onNext} disabled={!selectedAnswer} className="bg-charcoal hover:bg-charcoal/90 text-white border-2 border-soft-blush">
           Next
         </QuizButton>
       </div>
