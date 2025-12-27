@@ -22,7 +22,7 @@ export default function QuizPreview() {
                 <img 
                   src={logo}
                   alt="Diamond Digital Diva logo" 
-                  className="mx-auto mb-5 max-w-[140px] h-auto"
+                  className="mx-auto mb-5 max-w-[220px] h-auto"
                 />
               </div>
               <IntroScreen onStart={() => {}} />

@@ -72,7 +72,7 @@ export function TheMapQuiz() {
           <img 
             src={logo}
             alt="Diamond Digital Diva logo" 
-            className="mx-auto mb-5 max-w-[180px] h-auto"
+            className="mx-auto mb-5 max-w-[280px] h-auto"
           />
         </header>
 
