@@ -70,7 +70,7 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
         <QuizButton variant="ghost" onClick={onBack} className="border-soft-blush hover:bg-soft-blush/20">
           Back
         </QuizButton>
-        <QuizButton onClick={handleSubmit} className="bg-charcoal hover:bg-charcoal/90 text-white border-2 border-soft-blush">Get My Result</QuizButton>
+        <QuizButton onClick={handleSubmit} className="bg-soft-blush hover:bg-soft-blush/80 text-charcoal border-2 border-soft-blush">Get My Result</QuizButton>
       </div>
     </div>
   );

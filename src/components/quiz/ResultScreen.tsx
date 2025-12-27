@@ -40,7 +40,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName }: Result
           rel="noopener noreferrer"
           className="block"
         >
-          <QuizButton className="w-full bg-charcoal hover:bg-charcoal/90">
+          <QuizButton className="w-full bg-soft-blush hover:bg-soft-blush/80 text-charcoal border-2 border-soft-blush">
             Go to your next step
           </QuizButton>
         </a>
