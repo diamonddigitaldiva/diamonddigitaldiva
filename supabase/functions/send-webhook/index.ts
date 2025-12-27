@@ -20,7 +20,93 @@ const getCorsHeaders = (origin: string | null) => {
   };
 };
 
-const LEADCONNECTOR_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/bUUmh6cX31sAbXMXMnU9/webhook-trigger/TyS7OiDTq34zNu9CILJn";
+// Input validation functions
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 255;
+};
+
+const isValidString = (str: unknown, maxLength: number = 100): str is string => {
+  return typeof str === 'string' && str.trim().length > 0 && str.length <= maxLength;
+};
+
+const isValidNullableString = (str: unknown, maxLength: number = 100): str is string | null => {
+  return str === null || (typeof str === 'string' && str.length <= maxLength);
+};
+
+const isValidTimestamp = (timestamp: unknown): timestamp is string => {
+  if (typeof timestamp !== 'string') return false;
+  const date = new Date(timestamp);
+  return !isNaN(date.getTime());
+};
+
+const isValidSource = (source: unknown): source is string => {
+  if (typeof source !== 'string' || source.length > 500) return false;
+  try {
+    new URL(source);
+    return true;
+  } catch {
+    return source.length > 0 && source.length <= 500;
+  }
+};
+
+// Sanitize string to remove control characters
+const sanitizeString = (str: string): string => {
+  return str.replace(/[\x00-\x1F\x7F]/g, '').trim();
+};
+
+interface QuizPayload {
+  firstName: string;
+  email: string;
+  primaryStage: string;
+  secondaryStage: string | null;
+  timestamp: string;
+  source: string;
+}
+
+const validatePayload = (payload: unknown): { valid: true; data: QuizPayload } | { valid: false; error: string } => {
+  if (!payload || typeof payload !== 'object') {
+    return { valid: false, error: 'Invalid payload format' };
+  }
+
+  const p = payload as Record<string, unknown>;
+
+  if (!isValidString(p.firstName, 100)) {
+    return { valid: false, error: 'Invalid or missing firstName' };
+  }
+
+  if (!isValidString(p.email, 255) || !isValidEmail(p.email as string)) {
+    return { valid: false, error: 'Invalid or missing email' };
+  }
+
+  if (!isValidString(p.primaryStage, 100)) {
+    return { valid: false, error: 'Invalid or missing primaryStage' };
+  }
+
+  if (!isValidNullableString(p.secondaryStage, 100)) {
+    return { valid: false, error: 'Invalid secondaryStage' };
+  }
+
+  if (!isValidTimestamp(p.timestamp)) {
+    return { valid: false, error: 'Invalid or missing timestamp' };
+  }
+
+  if (!isValidSource(p.source)) {
+    return { valid: false, error: 'Invalid or missing source' };
+  }
+
+  return {
+    valid: true,
+    data: {
+      firstName: sanitizeString(p.firstName as string),
+      email: sanitizeString(p.email as string).toLowerCase(),
+      primaryStage: sanitizeString(p.primaryStage as string),
+      secondaryStage: p.secondaryStage ? sanitizeString(p.secondaryStage as string) : null,
+      timestamp: p.timestamp as string,
+      source: sanitizeString(p.source as string),
+    }
+  };
+};
 
 serve(async (req) => {
   const origin = req.headers.get('origin');
@@ -31,13 +117,52 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Method not allowed' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Check content length to prevent oversized payloads (max 10KB)
+  const contentLength = req.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > 10240) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Payload too large' }),
+      { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
-    const payload = await req.json();
+    // Get webhook URL from environment (secret)
+    const webhookUrl = Deno.env.get('LEADCONNECTOR_WEBHOOK_URL');
+    if (!webhookUrl) {
+      console.error('LEADCONNECTOR_WEBHOOK_URL not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Service configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const rawPayload = await req.json();
+    
+    // Validate and sanitize the payload
+    const validation = validatePayload(rawPayload);
+    if (!validation.valid) {
+      console.log("Validation failed:", validation.error);
+      return new Response(
+        JSON.stringify({ success: false, error: validation.error }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const payload = validation.data;
     
     // Log only that a submission was received (no PII)
     console.log("Quiz submission received, forwarding to webhook...");
 
-    const response = await fetch(LEADCONNECTOR_WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
