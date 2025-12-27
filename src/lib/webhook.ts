@@ -23,22 +23,39 @@ export async function sendQuizResultsToWebhook(
     return false;
   }
 
-  console.log("Sending quiz results to webhook:", webhookUrl, payload);
+  console.log("Sending quiz results to webhook:", webhookUrl);
+  console.log("Payload:", JSON.stringify(payload, null, 2));
 
   try {
-    await fetch(webhookUrl, {
+    // Try with cors first, fallback to no-cors
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json",
       },
-      mode: "no-cors", // Handle CORS for external services
       body: JSON.stringify(payload),
     });
 
+    console.log("Webhook response status:", response.status);
     console.log("Webhook request sent successfully");
     return true;
-  } catch (error) {
-    console.error("Error sending to webhook:", error);
-    return false;
+  } catch (corsError) {
+    console.log("CORS error, retrying with no-cors mode...");
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        mode: "no-cors",
+        body: JSON.stringify(payload),
+      });
+      console.log("Webhook request sent (no-cors mode)");
+      return true;
+    } catch (error) {
+      console.error("Error sending to webhook:", error);
+      return false;
+    }
   }
 }
