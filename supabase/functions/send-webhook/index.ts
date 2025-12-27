@@ -16,8 +16,8 @@ serve(async (req) => {
   try {
     const payload = await req.json();
     
-    console.log("Received quiz data:", JSON.stringify(payload, null, 2));
-    console.log("Forwarding to LeadConnector webhook...");
+    // Log only that a submission was received (no PII)
+    console.log("Quiz submission received, forwarding to webhook...");
 
     const response = await fetch(LEADCONNECTOR_WEBHOOK_URL, {
       method: "POST",
@@ -28,18 +28,20 @@ serve(async (req) => {
     });
 
     const responseStatus = response.status;
-    const responseText = await response.text();
     
-    console.log("LeadConnector response status:", responseStatus);
-    console.log("LeadConnector response body:", responseText);
+    // Log status for debugging (server-side only)
+    console.log("Webhook response status:", responseStatus);
 
     if (!response.ok) {
-      console.error("LeadConnector webhook failed:", responseStatus, responseText);
+      // Log detailed error server-side only
+      const responseText = await response.text();
+      console.error("Webhook failed - Status:", responseStatus, "Response:", responseText);
+      
+      // Return generic error to client
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Webhook returned ${responseStatus}`,
-          details: responseText 
+          error: "Failed to process submission. Please try again."
         }),
         { 
           status: 500,
@@ -51,17 +53,21 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Webhook sent successfully",
-        status: responseStatus 
+        message: "Submission received"
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // Log detailed error server-side only
     console.error("Error in send-webhook function:", error);
+    
+    // Return generic error to client
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ 
+        success: false, 
+        error: "An unexpected error occurred. Please try again."
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
