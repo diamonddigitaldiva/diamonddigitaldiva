@@ -1,7 +1,7 @@
 // Webhook URL - can be configured via environment or hardcoded
 // For Zapier: Create a Zap with "Webhooks by Zapier" trigger (Catch Hook)
 // For Make: Create a scenario with "Webhooks" module (Custom webhook)
-const WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/bUUmh6cX31sAbXMXMnU9/webhook-trigger/9gsy1cGB7RBYotmZEnO7";
+const WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/bUUmh6cX31sAbXMXMnU9/webhook-trigger/TyS7OiDTq34zNu9CILJn";
 
 export interface QuizResultPayload {
   firstName: string;
