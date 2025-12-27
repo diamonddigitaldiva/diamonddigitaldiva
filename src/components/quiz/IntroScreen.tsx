@@ -24,7 +24,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
       <p className="text-muted-foreground mb-6">
         Answer honestly. Your clarity starts here.
       </p>
-      <QuizButton onClick={onStart} className="bg-charcoal hover:bg-charcoal/90 text-white border-2 border-soft-blush">
+      <QuizButton onClick={onStart} className="bg-soft-blush hover:bg-soft-blush/80 text-charcoal border-2 border-soft-blush">
         Start
       </QuizButton>
     </div>
