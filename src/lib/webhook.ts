@@ -5,6 +5,8 @@ export interface QuizResultPayload {
   email: string;
   primaryStage: string;
   secondaryStage: string | null;
+  primaryStageUrl: string;
+  secondaryStageUrl: string | null;
   timestamp: string;
   source: string;
 }

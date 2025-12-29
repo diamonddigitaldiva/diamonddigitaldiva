@@ -3,7 +3,7 @@ import { IntroScreen } from "./IntroScreen";
 import { QuizScreen } from "./QuizScreen";
 import { LeadScreen } from "./LeadScreen";
 import { ResultScreen } from "./ResultScreen";
-import { QUESTIONS, computeResults, STAGE_NAMES } from "@/lib/quizData";
+import { QUESTIONS, computeResults, STAGE_NAMES, LINKS } from "@/lib/quizData";
 import { sendQuizResultsToWebhook } from "@/lib/webhook";
 import logo from "@/assets/diamond-digital-diva-logo.png";
 
@@ -58,6 +58,8 @@ export function TheMapQuiz() {
       email,
       primaryStage: STAGE_NAMES[computed.primary] || computed.primary,
       secondaryStage: computed.secondary ? STAGE_NAMES[computed.secondary] : null,
+      primaryStageUrl: LINKS[computed.primary] || '',
+      secondaryStageUrl: computed.secondary ? LINKS[computed.secondary] : null,
       timestamp: new Date().toISOString(),
       source: window.location.origin,
     });

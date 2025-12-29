@@ -41,11 +41,28 @@ const sanitizeString = (str: string): string => {
   return str.replace(/[\x00-\x1F\x7F]/g, '').trim();
 };
 
+const isValidUrl = (url: unknown): url is string => {
+  if (typeof url !== 'string' || url.length > 500) return false;
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isValidNullableUrl = (url: unknown): url is string | null => {
+  if (url === null) return true;
+  return isValidUrl(url);
+};
+
 interface QuizPayload {
   firstName: string;
   email: string;
   primaryStage: string;
   secondaryStage: string | null;
+  primaryStageUrl: string;
+  secondaryStageUrl: string | null;
   timestamp: string;
   source: string;
 }
@@ -73,6 +90,14 @@ const validatePayload = (payload: unknown): { valid: true; data: QuizPayload } |
     return { valid: false, error: 'Invalid secondaryStage' };
   }
 
+  if (!isValidUrl(p.primaryStageUrl)) {
+    return { valid: false, error: 'Invalid or missing primaryStageUrl' };
+  }
+
+  if (!isValidNullableUrl(p.secondaryStageUrl)) {
+    return { valid: false, error: 'Invalid secondaryStageUrl' };
+  }
+
   if (!isValidTimestamp(p.timestamp)) {
     return { valid: false, error: 'Invalid or missing timestamp' };
   }
@@ -88,6 +113,8 @@ const validatePayload = (payload: unknown): { valid: true; data: QuizPayload } |
       email: sanitizeString(p.email as string).toLowerCase(),
       primaryStage: sanitizeString(p.primaryStage as string),
       secondaryStage: p.secondaryStage ? sanitizeString(p.secondaryStage as string) : null,
+      primaryStageUrl: p.primaryStageUrl as string,
+      secondaryStageUrl: p.secondaryStageUrl as string | null,
       timestamp: p.timestamp as string,
       source: sanitizeString(p.source as string),
     }
