@@ -14,7 +14,10 @@ export interface QuizResultPayload {
 export async function sendQuizResultsToWebhook(
   payload: QuizResultPayload
 ): Promise<boolean> {
-  console.log("Sending quiz results via edge function:", JSON.stringify(payload, null, 2));
+  // Only log non-sensitive info in development
+  if (import.meta.env.DEV) {
+    console.log("Quiz submission initiated");
+  }
 
   try {
     const { data, error } = await supabase.functions.invoke('send-webhook', {
@@ -22,21 +25,28 @@ export async function sendQuizResultsToWebhook(
     });
 
     if (error) {
-      console.error("Edge function error:", error);
+      // Log generic error message only in development
+      if (import.meta.env.DEV) {
+        console.error("Edge function error occurred");
+      }
       return false;
     }
 
-    console.log("Edge function response:", data);
-    
     if (data?.success) {
-      console.log("Webhook sent successfully via edge function");
+      if (import.meta.env.DEV) {
+        console.log("Quiz submission completed successfully");
+      }
       return true;
     } else {
-      console.error("Webhook failed:", data?.error);
+      if (import.meta.env.DEV) {
+        console.error("Quiz submission failed");
+      }
       return false;
     }
   } catch (error) {
-    console.error("Error calling edge function:", error);
+    if (import.meta.env.DEV) {
+      console.error("Quiz submission error occurred");
+    }
     return false;
   }
 }
