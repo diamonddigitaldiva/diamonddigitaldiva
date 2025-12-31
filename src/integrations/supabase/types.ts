@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quiz_submissions: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          primary_stage: string
+          primary_stage_url: string | null
+          secondary_stage: string | null
+          secondary_stage_url: string | null
+          source: string | null
+          webhook_sent: boolean
+          webhook_sent_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          primary_stage: string
+          primary_stage_url?: string | null
+          secondary_stage?: string | null
+          secondary_stage_url?: string | null
+          source?: string | null
+          webhook_sent?: boolean
+          webhook_sent_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          primary_stage?: string
+          primary_stage_url?: string | null
+          secondary_stage?: string | null
+          secondary_stage_url?: string | null
+          source?: string | null
+          webhook_sent?: boolean
+          webhook_sent_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

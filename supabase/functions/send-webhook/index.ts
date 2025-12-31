@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // CORS headers - allow all origins for public quiz
 const corsHeaders = {
@@ -254,8 +255,38 @@ serve(async (req) => {
     const payload = validation.data;
     
     // Log only that a submission was received (no PII)
-    console.log("Quiz submission received, forwarding to webhook...");
+    console.log("Quiz submission received, saving to database...");
 
+    // Initialize Supabase client with service role for database access
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Save submission to database first
+    const { data: submission, error: dbError } = await supabase
+      .from('quiz_submissions')
+      .insert({
+        first_name: payload.firstName,
+        email: payload.email,
+        primary_stage: payload.primaryStage,
+        secondary_stage: payload.secondaryStage,
+        primary_stage_url: payload.primaryStageUrl,
+        secondary_stage_url: payload.secondaryStageUrl,
+        source: payload.source,
+        webhook_sent: false,
+      })
+      .select('id')
+      .single();
+
+    if (dbError) {
+      console.error("Database insert error:", dbError.message);
+      // Continue to webhook even if DB fails - don't block CRM
+    } else {
+      console.log("Submission saved to database");
+    }
+
+    // Forward to webhook
+    console.log("Forwarding to webhook...");
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
@@ -285,6 +316,21 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
+    }
+
+    // Update database to mark webhook as sent
+    if (submission?.id) {
+      const { error: updateError } = await supabase
+        .from('quiz_submissions')
+        .update({ 
+          webhook_sent: true, 
+          webhook_sent_at: new Date().toISOString() 
+        })
+        .eq('id', submission.id);
+
+      if (updateError) {
+        console.error("Failed to update webhook status:", updateError.message);
+      }
     }
 
     return new Response(
