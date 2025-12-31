@@ -6,6 +6,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10; // 10 requests per minute per IP
+
+// In-memory rate limit store (resets on function cold start)
+const rateLimitStore = new Map<string, { count: number; windowStart: number }>();
+
+// Clean up old entries periodically to prevent memory leaks
+const cleanupRateLimitStore = () => {
+  const now = Date.now();
+  for (const [ip, data] of rateLimitStore.entries()) {
+    if (now - data.windowStart > RATE_LIMIT_WINDOW_MS) {
+      rateLimitStore.delete(ip);
+    }
+  }
+};
+
+// Check if request is rate limited
+const isRateLimited = (ip: string): { limited: boolean; remaining: number; resetIn: number } => {
+  const now = Date.now();
+  const record = rateLimitStore.get(ip);
+
+  if (!record || now - record.windowStart > RATE_LIMIT_WINDOW_MS) {
+    // New window
+    rateLimitStore.set(ip, { count: 1, windowStart: now });
+    return { limited: false, remaining: MAX_REQUESTS_PER_WINDOW - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    const resetIn = RATE_LIMIT_WINDOW_MS - (now - record.windowStart);
+    return { limited: true, remaining: 0, resetIn };
+  }
+
+  record.count++;
+  const resetIn = RATE_LIMIT_WINDOW_MS - (now - record.windowStart);
+  return { limited: false, remaining: MAX_REQUESTS_PER_WINDOW - record.count, resetIn };
+};
+
+// Get client IP from request headers
+const getClientIP = (req: Request): string => {
+  // Check various headers for client IP (in order of preference)
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  const realIP = req.headers.get('x-real-ip');
+  if (realIP) {
+    return realIP;
+  }
+  const cfConnectingIP = req.headers.get('cf-connecting-ip');
+  if (cfConnectingIP) {
+    return cfConnectingIP;
+  }
+  return 'unknown';
+};
+
 // Input validation functions
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -132,6 +188,34 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ success: false, error: 'Method not allowed' }),
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Clean up old rate limit entries
+  cleanupRateLimitStore();
+
+  // Check rate limit
+  const clientIP = getClientIP(req);
+  const rateLimit = isRateLimited(clientIP);
+  
+  if (rateLimit.limited) {
+    console.log(`Rate limit exceeded for IP: ${clientIP.substring(0, 8)}...`);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Too many submissions. Please wait a moment and try again.' 
+      }),
+      { 
+        status: 429, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Retry-After': Math.ceil(rateLimit.resetIn / 1000).toString(),
+          'X-RateLimit-Limit': MAX_REQUESTS_PER_WINDOW.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': Math.ceil(rateLimit.resetIn / 1000).toString()
+        } 
+      }
     );
   }
 
