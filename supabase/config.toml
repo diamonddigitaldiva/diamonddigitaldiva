@@ -2,3 +2,6 @@ project_id = "tvboytblwwfylurodcme"
 
 [functions.send-webhook]
 verify_jwt = false
+
+[functions.retry-webhooks]
+verify_jwt = true
