@@ -83,23 +83,29 @@ serve(async (req) => {
         });
 
         if (response.ok) {
-          // Mark as sent
+          // Mark as sent and increment retry count
           const { error: updateError } = await supabase
             .from('quiz_submissions')
             .update({ 
               webhook_sent: true, 
-              webhook_sent_at: new Date().toISOString() 
+              webhook_sent_at: new Date().toISOString(),
+              retry_count: (submission.retry_count || 0) + 1
             })
             .eq('id', submission.id);
 
           if (updateError) {
             console.error(`Failed to update submission ${submission.id}:`, updateError.message);
           } else {
-            console.log(`Successfully retried submission ${submission.id}`);
+            console.log(`Successfully retried submission ${submission.id} (attempt ${(submission.retry_count || 0) + 1})`);
             succeeded++;
           }
         } else {
           console.error(`Webhook failed for ${submission.id} - Status: ${response.status}`);
+          // Increment retry count on failure too
+          await supabase
+            .from('quiz_submissions')
+            .update({ retry_count: (submission.retry_count || 0) + 1 })
+            .eq('id', submission.id);
           failed++;
         }
       } catch (err) {

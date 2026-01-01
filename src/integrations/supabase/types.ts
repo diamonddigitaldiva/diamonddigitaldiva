@@ -22,6 +22,7 @@ export type Database = {
           id: string
           primary_stage: string
           primary_stage_url: string | null
+          retry_count: number
           secondary_stage: string | null
           secondary_stage_url: string | null
           source: string | null
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           primary_stage: string
           primary_stage_url?: string | null
+          retry_count?: number
           secondary_stage?: string | null
           secondary_stage_url?: string | null
           source?: string | null
@@ -48,6 +50,7 @@ export type Database = {
           id?: string
           primary_stage?: string
           primary_stage_url?: string | null
+          retry_count?: number
           secondary_stage?: string | null
           secondary_stage_url?: string | null
           source?: string | null
