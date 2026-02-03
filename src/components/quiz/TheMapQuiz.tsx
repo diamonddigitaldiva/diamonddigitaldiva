@@ -111,6 +111,7 @@ export function TheMapQuiz() {
               primaryStage={results.primary}
               secondaryStage={results.secondary}
               firstName={leadData.firstName}
+              email={leadData.email}
               stageNames={stageNames}
               links={links}
             />

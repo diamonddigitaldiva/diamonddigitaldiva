@@ -71,6 +71,7 @@ export default function QuizPreview() {
                 primaryStage="CFW"
                 secondaryStage="AICA"
                 firstName="Jane"
+                email="jane@example.com"
                 stageNames={stageNames}
                 links={links}
               />

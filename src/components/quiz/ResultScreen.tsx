@@ -1,14 +1,16 @@
 import { QuizButton } from "@/components/ui/quiz-button";
+import { FeedbackForm } from "./FeedbackForm";
 
 interface ResultScreenProps {
   primaryStage: string;
   secondaryStage: string | null;
   firstName: string;
+  email: string;
   stageNames: Record<string, string>;
   links: Record<string, string>;
 }
 
-export function ResultScreen({ primaryStage, secondaryStage, firstName, stageNames, links }: ResultScreenProps) {
+export function ResultScreen({ primaryStage, secondaryStage, firstName, email, stageNames, links }: ResultScreenProps) {
   return (
     <div className="animate-fade-in text-center">
       <h2 className="text-2xl md:text-3xl font-heading text-charcoal mb-2">Your Results</h2>
@@ -74,6 +76,8 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, stageNam
       <p className="text-xs text-muted-foreground mt-8">
         Check your inbox for more personalized resources.
       </p>
+
+      <FeedbackForm email={email} firstName={firstName} />
     </div>
   );
 }
