@@ -5,7 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface QuizQuestion {
   id: string;
@@ -19,6 +30,8 @@ export function QuestionsEditor() {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     fetchQuestions();
@@ -62,6 +75,43 @@ export function QuestionsEditor() {
     }));
   };
 
+  const addOption = (questionId: string) => {
+    setQuestions(prev => prev.map(q => {
+      if (q.id === questionId) {
+        const existingKeys = Object.keys(q.options);
+        // Find next available letter
+        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let newKey = '';
+        for (const letter of alphabet) {
+          if (!existingKeys.includes(letter)) {
+            newKey = letter;
+            break;
+          }
+        }
+        if (!newKey) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Maximum options reached.' });
+          return q;
+        }
+        return {
+          ...q,
+          options: { ...q.options, [newKey]: '' }
+        };
+      }
+      return q;
+    }));
+  };
+
+  const removeOption = (questionId: string, optionKey: string) => {
+    setQuestions(prev => prev.map(q => {
+      if (q.id === questionId) {
+        const newOptions = { ...q.options };
+        delete newOptions[optionKey];
+        return { ...q, options: newOptions };
+      }
+      return q;
+    }));
+  };
+
   const saveQuestion = async (question: QuizQuestion) => {
     setSavingId(question.id);
     const { error } = await supabase
@@ -80,28 +130,121 @@ export function QuestionsEditor() {
     setSavingId(null);
   };
 
+  const addQuestion = async () => {
+    setIsAdding(true);
+    const newIndex = questions.length;
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .insert({
+        question_index: newIndex,
+        question_text: 'New question',
+        options: { A: 'Option A', B: 'Option B', C: 'Option C' }
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to add question.' });
+    } else if (data) {
+      setQuestions(prev => [...prev, {
+        id: data.id,
+        question_index: data.question_index,
+        question_text: data.question_text,
+        options: data.options as Record<string, string>
+      }]);
+      toast({ title: 'Added', description: 'New question created.' });
+    }
+    setIsAdding(false);
+  };
+
+  const deleteQuestion = async (question: QuizQuestion) => {
+    setDeletingId(question.id);
+    const { error } = await supabase
+      .from('quiz_questions')
+      .delete()
+      .eq('id', question.id);
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete question.' });
+    } else {
+      setQuestions(prev => prev.filter(q => q.id !== question.id));
+      toast({ title: 'Deleted', description: `Question removed.` });
+      // Reindex remaining questions
+      reindexQuestions();
+    }
+    setDeletingId(null);
+  };
+
+  const reindexQuestions = async () => {
+    const remaining = questions.filter(q => q.id !== deletingId);
+    for (let i = 0; i < remaining.length; i++) {
+      if (remaining[i].question_index !== i) {
+        await supabase
+          .from('quiz_questions')
+          .update({ question_index: i })
+          .eq('id', remaining[i].id);
+      }
+    }
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">Loading questions...</div>;
   }
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button onClick={addQuestion} disabled={isAdding}>
+          {isAdding ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Plus className="w-4 h-4 mr-2" />
+          )}
+          Add Question
+        </Button>
+      </div>
+
       {questions.map((question) => (
         <div key={question.id} className="quiz-card space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-heading text-lg">Question {question.question_index + 1}</h3>
-            <Button 
-              size="sm" 
-              onClick={() => saveQuestion(question)}
-              disabled={savingId === question.id}
-            >
-              {savingId === question.id ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                onClick={() => saveQuestion(question)}
+                disabled={savingId === question.id}
+              >
+                {savingId === question.id ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Save
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="destructive" disabled={deletingId === question.id}>
+                    {deletingId === question.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Question?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete Question {question.question_index + 1}. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => deleteQuestion(question)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
           
           <div>
@@ -114,22 +257,47 @@ export function QuestionsEditor() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {Object.entries(question.options).map(([key, value]) => (
-              <div key={key} className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-                  {key}
-                </span>
-                <Input
-                  value={value}
-                  onChange={(e) => handleOptionChange(question.id, key, e.target.value)}
-                  className="flex-1"
-                />
-              </div>
-            ))}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Answer Options</Label>
+              <Button size="sm" variant="outline" onClick={() => addOption(question.id)}>
+                <Plus className="w-3 h-3 mr-1" />
+                Add Option
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {Object.entries(question.options)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([key, value]) => (
+                <div key={key} className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+                    {key}
+                  </span>
+                  <Input
+                    value={value}
+                    onChange={(e) => handleOptionChange(question.id, key, e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeOption(question.id, key)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ))}
+
+      {questions.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          No questions yet. Click "Add Question" to create one.
+        </div>
+      )}
     </div>
   );
 }
