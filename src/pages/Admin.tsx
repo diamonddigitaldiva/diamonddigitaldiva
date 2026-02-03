@@ -14,10 +14,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, LogOut, CheckCircle, Clock, FileText, Link, List, RotateCcw } from 'lucide-react';
+import { RefreshCw, LogOut, CheckCircle, Clock, FileText, Link, List, RotateCcw, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { QuestionsEditor } from '@/components/admin/QuestionsEditor';
 import { LinksEditor } from '@/components/admin/LinksEditor';
+import { FeedbackViewer } from '@/components/admin/FeedbackViewer';
 
 interface QuizSubmission {
   id: string;
@@ -158,7 +159,7 @@ export default function Admin() {
 
       <main className="container py-6">
         <Tabs defaultValue="submissions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-4 max-w-lg">
             <TabsTrigger value="submissions" className="flex items-center gap-2">
               <List className="w-4 h-4" />
               Submissions
@@ -170,6 +171,10 @@ export default function Admin() {
             <TabsTrigger value="links" className="flex items-center gap-2">
               <Link className="w-4 h-4" />
               Links
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Feedback
             </TabsTrigger>
           </TabsList>
 
@@ -271,6 +276,10 @@ export default function Admin() {
 
           <TabsContent value="links">
             <LinksEditor />
+          </TabsContent>
+
+          <TabsContent value="feedback">
+            <FeedbackViewer />
           </TabsContent>
         </Tabs>
       </main>
