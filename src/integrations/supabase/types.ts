@@ -32,6 +32,33 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_questions: {
+        Row: {
+          created_at: string
+          id: string
+          options: Json
+          question_index: number
+          question_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          options?: Json
+          question_index: number
+          question_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          options?: Json
+          question_index?: number
+          question_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quiz_submissions: {
         Row: {
           created_at: string
@@ -74,6 +101,33 @@ export type Database = {
           source?: string | null
           webhook_sent?: boolean
           webhook_sent_at?: string | null
+        }
+        Relationships: []
+      }
+      stage_links: {
+        Row: {
+          created_at: string
+          id: string
+          link_url: string
+          stage_code: string
+          stage_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link_url: string
+          stage_code: string
+          stage_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link_url?: string
+          stage_code?: string
+          stage_name?: string
+          updated_at?: string
         }
         Relationships: []
       }

@@ -1,9 +1,14 @@
 import { QuizButton } from "@/components/ui/quiz-button";
-import { QUESTIONS } from "@/lib/quizData";
 import { cn } from "@/lib/utils";
+
+interface Question {
+  text: string;
+  options: Record<string, string>;
+}
 
 interface QuizScreenProps {
   questionIndex: number;
+  questions: Question[];
   answers: Record<number, string>;
   onSelectAnswer: (key: string) => void;
   onBack: () => void;
@@ -12,18 +17,21 @@ interface QuizScreenProps {
 
 export function QuizScreen({
   questionIndex,
+  questions,
   answers,
   onSelectAnswer,
   onBack,
   onNext,
 }: QuizScreenProps) {
-  const question = QUESTIONS[questionIndex];
-  const progress = ((questionIndex + 1) / QUESTIONS.length) * 100;
+  const question = questions[questionIndex];
+  const progress = ((questionIndex + 1) / questions.length) * 100;
   const selectedAnswer = answers[questionIndex];
+
+  if (!question) return null;
 
   return (
     <div className="animate-fade-in">
-{/* Progress Bar */}
+      {/* Progress Bar */}
       <div className="h-2 bg-secondary border border-border rounded-full overflow-hidden mb-6">
         <div
           className="h-full bg-charcoal transition-all duration-300 ease-out"
