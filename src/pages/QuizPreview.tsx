@@ -2,11 +2,22 @@ import { IntroScreen } from "@/components/quiz/IntroScreen";
 import { QuizScreen } from "@/components/quiz/QuizScreen";
 import { LeadScreen } from "@/components/quiz/LeadScreen";
 import { ResultScreen } from "@/components/quiz/ResultScreen";
+import { useQuizData } from "@/hooks/useQuizData";
 import logo from "@/assets/diamond-digital-diva-logo.png";
 
 export default function QuizPreview() {
+  const { questions, stageNames, links, isLoading } = useQuizData();
+  
   // Mock data for preview
   const mockAnswers = { 0: "A", 1: "B", 2: "C" };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading preview...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-8 px-4 bg-background">
@@ -35,6 +46,7 @@ export default function QuizPreview() {
             <div className="quiz-card">
               <QuizScreen
                 questionIndex={0}
+                questions={questions}
                 answers={mockAnswers}
                 onSelectAnswer={() => {}}
                 onBack={() => {}}
@@ -56,9 +68,11 @@ export default function QuizPreview() {
             <h2 className="text-xl font-heading text-charcoal text-center">4. Result Screen</h2>
             <div className="quiz-card">
               <ResultScreen
-                primaryStage="EXPLORER"
-                secondaryStage="BUILDER"
+                primaryStage="CFW"
+                secondaryStage="AICA"
                 firstName="Jane"
+                stageNames={stageNames}
+                links={links}
               />
             </div>
           </div>

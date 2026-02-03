@@ -3,13 +3,15 @@ import { IntroScreen } from "./IntroScreen";
 import { QuizScreen } from "./QuizScreen";
 import { LeadScreen } from "./LeadScreen";
 import { ResultScreen } from "./ResultScreen";
-import { QUESTIONS, computeResults, STAGE_NAMES, LINKS } from "@/lib/quizData";
+import { computeResults } from "@/lib/quizData";
+import { useQuizData } from "@/hooks/useQuizData";
 import { sendQuizResultsToWebhook } from "@/lib/webhook";
 import logo from "@/assets/diamond-digital-diva-logo.png";
 
 type Screen = "intro" | "quiz" | "lead" | "result";
 
 export function TheMapQuiz() {
+  const { questions, stageNames, links, isLoading } = useQuizData();
   const [screen, setScreen] = useState<Screen>("intro");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -35,7 +37,7 @@ export function TheMapQuiz() {
   };
 
   const handleNext = () => {
-    if (questionIndex < QUESTIONS.length - 1) {
+    if (questionIndex < questions.length - 1) {
       setQuestionIndex((prev) => prev + 1);
     } else {
       setScreen("lead");
@@ -44,7 +46,7 @@ export function TheMapQuiz() {
 
   const handleLeadBack = () => {
     setScreen("quiz");
-    setQuestionIndex(QUESTIONS.length - 1);
+    setQuestionIndex(questions.length - 1);
   };
 
   const handleLeadSubmit = async (firstName: string, email: string) => {
@@ -56,16 +58,24 @@ export function TheMapQuiz() {
     sendQuizResultsToWebhook({
       firstName,
       email,
-      primaryStage: STAGE_NAMES[computed.primary] || computed.primary,
-      secondaryStage: computed.secondary ? STAGE_NAMES[computed.secondary] : null,
-      primaryStageUrl: LINKS[computed.primary] || '',
-      secondaryStageUrl: computed.secondary ? LINKS[computed.secondary] : null,
+      primaryStage: stageNames[computed.primary] || computed.primary,
+      secondaryStage: computed.secondary ? stageNames[computed.secondary] : null,
+      primaryStageUrl: links[computed.primary] || '',
+      secondaryStageUrl: computed.secondary ? links[computed.secondary] : null,
       timestamp: new Date().toISOString(),
       source: window.location.origin,
     });
     
     setScreen("result");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading quiz...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col py-8 px-4">
@@ -84,6 +94,7 @@ export function TheMapQuiz() {
           {screen === "quiz" && (
             <QuizScreen
               questionIndex={questionIndex}
+              questions={questions}
               answers={answers}
               onSelectAnswer={handleSelectAnswer}
               onBack={handleBack}
@@ -100,6 +111,8 @@ export function TheMapQuiz() {
               primaryStage={results.primary}
               secondaryStage={results.secondary}
               firstName={leadData.firstName}
+              stageNames={stageNames}
+              links={links}
             />
           )}
         </main>

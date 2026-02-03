@@ -1,13 +1,14 @@
-import { STAGE_NAMES, LINKS } from "@/lib/quizData";
 import { QuizButton } from "@/components/ui/quiz-button";
 
 interface ResultScreenProps {
   primaryStage: string;
   secondaryStage: string | null;
   firstName: string;
+  stageNames: Record<string, string>;
+  links: Record<string, string>;
 }
 
-export function ResultScreen({ primaryStage, secondaryStage, firstName }: ResultScreenProps) {
+export function ResultScreen({ primaryStage, secondaryStage, firstName, stageNames, links }: ResultScreenProps) {
   return (
     <div className="animate-fade-in text-center">
       <h2 className="text-2xl md:text-3xl font-heading text-charcoal mb-2">Your Results</h2>
@@ -19,7 +20,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName }: Result
         <div className="p-6 bg-gradient-to-br from-charcoal to-charcoal/90 rounded-2xl shadow-lg border-2 border-soft-blush/50">
           <div className="text-xs text-soft-blush uppercase tracking-wider mb-2">Primary Match</div>
           <div className="font-heading text-xl md:text-2xl text-white">
-            {STAGE_NAMES[primaryStage]}
+            {stageNames[primaryStage]}
           </div>
         </div>
 
@@ -27,7 +28,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName }: Result
           <div className="p-5 bg-soft-blush/30 rounded-xl border-2 border-soft-blush">
             <div className="text-xs text-charcoal/70 uppercase tracking-wider mb-2">Secondary Match</div>
             <div className="font-heading text-lg text-charcoal">
-              {STAGE_NAMES[secondaryStage]}
+              {stageNames[secondaryStage]}
             </div>
           </div>
         )}
@@ -35,7 +36,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName }: Result
 
       <div className="flex flex-col gap-3">
         <a
-          href={LINKS[primaryStage]}
+          href={links[primaryStage]}
           target="_blank"
           rel="noopener noreferrer"
           className="block"
@@ -47,7 +48,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName }: Result
 
         {secondaryStage && (
           <a
-            href={LINKS[secondaryStage]}
+            href={links[secondaryStage]}
             target="_blank"
             rel="noopener noreferrer"
             className="block"
@@ -59,7 +60,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName }: Result
         )}
 
         <a
-          href={LINKS.BOUTIQUE}
+          href={links.BOUTIQUE || "https://beacons.ai/diamonddigitaldiva"}
           target="_blank"
           rel="noopener noreferrer"
           className="block"
