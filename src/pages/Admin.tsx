@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, LogOut, CheckCircle, Clock, FileText, Link, List } from 'lucide-react';
+import { RefreshCw, LogOut, CheckCircle, Clock, FileText, Link, List, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { QuestionsEditor } from '@/components/admin/QuestionsEditor';
 import { LinksEditor } from '@/components/admin/LinksEditor';
@@ -40,6 +40,7 @@ export default function Admin() {
   const [submissions, setSubmissions] = useState<QuizSubmission[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -83,6 +84,31 @@ export default function Admin() {
       title: 'Refreshed',
       description: 'Submissions list updated.',
     });
+  };
+
+  const handleRetryWebhooks = async () => {
+    setIsRetrying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('retry-webhooks');
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Retry Complete',
+        description: `Retried ${data.retried} submissions: ${data.succeeded} succeeded, ${data.failed} failed.`,
+      });
+      
+      await fetchSubmissions();
+    } catch (error) {
+      console.error('Error retrying webhooks:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Retry Failed',
+        description: 'Failed to trigger webhook retry.',
+      });
+    } finally {
+      setIsRetrying(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -167,15 +193,26 @@ export default function Admin() {
                   <p className="text-2xl font-heading">{failedCount}</p>
                 </div>
               </div>
-              <Button 
-                onClick={handleRefresh} 
-                variant="outline" 
-                size="sm"
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleRetryWebhooks} 
+                  variant="outline" 
+                  size="sm"
+                  disabled={isRetrying || failedCount === 0}
+                >
+                  <RotateCcw className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+                  Retry Failed ({failedCount})
+                </Button>
+                <Button 
+                  onClick={handleRefresh} 
+                  variant="outline" 
+                  size="sm"
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
             </div>
 
             <div className="quiz-card overflow-hidden">
