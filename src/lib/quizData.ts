@@ -214,7 +214,7 @@ export interface UpsellProduct {
 }
 
 // Products that are considered high-ticket (over $150) → FOC upsell
-const HIGH_TICKET_STAGES = ["CFW", "DWA", "ATA"];
+const HIGH_TICKET_STAGES = ["CFW", "DWA", "ATA", "TACM", "TSA", "MPV", "AIS", "TSS", "TDP"];
 
 const UPSELL_PRODUCTS: Record<string, UpsellProduct> = {
   antiCloneDecoder: {
