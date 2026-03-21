@@ -249,14 +249,40 @@ const UPSELL_PRODUCTS: Record<string, UpsellProduct> = {
     url: "https://funnelsofcourse.com/foc-home?am_id=elleni1987",
     label: "Recommended Add-On",
   },
+  facelessLaunch: {
+    name: "The Faceless Launch",
+    description: "Complete launch system for faceless creators. Everything you need to launch your digital products without showing your face.",
+    url: "https://stan.store/affiliates/fd776c11-5dc2-4102-8291-e10d98729d7d",
+    label: "Budget-Friendly Alternative",
+  },
+  theSecretSauce: {
+    name: "The Secret Sauce (TSS)",
+    description: "Psychology-based content and conversion system. Build trust and create content that sells without a big following.",
+    url: "https://stan.store/affiliates/494d42e8-1d91-44ac-93f4-fd97b9368525",
+  },
+  tacmProduct: {
+    name: "The Anti-Clone Method (TACM)",
+    description: "Positioning system that rebuilds your voice, offers, and content into something buyers chase.",
+    url: "https://stan.store/affiliates/b65c8924-96d7-4b85-bf01-8f7a41c7de7d",
+  },
+  tsaProduct: {
+    name: "The Story Advantage (TSA)",
+    description: "Master storytelling that sells — craft narratives that captivate and convert.",
+    url: "https://stan.store/affiliates/b6f875c9-80ff-4073-b7c4-4555497ee91a",
+  },
 };
 
 // Mapping: which upsells to show for each primary stage result
 const STAGE_UPSELLS: Record<string, string[]> = {
-  AICA: ["antiCloneDecoder", "promptBank", "afterTheAlgorithm", "openArtAI"],
-  AIS: ["antiCloneDecoder", "promptBank", "afterTheAlgorithm", "openArtAI"],
-  CFW: ["createLaunchSell", "antiCloneDecoder"],
-  DWA: ["createLaunchSell", "antiCloneDecoder"],
+  AICA: ["antiCloneDecoder", "promptBank", "afterTheAlgorithm", "openArtAI", "theSecretSauce"],
+  AIS: ["antiCloneDecoder", "promptBank", "afterTheAlgorithm", "openArtAI", "theSecretSauce"],
+  CFW: ["createLaunchSell", "antiCloneDecoder", "theSecretSauce"],
+  DWA: ["createLaunchSell", "antiCloneDecoder", "theSecretSauce"],
+  MPV: ["createLaunchSell", "antiCloneDecoder", "theSecretSauce"],
+  TACM: ["tsaProduct"],
+  TSA: ["tacmProduct"],
+  ATA: ["afterTheAlgorithm", "tacmProduct"],
+  TSS: ["facelessLaunch"],
 };
 
 export function getUpsellsForStage(stageCode: string): UpsellProduct[] {
