@@ -15,7 +15,10 @@ export const QUESTIONS: Question[] = [
       F: "I don't have a consistent content plan.",
       G: "I'm creating but it's not making money.",
       H: "I'm doing too much tech just to get seen.",
-      I: "I don't feel confident in what I'm sharing."
+      I: "I don't feel confident in what I'm sharing.",
+      J: "I don't have a clear roadmap for my business.",
+      K: "I'm not using AI to grow my influence.",
+      L: "I need to pivot but don't know how."
     }
   },
   {
@@ -29,7 +32,10 @@ export const QUESTIONS: Question[] = [
       F: "Scattered with no structure.",
       G: "Unclear how this builds income.",
       H: "Frustrated with backend systems.",
-      I: "Like I'm missing the 'special' spark."
+      I: "Like I'm missing the 'special' spark.",
+      J: "Lost without a business blueprint.",
+      K: "Like I'm missing out on AI tools.",
+      L: "Ready for a fresh start but unsure how."
     }
   },
   {
@@ -43,7 +49,10 @@ export const QUESTIONS: Question[] = [
       F: "Too many moving pieces to organize.",
       G: "Content isn't converting to sales.",
       H: "I've built a funnel that doesn't feel like me.",
-      I: "I don't know what makes me magnetic."
+      I: "I don't know what makes me magnetic.",
+      J: "No personalized plan to follow.",
+      K: "Not leveraging AI for reach and growth.",
+      L: "I've outgrown my current approach."
     }
   },
   {
@@ -57,7 +66,10 @@ export const QUESTIONS: Question[] = [
       F: "It's not guiding how I show up.",
       G: "I'm unsure what content they'll buy from me.",
       H: "I'm trying to automate without knowing them.",
-      I: "I don't know how to resonate with them."
+      I: "I don't know how to resonate with them.",
+      J: "I need a system to map it all out.",
+      K: "I want AI to help me reach them.",
+      L: "My audience has changed and I need to adapt."
     }
   },
   {
@@ -71,7 +83,10 @@ export const QUESTIONS: Question[] = [
       F: "It doesn't fit into any content system.",
       G: "It doesn't lead to actual sales.",
       H: "I get stuck setting up the tech behind it.",
-      I: "It feels like it lacks that secret sauce."
+      I: "It feels like it lacks that secret sauce.",
+      J: "I don't have a blueprint to guide me.",
+      K: "I'm not using AI to optimize it.",
+      L: "My old offers don't fit who I'm becoming."
     }
   },
   {
@@ -85,7 +100,10 @@ export const QUESTIONS: Question[] = [
       F: "Building a working content plan.",
       G: "Creating profitable assets.",
       H: "Making tech feel seamless.",
-      I: "Tapping into my magic consistently."
+      I: "Tapping into my magic consistently.",
+      J: "Having a step-by-step business map.",
+      K: "Using AI to amplify my influence.",
+      L: "Reinventing my brand direction."
     }
   },
   {
@@ -99,7 +117,10 @@ export const QUESTIONS: Question[] = [
       F: "When planning the content journey.",
       G: "When turning content into cash.",
       H: "When connecting all the tools.",
-      I: "When I try to bottle my uniqueness."
+      I: "When I try to bottle my uniqueness.",
+      J: "When I realize I don't have a plan.",
+      K: "When I see others using AI and I'm not.",
+      L: "When my current brand no longer fits."
     }
   },
   {
@@ -113,7 +134,10 @@ export const QUESTIONS: Question[] = [
       F: "Content structure systems.",
       G: "Revenue-driving ideas.",
       H: "Backend tech clean-up.",
-      I: "Uncovering my special edge."
+      I: "Uncovering my special edge.",
+      J: "A personalized business blueprint.",
+      K: "AI-powered growth strategies.",
+      L: "A framework for pivoting my brand."
     }
   },
   {
@@ -127,7 +151,10 @@ export const QUESTIONS: Question[] = [
       F: "I'll stay stuck in a cycle of content chaos.",
       G: "I'll never earn from what I create.",
       H: "My systems will sabotage my growth.",
-      I: "I'll never find the 'thing' that makes me unforgettable."
+      I: "I'll never find the 'thing' that makes me unforgettable.",
+      J: "I'll keep going in circles without a plan.",
+      K: "I'll fall behind on AI trends.",
+      L: "I'll stay stuck in a brand that no longer fits."
     }
   }
 ];
@@ -141,7 +168,10 @@ export const STAGE_MAP: Record<string, string> = {
   F: "TSA",
   G: "DWA",
   H: "FOC",
-  I: "TSS"
+  I: "TSS",
+  J: "TDP",
+  K: "AIS",
+  L: "CPM"
 };
 
 export const STAGE_NAMES: Record<string, string> = {
@@ -153,21 +183,98 @@ export const STAGE_NAMES: Record<string, string> = {
   TSA: "TSA – The OS",
   DWA: "DWA – The Business",
   FOC: "FOC – The Infrastructure",
-  TSS: "TSS – The Secret Sauce"
+  TSS: "TSS – The Secret Sauce",
+  TDP: "TDP – The Decision Point",
+  AIS: "AIS – AIfluencer Studio",
+  CPM: "CPM – The Pivot Method"
 };
 
 export const LINKS: Record<string, string> = {
   CFW: "https://stan.store/affiliates/c935ed13-9133-43b2-aaed-80ecc046111d",
-  AICA: "https://shop.beacons.ai/diamonddigitaldiva/03ce2f96-f277-4ee0-9486-ed56fdcb9554",
-  MPV: "https://shop.beacons.ai/diamonddigitaldiva/fc2e90aa-974a-4250-bba4-4874983c6527",
+  AICA: "https://stan.store/affiliates/4ca38442-fd7d-424e-876a-c6d1bd3666a3",
+  MPV: "https://stan.store/affiliates/98b2e074-55af-4525-b916-d2b568899334",
   TACM: "https://stan.store/affiliates/b65c8924-96d7-4b85-bf01-8f7a41c7de7d",
   ATA: "https://stan.store/affiliates/b42f8d5f-d122-45a2-a8fc-8e5a347b95fe",
   TSA: "https://stan.store/affiliates/b6f875c9-80ff-4073-b7c4-4555497ee91a",
   DWA: "https://go.diamonddigitaldiva.com/dwa",
   FOC: "https://funnelsofcourse.com/foc-home?am_id=elleni1987",
   TSS: "https://shop.beacons.ai/diamonddigitaldiva/4f3e423a-491a-40f2-828b-d46cb1d5abcb",
+  TDP: "https://thedecisionpoint-diamonddigitaldiva.lovable.app",
+  AIS: "https://stan.store/affiliates/32fd0453-745e-46f9-b929-c48aad195517",
+  CPM: "https://shop.beacons.ai/diamonddigitaldiva/3fbc71c2-f595-471d-a840-04ea2f5a4204",
   BOUTIQUE: "https://beacons.ai/diamonddigitaldiva"
 };
+
+// Upsell configuration
+export interface UpsellProduct {
+  name: string;
+  description: string;
+  url: string;
+  label?: string; // e.g. "Budget-Friendly Alternative", "Recommended Add-On"
+}
+
+// Products that are considered high-ticket (over $150) → FOC upsell
+const HIGH_TICKET_STAGES = ["CFW", "DWA", "ATA"];
+
+const UPSELL_PRODUCTS: Record<string, UpsellProduct> = {
+  antiCloneDecoder: {
+    name: "The Anti-Clone Decoder",
+    description: "Decode what makes your brand unique and eliminate copycat energy.",
+    url: "https://shop.beacons.ai/diamonddigitaldiva/7e778ca6-ee40-47de-8c70-078e3c0613ac",
+  },
+  promptBank: {
+    name: "PromptBank",
+    description: "Curated library of high-converting prompts for AI tools.",
+    url: "https://stan.store/affiliates/76fa35b2-b072-4e55-b50a-bc522d34c823",
+  },
+  afterTheAlgorithm: {
+    name: "After The Algorithm",
+    description: "Master the algorithm and grow your reach with strategic insights.",
+    url: "https://stan.store/affiliates/533fdf9b-b338-4f22-b5fe-a7f7c2637585",
+  },
+  openArtAI: {
+    name: "OpenArt AI",
+    description: "Create stunning AI-generated artwork for your content and brand.",
+    url: "https://openart.ai/home?ref=kristopher01",
+  },
+  createLaunchSell: {
+    name: "Create Launch Sell",
+    description: "The complete blueprint for creating, launching, and selling digital products.",
+    url: "https://stan.store/affiliates/73f3347c-ff55-448e-a5ce-916f3421f401",
+    label: "Budget-Friendly Alternative",
+  },
+  funnelsOfCourse: {
+    name: "Funnels of Course (FOC)",
+    description: "Complete funnel building system — design high-converting funnels that turn visitors into buyers.",
+    url: "https://funnelsofcourse.com/foc-home?am_id=elleni1987",
+    label: "Recommended Add-On",
+  },
+};
+
+// Mapping: which upsells to show for each primary stage result
+const STAGE_UPSELLS: Record<string, string[]> = {
+  AICA: ["antiCloneDecoder", "promptBank", "afterTheAlgorithm", "openArtAI"],
+  AIS: ["antiCloneDecoder", "promptBank", "afterTheAlgorithm", "openArtAI"],
+  CFW: ["createLaunchSell", "antiCloneDecoder"],
+  DWA: ["createLaunchSell", "antiCloneDecoder"],
+};
+
+export function getUpsellsForStage(stageCode: string): UpsellProduct[] {
+  const upsells: UpsellProduct[] = [];
+  const keys = STAGE_UPSELLS[stageCode] || [];
+
+  keys.forEach(key => {
+    const product = UPSELL_PRODUCTS[key];
+    if (product) upsells.push(product);
+  });
+
+  // Add FOC upsell for high-ticket stages
+  if (HIGH_TICKET_STAGES.includes(stageCode)) {
+    upsells.push(UPSELL_PRODUCTS.funnelsOfCourse);
+  }
+
+  return upsells;
+}
 
 export function computeResults(answers: Record<number, string>): { primary: string; secondary: string | null } {
   const score: Record<string, number> = {};
