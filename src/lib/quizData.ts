@@ -274,11 +274,11 @@ const UPSELL_PRODUCTS: Record<string, UpsellProduct> = {
 
 // Mapping: which upsells to show for each primary stage result
 const STAGE_UPSELLS: Record<string, string[]> = {
-  AICA: ["antiCloneDecoder", "promptBank", "afterTheAlgorithm", "openArtAI", "theSecretSauce"],
-  AIS: ["antiCloneDecoder", "promptBank", "afterTheAlgorithm", "openArtAI", "theSecretSauce"],
-  CFW: ["createLaunchSell", "antiCloneDecoder", "theSecretSauce"],
-  DWA: ["createLaunchSell", "antiCloneDecoder", "theSecretSauce"],
-  MPV: ["createLaunchSell", "antiCloneDecoder", "theSecretSauce"],
+  AICA: ["promptBank", "afterTheAlgorithm", "openArtAI", "theSecretSauce"],
+  AIS: ["promptBank", "afterTheAlgorithm", "openArtAI", "theSecretSauce"],
+  CFW: ["createLaunchSell", "theSecretSauce"],
+  DWA: ["createLaunchSell", "theSecretSauce"],
+  MPV: ["createLaunchSell", "theSecretSauce"],
   TACM: ["tsaProduct"],
   TSA: ["tacmProduct"],
   ATA: ["afterTheAlgorithm", "tacmProduct"],
