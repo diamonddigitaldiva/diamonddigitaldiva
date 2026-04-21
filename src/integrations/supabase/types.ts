@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      link_clicks: {
+        Row: {
+          created_at: string
+          id: string
+          link_name: string
+          link_url: string | null
+          primary_stage: string | null
+          secondary_stage: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link_name: string
+          link_url?: string | null
+          primary_stage?: string | null
+          secondary_stage?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link_name?: string
+          link_url?: string | null
+          primary_stage?: string | null
+          secondary_stage?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
