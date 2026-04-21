@@ -148,11 +148,6 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: false, error: errMsg, status: lastStatus, attempts: MAX_ATTEMPTS }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (error: unknown) {
     console.error("forward-to-hq error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
