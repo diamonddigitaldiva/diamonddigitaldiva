@@ -71,6 +71,16 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
           target="_blank"
           rel="noopener noreferrer"
           className="block"
+          onClick={() => {
+            supabase.from("link_clicks").insert({
+              link_name: "creator_access_hub",
+              link_url: "https://creatoraccesshub.lovable.app",
+              primary_stage: primaryStage,
+              secondary_stage: secondaryStage,
+            }).then(({ error }) => {
+              if (error) console.error("Click tracking failed:", error);
+            });
+          }}
         >
           <QuizButton variant="ghost" className="w-full text-charcoal border-charcoal/30 hover:bg-charcoal/5">
             Visit the Creator Access Hub
