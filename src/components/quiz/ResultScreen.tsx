@@ -2,6 +2,7 @@ import { QuizButton } from "@/components/ui/quiz-button";
 import { FeedbackForm } from "./FeedbackForm";
 import { getUpsellsForStage } from "@/lib/quizData";
 import { ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ResultScreenProps {
   primaryStage: string;
