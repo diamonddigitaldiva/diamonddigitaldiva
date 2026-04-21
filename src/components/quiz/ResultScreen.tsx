@@ -115,7 +115,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {product.label && (
-                      <span className="inline-block text-[10px] uppercase tracking-wider font-medium text-soft-blush bg-soft-blush/15 px-2 py-0.5 rounded-full mb-1.5">
+                      <span className="inline-block text-[10px] uppercase tracking-wider font-semibold text-charcoal bg-soft-blush px-2 py-0.5 rounded-full mb-1.5">
                         {product.label}
                       </span>
                     )}
