@@ -97,20 +97,57 @@ Deno.serve(async (req) => {
       ];
     }
 
-    const hqRes = await fetch(HQ_INGEST_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    // Retry with exponential backoff: 4 attempts, ~250ms / 500ms / 1000ms delays.
+    // Retries on network errors and 5xx / 408 / 429 responses; 4xx (other) fails fast.
+    const MAX_ATTEMPTS = 4;
+    const BASE_DELAY_MS = 250;
+    const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
-    const hqBody = await hqRes.text();
-    if (!hqRes.ok) {
-      console.error("HQ ingest failed", hqRes.status, hqBody);
-      return new Response(
-        JSON.stringify({ success: false, error: "HQ ingest failed", status: hqRes.status }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let lastStatus = 0;
+    let lastBody = "";
+    let lastError: unknown = null;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const hqRes = await fetch(HQ_INGEST_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (hqRes.ok) {
+          return new Response(JSON.stringify({ success: true, attempts: attempt }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        lastStatus = hqRes.status;
+        lastBody = await hqRes.text();
+        console.error(`HQ ingest attempt ${attempt} failed`, lastStatus, lastBody);
+
+        // Non-retryable client error → stop immediately.
+        if (!RETRYABLE_STATUSES.has(hqRes.status)) {
+          break;
+        }
+      } catch (err) {
+        lastError = err;
+        console.error(`HQ ingest attempt ${attempt} threw`, err);
+      }
+
+      if (attempt < MAX_ATTEMPTS) {
+        // Exponential backoff with jitter (±20%).
+        const expDelay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        const jitter = expDelay * (0.8 + Math.random() * 0.4);
+        await new Promise((resolve) => setTimeout(resolve, jitter));
+      }
     }
+
+    const errMsg = lastError instanceof Error ? lastError.message : lastBody || "HQ ingest failed";
+    return new Response(
+      JSON.stringify({ success: false, error: errMsg, status: lastStatus, attempts: MAX_ATTEMPTS }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
