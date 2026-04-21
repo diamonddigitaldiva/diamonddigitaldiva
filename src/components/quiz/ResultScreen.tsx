@@ -66,13 +66,13 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
         )}
 
         <a
-          href={links.BOUTIQUE || "https://beacons.ai/diamonddigitaldiva"}
+          href="https://creatoraccesshub.lovable.app"
           target="_blank"
           rel="noopener noreferrer"
           className="block"
         >
           <QuizButton variant="ghost" className="w-full text-charcoal border-charcoal/30 hover:bg-charcoal/5">
-            Browse Boutique
+            Visit the Creator Access Hub
           </QuizButton>
         </a>
       </div>
