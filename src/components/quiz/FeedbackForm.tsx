@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Star, Loader2, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
+import { forwardToHQ } from '@/lib/hqTracking';
 
 const feedbackSchema = z.object({
   message: z.string().trim().min(1, 'Please share your feedback').max(1000, 'Feedback must be less than 1000 characters'),
@@ -50,6 +51,11 @@ export function FeedbackForm({ email, firstName }: FeedbackFormProps) {
     if (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit feedback.' });
     } else {
+      forwardToHQ({
+        type: 'feedback_submitted',
+        rating: validation.data.rating,
+        has_message: validation.data.message.length > 0,
+      });
       setIsSubmitted(true);
       toast({ title: 'Thank you!', description: 'Your feedback has been submitted.' });
     }
