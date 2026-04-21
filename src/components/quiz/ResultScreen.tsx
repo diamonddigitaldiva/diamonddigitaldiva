@@ -3,6 +3,7 @@ import { FeedbackForm } from "./FeedbackForm";
 import { getUpsellsForStage } from "@/lib/quizData";
 import { ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { forwardToHQ } from "@/lib/hqTracking";
 
 interface ResultScreenProps {
   primaryStage: string;
@@ -79,6 +80,13 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
               secondary_stage: secondaryStage,
             }).then(({ error }) => {
               if (error) console.error("Click tracking failed:", error);
+            });
+            forwardToHQ({
+              type: "link_click",
+              link_name: "creator_access_hub",
+              link_url: "https://creatoraccesshub.lovable.app",
+              primary_stage: primaryStage,
+              secondary_stage: secondaryStage,
             });
           }}
         >

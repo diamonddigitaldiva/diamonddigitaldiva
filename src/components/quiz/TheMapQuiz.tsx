@@ -6,6 +6,7 @@ import { ResultScreen } from "./ResultScreen";
 import { computeResults } from "@/lib/quizData";
 import { useQuizData } from "@/hooks/useQuizData";
 import { sendQuizResultsToWebhook } from "@/lib/webhook";
+import { forwardToHQ } from "@/lib/hqTracking";
 import logo from "@/assets/diamond-digital-diva-logo.png";
 
 type Screen = "intro" | "quiz" | "lead" | "result";
@@ -65,7 +66,14 @@ export function TheMapQuiz() {
       timestamp: new Date().toISOString(),
       source: window.location.origin,
     });
-    
+
+    // Notify HQ that a quiz was completed (no PII — FOC handles that).
+    forwardToHQ({
+      type: "quiz_completed",
+      primary_stage: computed.primary,
+      secondary_stage: computed.secondary,
+    });
+
     setScreen("result");
   };
 
