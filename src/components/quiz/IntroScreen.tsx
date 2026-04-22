@@ -72,9 +72,8 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             animationDelay: "0.5s",
           }}
         >
-          Discover your exact stage in the digital journey, unlock your messaging blueprint,
-          and receive training designed for the woman you actually are right now — not who anyone
-          else thinks you should be.
+          Four minutes of honest answers. A diagnostic that meets you where you are, a messaging
+          blueprint built for your stage, and training that finally fits.
         </p>
       </section>
 
