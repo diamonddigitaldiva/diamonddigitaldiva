@@ -58,6 +58,13 @@ export default function Contact() {
 
     setSent(true);
     setMessage("");
+
+    forwardToHQ({
+      type: "contact_message",
+      first_name: parsed.data.firstName,
+      email: parsed.data.email,
+      message: parsed.data.message,
+    });
   };
 
   return (
