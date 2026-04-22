@@ -188,6 +188,9 @@ Deno.serve(async (req) => {
         });
 
         if (hqRes.ok) {
+          if (event.type === "contact_message" && event.feedback_id) {
+            await markFeedbackForwarded(event.feedback_id, true);
+          }
           return new Response(JSON.stringify({ success: true, attempts: attempt }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -213,6 +216,12 @@ Deno.serve(async (req) => {
         const jitter = expDelay * (0.8 + Math.random() * 0.4);
         await new Promise((resolve) => setTimeout(resolve, jitter));
       }
+    }
+
+    // All attempts failed. For contact messages, leave hq_forwarded=false so
+    // the retry-webhooks cron picks it up later. Bump the retry counter.
+    if (event.type === "contact_message" && event.feedback_id) {
+      await markFeedbackForwarded(event.feedback_id, false);
     }
 
     const errMsg = lastError instanceof Error ? lastError.message : lastBody || "HQ ingest failed";
