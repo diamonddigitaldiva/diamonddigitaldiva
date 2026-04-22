@@ -16,7 +16,7 @@ export function TheMapQuiz() {
   const [screen, setScreen] = useState<Screen>("intro");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [leadData, setLeadData] = useState({ firstName: "", email: "" });
+  const [leadData, setLeadData] = useState({ firstName: "", email: "", hubConsent: false });
   const [results, setResults] = useState<{ primary: string; secondary: string | null }>({
     primary: "",
     secondary: null,
@@ -31,8 +31,8 @@ export function TheMapQuiz() {
   };
   const handleLeadBack = () => { setScreen("quiz"); setQuestionIndex(questions.length - 1); };
 
-  const handleLeadSubmit = async (firstName: string, email: string) => {
-    setLeadData({ firstName, email });
+  const handleLeadSubmit = async (firstName: string, email: string, hubConsent: boolean) => {
+    setLeadData({ firstName, email, hubConsent });
     const computed = computeResults(answers);
     setResults(computed);
 
