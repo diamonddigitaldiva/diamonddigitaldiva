@@ -13,13 +13,20 @@ const MAX_RETRY_ATTEMPTS = 10; // Give up after this many tries to avoid infinit
 const HQ_INGEST_URL =
   "https://qiwrlzqryctjyyetmnpt.supabase.co/functions/v1/ingest";
 
+type HQForwardResult = {
+  ok: boolean;
+  taskId: string | null;
+  escalationTaskId: string | null;
+  response: unknown;
+};
+
 async function forwardContactToHQ(submission: {
   id: string;
   first_name: string;
   email: string;
   message: string;
   created_at: string;
-}): Promise<boolean> {
+}): Promise<HQForwardResult> {
   try {
     const submittedAt = submission.created_at;
     // Stable idempotency key — identical to the one used by the initial
@@ -149,11 +156,82 @@ async function forwardContactToHQ(submission: {
       },
       body: JSON.stringify(payload),
     });
-    return res.ok;
+    let responseJson: unknown = null;
+    try {
+      responseJson = await res.json();
+    } catch {
+      // Ignore — HQ may not always return JSON.
+    }
+    const { taskId, escalationTaskId } = extractTaskIds(
+      responseJson,
+      idempotencyKey
+    );
+    return { ok: res.ok, taskId, escalationTaskId, response: responseJson };
   } catch (err) {
     console.error("Contact retry threw:", err);
-    return false;
+    return { ok: false, taskId: null, escalationTaskId: null, response: null };
   }
+}
+
+/**
+ * Extract task IDs from the HQ ingest response. HQ may return them in a few
+ * shapes (top-level `tasks: [...]`, nested under `data`, etc.) so we walk
+ * defensively and match by idempotency key when possible.
+ */
+function extractTaskIds(
+  response: unknown,
+  primaryKey: string
+): { taskId: string | null; escalationTaskId: string | null } {
+  const escalationKey = `${primaryKey}:escalation`;
+  let taskId: string | null = null;
+  let escalationTaskId: string | null = null;
+
+  const candidates: unknown[] = [];
+  const root = response as Record<string, unknown> | null;
+  if (root && typeof root === "object") {
+    if (Array.isArray((root as { tasks?: unknown }).tasks)) {
+      candidates.push(...((root as { tasks: unknown[] }).tasks));
+    }
+    const data = (root as { data?: unknown }).data as
+      | Record<string, unknown>
+      | undefined;
+    if (data && Array.isArray(data.tasks)) {
+      candidates.push(...(data.tasks as unknown[]));
+    }
+    const results = (root as { results?: unknown }).results as
+      | Record<string, unknown>
+      | undefined;
+    if (results && Array.isArray(results.tasks)) {
+      candidates.push(...(results.tasks as unknown[]));
+    }
+  }
+
+  for (const t of candidates) {
+    if (!t || typeof t !== "object") continue;
+    const task = t as Record<string, unknown>;
+    const id =
+      (typeof task.id === "string" && task.id) ||
+      (typeof task.task_id === "string" && task.task_id) ||
+      null;
+    if (!id) continue;
+    const meta = (task.metadata && typeof task.metadata === "object"
+      ? (task.metadata as Record<string, unknown>)
+      : {}) as Record<string, unknown>;
+    const key =
+      (typeof task.idempotency_key === "string" && task.idempotency_key) ||
+      (typeof meta.idempotency_key === "string" ? (meta.idempotency_key as string) : "");
+    const role = typeof meta.task_role === "string" ? (meta.task_role as string) : "";
+    if (key === escalationKey || role === "escalation") {
+      escalationTaskId = escalationTaskId ?? id;
+    } else if (key === primaryKey || role === "primary_reply") {
+      taskId = taskId ?? id;
+    } else if (!taskId) {
+      // Fallback: first unidentified task is treated as primary.
+      taskId = id;
+    }
+  }
+
+  return { taskId, escalationTaskId };
 }
 
 serve(async (req) => {
@@ -300,7 +378,7 @@ serve(async (req) => {
           continue;
         }
 
-        const ok = await forwardContactToHQ({
+        const result = await forwardContactToHQ({
           id: contact.id,
           first_name: contact.first_name,
           email: contact.email,
@@ -308,7 +386,7 @@ serve(async (req) => {
           created_at: contact.created_at,
         });
 
-        if (ok) {
+        if (result.ok) {
           await supabase
             .from('feedback')
             .update({
@@ -316,6 +394,9 @@ serve(async (req) => {
               hq_forwarded_at: new Date().toISOString(),
               hq_retry_count: (contact.hq_retry_count || 0) + 1,
               hq_inflight_until: null,
+              hq_task_id: result.taskId,
+              hq_escalation_task_id: result.escalationTaskId,
+              hq_response: result.response as never,
             })
             .eq('id', contact.id);
           contactSucceeded++;
