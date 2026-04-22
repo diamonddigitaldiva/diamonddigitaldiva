@@ -114,6 +114,7 @@ export function TheMapQuiz() {
                 secondaryStage={results.secondary}
                 firstName={leadData.firstName}
                 email={leadData.email}
+                hubConsent={leadData.hubConsent}
                 stageNames={stageNames}
                 links={links}
               />
