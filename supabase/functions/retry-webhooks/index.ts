@@ -205,7 +205,7 @@ serve(async (req) => {
     // ---- Retry contact form submissions to HQ ----
     const { data: pendingContacts, error: contactFetchError } = await supabase
       .from('feedback')
-      .select('id, first_name, email, message, hq_retry_count')
+      .select('id, first_name, email, message, hq_retry_count, created_at')
       .eq('entry_type', 'contact')
       .eq('hq_forwarded', false)
       .lt('hq_retry_count', MAX_RETRY_ATTEMPTS)
@@ -226,6 +226,7 @@ serve(async (req) => {
           first_name: contact.first_name,
           email: contact.email,
           message: contact.message,
+          created_at: contact.created_at,
         });
 
         if (ok) {
