@@ -44,7 +44,15 @@ function getServiceClient() {
   return createClient(url, key);
 }
 
-async function markFeedbackForwarded(feedbackId: string, success: boolean) {
+async function markFeedbackForwarded(
+  feedbackId: string,
+  success: boolean,
+  hqInfo?: {
+    taskId: string | null;
+    escalationTaskId: string | null;
+    response: unknown;
+  }
+) {
   const client = getServiceClient();
   if (!client) return;
   try {
@@ -55,6 +63,9 @@ async function markFeedbackForwarded(feedbackId: string, success: boolean) {
           hq_forwarded: true,
           hq_forwarded_at: new Date().toISOString(),
           hq_inflight_until: null,
+          hq_task_id: hqInfo?.taskId ?? null,
+          hq_escalation_task_id: hqInfo?.escalationTaskId ?? null,
+          hq_response: (hqInfo?.response ?? null) as never,
         })
         .eq("id", feedbackId);
     } else {
@@ -76,6 +87,57 @@ async function markFeedbackForwarded(feedbackId: string, success: boolean) {
   } catch (err) {
     console.error("Failed to update feedback HQ status:", err);
   }
+}
+
+/**
+ * Extract task IDs from the HQ ingest response. HQ may return them in a few
+ * shapes; we walk defensively and match by idempotency key / task_role.
+ */
+function extractTaskIds(
+  response: unknown,
+  primaryKey: string
+): { taskId: string | null; escalationTaskId: string | null } {
+  const escalationKey = `${primaryKey}:escalation`;
+  let taskId: string | null = null;
+  let escalationTaskId: string | null = null;
+
+  const candidates: unknown[] = [];
+  const root = response as Record<string, unknown> | null;
+  if (root && typeof root === "object") {
+    if (Array.isArray((root as { tasks?: unknown }).tasks)) {
+      candidates.push(...((root as { tasks: unknown[] }).tasks));
+    }
+    const data = (root as { data?: unknown }).data as Record<string, unknown> | undefined;
+    if (data && Array.isArray(data.tasks)) candidates.push(...(data.tasks as unknown[]));
+    const results = (root as { results?: unknown }).results as Record<string, unknown> | undefined;
+    if (results && Array.isArray(results.tasks)) candidates.push(...(results.tasks as unknown[]));
+  }
+
+  for (const t of candidates) {
+    if (!t || typeof t !== "object") continue;
+    const task = t as Record<string, unknown>;
+    const id =
+      (typeof task.id === "string" && task.id) ||
+      (typeof task.task_id === "string" && task.task_id) ||
+      null;
+    if (!id) continue;
+    const meta = (task.metadata && typeof task.metadata === "object"
+      ? (task.metadata as Record<string, unknown>)
+      : {}) as Record<string, unknown>;
+    const key =
+      (typeof task.idempotency_key === "string" && task.idempotency_key) ||
+      (typeof meta.idempotency_key === "string" ? (meta.idempotency_key as string) : "");
+    const role = typeof meta.task_role === "string" ? (meta.task_role as string) : "";
+    if (key === escalationKey || role === "escalation") {
+      escalationTaskId = escalationTaskId ?? id;
+    } else if (key === primaryKey || role === "primary_reply") {
+      taskId = taskId ?? id;
+    } else if (!taskId) {
+      taskId = id;
+    }
+  }
+
+  return { taskId, escalationTaskId };
 }
 
 /**
