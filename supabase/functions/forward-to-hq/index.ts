@@ -389,13 +389,34 @@ Deno.serve(async (req) => {
         });
 
         if (hqRes.ok) {
-          if (event.type === "contact_message" && event.feedback_id) {
-            await markFeedbackForwarded(event.feedback_id, true);
+          let hqResponseJson: unknown = null;
+          try {
+            hqResponseJson = await hqRes.json();
+          } catch {
+            // HQ may not always return JSON — that's fine.
           }
-          return new Response(JSON.stringify({ success: true, attempts: attempt }), {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          if (event.type === "contact_message" && event.feedback_id) {
+            const primaryKey =
+              typeof payload.idempotency_key === "string"
+                ? payload.idempotency_key
+                : `contact:${event.feedback_id}`;
+            const { taskId, escalationTaskId } = extractTaskIds(
+              hqResponseJson,
+              primaryKey
+            );
+            await markFeedbackForwarded(event.feedback_id, true, {
+              taskId,
+              escalationTaskId,
+              response: hqResponseJson,
+            });
+          }
+          return new Response(
+            JSON.stringify({ success: true, attempts: attempt, hq_task_ids: event.type === "contact_message" ? extractTaskIds(hqResponseJson, typeof payload.idempotency_key === "string" ? payload.idempotency_key : `contact:${event.feedback_id ?? ""}`) : undefined }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         }
 
         lastStatus = hqRes.status;
