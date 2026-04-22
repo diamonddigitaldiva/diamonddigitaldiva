@@ -27,6 +27,12 @@ const eventSchema = z.discriminatedUnion("type", [
     rating: z.number().int().min(1).max(5).optional().nullable(),
     has_message: z.boolean().default(false),
   }),
+  z.object({
+    type: z.literal("contact_message"),
+    first_name: z.string().trim().min(1).max(100),
+    email: z.string().trim().email().max(200),
+    message: z.string().trim().min(1).max(2000),
+  }),
 ]);
 
 Deno.serve(async (req) => {
