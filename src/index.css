@@ -128,3 +128,18 @@
     to   { opacity: 1; transform: scale(1) rotate(45deg); }
   }
 }
+
+@layer components {
+  .legal-prose {
+    @apply text-[15px] leading-relaxed text-charcoal/85;
+  }
+  .legal-prose h2 {
+    @apply font-heading text-xl md:text-2xl text-charcoal mt-8 mb-3;
+  }
+  .legal-prose p { @apply mb-4; }
+  .legal-prose ul { @apply list-disc pl-6 mb-4 space-y-1.5; }
+  .legal-prose a { @apply text-amethyst underline underline-offset-2 hover:text-amethyst-deep; }
+  .legal-prose code {
+    @apply bg-ivory px-1.5 py-0.5 rounded-sm text-[13px];
+  }
+}

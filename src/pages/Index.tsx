@@ -3,12 +3,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
 import { Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SiteFooter } from "@/components/site/SiteFooter";
 
 const Index = () => {
   const { user, isAdmin, signOut } = useAuth();
 
   return (
-    <div className="relative">
+    <div className="relative flex flex-col min-h-screen">
       {user && (
         <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
           {isAdmin && (
@@ -31,7 +32,10 @@ const Index = () => {
           </Button>
         </div>
       )}
-      <TheMapQuiz />
+      <div className="flex-1">
+        <TheMapQuiz />
+      </div>
+      <SiteFooter />
     </div>
   );
 };
