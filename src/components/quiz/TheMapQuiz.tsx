@@ -90,10 +90,12 @@ export function TheMapQuiz() {
       </nav>
 
       {/* Main */}
-      <main className={`flex-1 w-full mx-auto px-6 py-12 md:py-20 ${isHero ? "max-w-[1200px]" : "max-w-2xl"}`}>
-        {isHero ? (
+      {isHero ? (
+        <main className="flex-1 w-full">
           <IntroScreen onStart={handleStart} />
-        ) : (
+        </main>
+      ) : (
+        <main className="flex-1 w-full mx-auto px-6 py-12 md:py-20 max-w-2xl">
           <div className="quiz-card">
             {screen === "quiz" && (
               <QuizScreen
@@ -117,8 +119,8 @@ export function TheMapQuiz() {
               />
             )}
           </div>
-        )}
-      </main>
+        </main>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border/60 py-8">
