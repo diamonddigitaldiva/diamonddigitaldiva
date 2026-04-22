@@ -305,6 +305,7 @@ serve(async (req) => {
           retried: pendingContacts?.length ?? 0,
           succeeded: contactSucceeded,
           failed: contactFailed,
+          skipped: contactSkipped,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
