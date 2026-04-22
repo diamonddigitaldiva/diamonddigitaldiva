@@ -271,6 +271,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_handoff_session: {
+        Args: { _session_id: string }
+        Returns: boolean
+      }
+      get_handoff_session: {
+        Args: { _session_id: string }
+        Returns: {
+          consumed_at: string
+          created_at: string
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          primary_stage: string
+          primary_stage_name: string
+          primary_stage_url: string
+          secondary_stage: string
+          secondary_stage_name: string
+          secondary_stage_url: string
+          source: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
