@@ -4,96 +4,127 @@
 
 @layer base {
   :root {
-    --gold: 42 38% 64%;
-    --cream: 36 33% 95%;
-    --moon-gray: 30 5% 84%;
-    --warm-beige: 36 29% 89%;
-    --soft-blush: 0 40% 86%;
-    --charcoal: 24 6% 17%;
+    /* Diamond Digital Diva — brand palette (HSL) */
+    --amethyst: 265 32% 43%;          /* #6A4C93 */
+    --amethyst-deep: 265 33% 34%;     /* #533a75 */
+    --sapphire: 215 51% 25%;          /* #1F3A5F */
+    --true-black: 240 3% 6%;          /* #0F0F10 */
+    --pearl: 40 18% 96%;              /* #F7F6F3 */
+    --ivory: 36 16% 92%;              /* #EFECE7 */
+    --charcoal: 24 8% 17%;            /* #2E2A27 */
+    --gold: 39 39% 64%;               /* #C9B27C */
+    --gold-deep: 39 30% 53%;          /* #a89464 */
+    --blush: 0 56% 90%;               /* #F2DADA — reserved */
 
-    --background: 36 33% 95%;
-    --foreground: 20 11% 16%;
+    /* Semantic tokens map to brand */
+    --background: var(--pearl);
+    --foreground: var(--charcoal);
 
-    --card: 36 29% 89%;
-    --card-foreground: 20 11% 16%;
+    --card: var(--ivory);
+    --card-foreground: var(--charcoal);
 
-    --popover: 36 29% 89%;
-    --popover-foreground: 20 11% 16%;
+    --popover: var(--pearl);
+    --popover-foreground: var(--charcoal);
 
-    --primary: 42 38% 64%;
-    --primary-foreground: 20 11% 16%;
+    --primary: var(--amethyst);
+    --primary-foreground: var(--pearl);
 
-    --secondary: 0 0% 100%;
-    --secondary-foreground: 20 11% 16%;
+    --secondary: var(--ivory);
+    --secondary-foreground: var(--charcoal);
 
-    --muted: 30 5% 84%;
-    --muted-foreground: 20 11% 40%;
+    --muted: var(--ivory);
+    --muted-foreground: 24 6% 38%;
 
-    --accent: 0 46% 90%;
-    --accent-foreground: 20 11% 16%;
+    --accent: var(--gold);
+    --accent-foreground: var(--charcoal);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: var(--pearl);
 
-    --border: 30 5% 84%;
-    --input: 30 5% 84%;
-    --ring: 42 38% 64%;
+    --border: 36 16% 86%;
+    --input: 36 16% 86%;
+    --ring: var(--amethyst);
 
-    --radius: 0.875rem;
+    --radius: 0.5rem;
+
+    --signet-shadow: 0 16px 40px -12px hsl(var(--amethyst) / 0.45);
+    --card-shadow: 0 30px 80px -30px hsl(var(--true-black) / 0.25);
   }
 
   .dark {
-    --background: 20 11% 10%;
-    --foreground: 36 33% 95%;
-
-    --card: 20 11% 14%;
-    --card-foreground: 36 33% 95%;
-
-    --popover: 20 11% 14%;
-    --popover-foreground: 36 33% 95%;
-
-    --primary: 42 38% 64%;
-    --primary-foreground: 20 11% 16%;
-
-    --secondary: 20 11% 20%;
-    --secondary-foreground: 36 33% 95%;
-
-    --muted: 20 11% 25%;
-    --muted-foreground: 36 33% 70%;
-
-    --accent: 20 11% 20%;
-    --accent-foreground: 36 33% 95%;
-
-    --border: 20 11% 25%;
-    --input: 20 11% 25%;
-    --ring: 42 38% 64%;
+    --background: 240 3% 8%;
+    --foreground: var(--pearl);
+    --card: 240 3% 12%;
+    --card-foreground: var(--pearl);
+    --popover: 240 3% 12%;
+    --popover-foreground: var(--pearl);
+    --primary: var(--amethyst);
+    --primary-foreground: var(--pearl);
+    --secondary: 240 3% 16%;
+    --secondary-foreground: var(--pearl);
+    --muted: 240 3% 18%;
+    --muted-foreground: 40 18% 80%;
+    --accent: var(--gold);
+    --accent-foreground: var(--true-black);
+    --border: 240 3% 20%;
+    --input: 240 3% 20%;
+    --ring: var(--amethyst);
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
 
   body {
     @apply bg-background text-foreground font-body antialiased;
+    /* Subtle paper grain */
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.16  0 0 0 0 0.15  0 0 0 0.4 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/></svg>");
+    background-attachment: fixed;
   }
 
-  h1, h2, h3, h4 {
-    @apply font-heading text-primary;
-  }
+  h1, h2, h3, h4 { @apply font-heading text-charcoal; }
 }
 
 @layer components {
   .quiz-option {
-    @apply border-2 border-soft-blush/50 rounded-xl p-4 cursor-pointer bg-secondary transition-all duration-200 hover:border-soft-blush hover:bg-soft-blush/10;
+    @apply border border-border rounded-md p-4 cursor-pointer bg-pearl transition-all duration-200
+           hover:border-amethyst hover:bg-amethyst/5;
   }
 
   .quiz-option.selected {
-    @apply border-soft-blush bg-soft-blush/20;
+    @apply border-amethyst bg-amethyst/10;
   }
 
   .quiz-card {
-    @apply bg-card border border-border rounded-2xl p-6 shadow-soft;
+    @apply bg-ivory border border-border rounded-md p-8 md:p-12;
+    box-shadow: var(--card-shadow);
+  }
+
+  .eyebrow {
+    @apply text-[10px] font-semibold uppercase text-amethyst font-body;
+    letter-spacing: 0.4em;
+  }
+
+  .wordmark {
+    @apply font-wordmark uppercase text-charcoal;
+    letter-spacing: 0.4em;
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animate-signet-in {
+    animation: signet-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes signet-in {
+    from { opacity: 0; transform: scale(0.6) rotate(45deg); }
+    to   { opacity: 1; transform: scale(1) rotate(45deg); }
   }
 }

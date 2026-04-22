@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 interface QuizButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "ghost";
+  variant?: "primary" | "ghost" | "outline";
 }
 
 const QuizButton = React.forwardRef<HTMLButtonElement, QuizButtonProps>(
@@ -11,14 +11,20 @@ const QuizButton = React.forwardRef<HTMLButtonElement, QuizButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "rounded-lg px-5 py-3 font-body font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed",
-          variant === "primary" && "bg-primary text-primary-foreground hover:opacity-90",
-          variant === "ghost" && "bg-transparent text-foreground border border-border hover:bg-secondary",
+          "relative overflow-hidden inline-flex items-center justify-center font-body font-semibold uppercase",
+          "text-[11px] tracking-[0.25em] px-7 py-4 rounded-sm transition-all duration-300",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
+          variant === "primary" &&
+            "bg-amethyst text-pearl shadow-soft hover:bg-amethyst-deep hover:shadow-editorial hover:-translate-y-0.5",
+          variant === "outline" &&
+            "bg-transparent text-amethyst border border-amethyst hover:bg-amethyst hover:text-pearl",
+          variant === "ghost" &&
+            "bg-transparent text-charcoal border border-border hover:border-amethyst hover:text-amethyst",
           className
         )}
         {...props}
       >
-        {children}
+        <span className="relative z-10">{children}</span>
       </button>
     );
   }

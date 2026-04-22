@@ -8,23 +8,31 @@ export default {
     container: {
       center: true,
       padding: "1.5rem",
-      screens: {
-        "2xl": "820px",
-      },
+      screens: { "2xl": "1200px" },
     },
     extend: {
       fontFamily: {
-        heading: ['"Cormorant SC"', 'serif'],
-        body: ['"Libre Baskerville"', 'serif'],
-        input: ['"Lora"', 'serif'],
+        heading: ['"Cormorant Garamond"', 'serif'],
+        body: ['Inter', 'system-ui', 'sans-serif'],
+        wordmark: ['Cinzel', 'serif'],
+        input: ['"Cormorant Garamond"', 'serif'],
       },
       colors: {
-        gold: "hsl(var(--gold))",
-        cream: "hsl(var(--cream))",
-        "moon-gray": "hsl(var(--moon-gray))",
-        "warm-beige": "hsl(var(--warm-beige))",
-        "soft-blush": "hsl(var(--soft-blush))",
+        amethyst: {
+          DEFAULT: "hsl(var(--amethyst))",
+          deep: "hsl(var(--amethyst-deep))",
+        },
+        sapphire: "hsl(var(--sapphire))",
+        pearl: "hsl(var(--pearl))",
+        ivory: "hsl(var(--ivory))",
         charcoal: "hsl(var(--charcoal))",
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          deep: "hsl(var(--gold-deep))",
+        },
+        blush: "hsl(var(--blush))",
+        "true-black": "hsl(var(--true-black))",
+
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -58,6 +66,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Legacy aliases — keep until all components migrate.
+        "soft-blush": "hsl(var(--blush))",
+        cream: "hsl(var(--pearl))",
+        "warm-beige": "hsl(var(--ivory))",
+        "moon-gray": "hsl(var(--border))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -67,7 +80,9 @@ export default {
         "2xl": "1.25rem",
       },
       boxShadow: {
-        soft: "0 4px 20px -4px rgba(0, 0, 0, 0.05)",
+        soft: "0 4px 20px -4px rgba(15, 15, 16, 0.08)",
+        signet: "0 16px 40px -12px rgba(106, 76, 147, 0.45)",
+        editorial: "0 30px 80px -30px rgba(15, 15, 16, 0.25)",
       },
       keyframes: {
         "accordion-down": {
