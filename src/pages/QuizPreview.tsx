@@ -3,12 +3,10 @@ import { QuizScreen } from "@/components/quiz/QuizScreen";
 import { LeadScreen } from "@/components/quiz/LeadScreen";
 import { ResultScreen } from "@/components/quiz/ResultScreen";
 import { useQuizData } from "@/hooks/useQuizData";
-import logo from "@/assets/diamond-digital-diva-logo.png";
 
 export default function QuizPreview() {
   const { questions, stageNames, links, isLoading } = useQuizData();
-  
-  // Mock data for preview
+
   const mockAnswers = { 0: "A", 1: "B", 2: "C" };
 
   if (isLoading) {
@@ -21,26 +19,17 @@ export default function QuizPreview() {
 
   return (
     <div className="min-h-screen py-8 px-4 bg-background">
-      <div className="container max-w-6xl mx-auto">
-        <h1 className="text-3xl font-heading text-charcoal text-center mb-8">Quiz Preview - All Screens</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Intro Screen */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-heading text-charcoal text-center">1. Intro Screen</h2>
-            <div className="quiz-card">
-              <div className="text-center mb-4">
-                <img 
-                  src={logo}
-                  alt="Diamond Digital Diva logo" 
-                  className="mx-auto mb-5 max-w-[220px] h-auto"
-                />
-              </div>
-              <IntroScreen onStart={() => {}} />
-            </div>
-          </div>
+      <div className="container max-w-7xl mx-auto space-y-10">
+        <h1 className="text-3xl font-heading text-charcoal text-center">Quiz Preview - All Screens</h1>
 
-          {/* Quiz Screen */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-heading text-charcoal text-center">1. Intro Screen</h2>
+          <div className="max-w-[1200px] mx-auto px-2 py-6 md:px-6 md:py-12">
+            <IntroScreen onStart={() => {}} />
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">
             <h2 className="text-xl font-heading text-charcoal text-center">2. Quiz Screen</h2>
             <div className="quiz-card">
@@ -55,7 +44,6 @@ export default function QuizPreview() {
             </div>
           </div>
 
-          {/* Lead Screen */}
           <div className="space-y-4">
             <h2 className="text-xl font-heading text-charcoal text-center">3. Lead Capture Screen</h2>
             <div className="quiz-card">
@@ -63,10 +51,9 @@ export default function QuizPreview() {
             </div>
           </div>
 
-          {/* Result Screen */}
-          <div className="space-y-4">
+          <div className="space-y-4 md:col-span-2">
             <h2 className="text-xl font-heading text-charcoal text-center">4. Result Screen</h2>
-            <div className="quiz-card">
+            <div className="quiz-card max-w-3xl mx-auto">
               <ResultScreen
                 primaryStage="CFW"
                 secondaryStage="AICA"
