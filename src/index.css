@@ -142,5 +142,4 @@
   .legal-prose code {
     @apply bg-ivory px-1.5 py-0.5 rounded-sm text-[13px];
   }
-  .not-prose, .not-prose * { all: revert; }
 }
