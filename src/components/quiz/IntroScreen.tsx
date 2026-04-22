@@ -76,24 +76,25 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
           <span aria-hidden className="absolute bottom-0 left-0" style={{ width: 28, height: 28, borderBottom: "2px solid hsl(var(--gold))", borderLeft: "2px solid hsl(var(--gold))" }} />
           <span aria-hidden className="absolute bottom-0 right-0" style={{ width: 28, height: 28, borderBottom: "2px solid hsl(var(--gold))", borderRight: "2px solid hsl(var(--gold))" }} />
 
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center">
             <Signet size={88} animate />
           </div>
 
-          <div className="eyebrow mb-4">Your Diagnostic Awaits</div>
-
-          <h2
-            className="font-heading text-true-black mb-4"
-            style={{ fontSize: "clamp(2.75rem, 5vw, 4rem)", lineHeight: 1 }}
+          <div
+            className="eyebrow text-amethyst font-semibold uppercase"
+            style={{ marginTop: 32, fontSize: 10, letterSpacing: "0.4em" }}
           >
-            The MAP<sup className="text-gold text-[0.32em] align-super font-normal">™</sup>
-          </h2>
+            Begin Your Diagnostic
+          </div>
 
-          <p className="font-heading italic text-charcoal/90 text-[19px] mx-auto mb-8 max-w-[320px]">
+          <p
+            className="font-heading italic text-charcoal mx-auto"
+            style={{ fontSize: 22, maxWidth: 340, marginTop: 20, lineHeight: 1.4 }}
+          >
             Answer honestly. Your clarity starts here.
           </p>
 
-          <ul className="text-left space-y-3 mb-8">
+          <ul className="text-left space-y-3 mb-8" style={{ marginTop: 24 }}>
             {[
               "Identify your exact stage in the digital journey",
               "Receive a custom messaging & positioning blueprint",
