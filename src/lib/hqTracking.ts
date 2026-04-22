@@ -12,6 +12,7 @@ type HqEvent =
       link_url?: string | null;
       primary_stage?: string | null;
       secondary_stage?: string | null;
+      hub_consent?: boolean | null;
     }
   | {
       type: "feedback_submitted";
