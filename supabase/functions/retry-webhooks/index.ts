@@ -14,6 +14,7 @@ const HQ_INGEST_URL =
   "https://qiwrlzqryctjyyetmnpt.supabase.co/functions/v1/ingest";
 
 async function forwardContactToHQ(submission: {
+  id: string;
   first_name: string;
   email: string;
   message: string;
@@ -21,6 +22,9 @@ async function forwardContactToHQ(submission: {
 }): Promise<boolean> {
   try {
     const submittedAt = submission.created_at;
+    // Stable idempotency key — identical to the one used by the initial
+    // forward-to-hq send, so HQ deduplicates server-side.
+    const idempotencyKey = `contact:${submission.id}`;
     // Due 48h after original submission. If already past due, give a 24h grace.
     const dueAtMs = new Date(submittedAt).getTime() + 48 * 60 * 60 * 1000;
     const dueAt = new Date(
@@ -28,17 +32,20 @@ async function forwardContactToHQ(submission: {
     ).toISOString();
 
     const payload = {
+      idempotency_key: idempotencyKey,
       signups: [
         {
           source: "map-contact-form",
           business: "ddd",
           first_name: submission.first_name,
           email: submission.email,
+          idempotency_key: idempotencyKey,
           metadata: {
             channel: "contact_form",
             message: submission.message,
             submitted_at: submittedAt,
             retried: true,
+            idempotency_key: idempotencyKey,
           },
         },
       ],
@@ -49,6 +56,7 @@ async function forwardContactToHQ(submission: {
           business: "ddd",
           first_name: submission.first_name,
           email: submission.email,
+          idempotency_key: idempotencyKey,
           title: `Contact message from ${submission.first_name}`,
           description: submission.message,
           metadata: {
@@ -57,6 +65,7 @@ async function forwardContactToHQ(submission: {
             full_message: submission.message,
             submitted_at: submittedAt,
             retried: true,
+            idempotency_key: idempotencyKey,
           },
         },
       ],
@@ -66,6 +75,7 @@ async function forwardContactToHQ(submission: {
           business: "ddd",
           first_name: submission.first_name,
           email: submission.email,
+          idempotency_key: idempotencyKey,
           title: `Reply to contact message from ${submission.first_name}`,
           description:
             `Check and respond to this contact form message.\n\n` +
@@ -82,13 +92,18 @@ async function forwardContactToHQ(submission: {
             submitted_at: submittedAt,
             sla_hours: 48,
             retried: true,
+            idempotency_key: idempotencyKey,
           },
         },
       ],
     };
     const res = await fetch(HQ_INGEST_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+        "X-Idempotency-Key": idempotencyKey,
+      },
       body: JSON.stringify(payload),
     });
     return res.ok;
