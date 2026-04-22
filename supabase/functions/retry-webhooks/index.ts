@@ -165,15 +165,70 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Retry complete: ${succeeded} succeeded, ${failed} failed`);
+    console.log(`Quiz retry complete: ${succeeded} succeeded, ${failed} failed`);
+
+    // ---- Retry contact form submissions to HQ ----
+    const { data: pendingContacts, error: contactFetchError } = await supabase
+      .from('feedback')
+      .select('id, first_name, email, message, hq_retry_count')
+      .eq('entry_type', 'contact')
+      .eq('hq_forwarded', false)
+      .lt('hq_retry_count', MAX_RETRY_ATTEMPTS)
+      .lt('created_at', cutoffTime)
+      .order('created_at', { ascending: true })
+      .limit(MAX_RETRIES_PER_RUN);
+
+    let contactSucceeded = 0;
+    let contactFailed = 0;
+
+    if (contactFetchError) {
+      console.error('Error fetching pending contacts:', contactFetchError.message);
+    } else if (pendingContacts && pendingContacts.length > 0) {
+      console.log(`Found ${pendingContacts.length} pending contact messages to retry`);
+
+      for (const contact of pendingContacts) {
+        const ok = await forwardContactToHQ({
+          first_name: contact.first_name,
+          email: contact.email,
+          message: contact.message,
+        });
+
+        if (ok) {
+          await supabase
+            .from('feedback')
+            .update({
+              hq_forwarded: true,
+              hq_forwarded_at: new Date().toISOString(),
+              hq_retry_count: (contact.hq_retry_count || 0) + 1,
+            })
+            .eq('id', contact.id);
+          contactSucceeded++;
+        } else {
+          await supabase
+            .from('feedback')
+            .update({ hq_retry_count: (contact.hq_retry_count || 0) + 1 })
+            .eq('id', contact.id);
+          contactFailed++;
+        }
+      }
+
+      console.log(`Contact retry complete: ${contactSucceeded} succeeded, ${contactFailed} failed`);
+    }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: 'Retry complete',
-        retried: failedSubmissions.length,
-        succeeded,
-        failed
+        quiz: {
+          retried: failedSubmissions.length,
+          succeeded,
+          failed,
+        },
+        contact: {
+          retried: pendingContacts?.length ?? 0,
+          succeeded: contactSucceeded,
+          failed: contactFailed,
+        },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
