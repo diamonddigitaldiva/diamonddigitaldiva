@@ -54,10 +54,12 @@ async function markFeedbackForwarded(feedbackId: string, success: boolean) {
         .update({
           hq_forwarded: true,
           hq_forwarded_at: new Date().toISOString(),
+          hq_inflight_until: null,
         })
         .eq("id", feedbackId);
     } else {
-      // Increment retry counter so the cron can prioritize / cap retries.
+      // Release the in-flight lock and bump the retry counter so the cron
+      // can prioritize / cap retries.
       const { data } = await client
         .from("feedback")
         .select("hq_retry_count")
@@ -65,11 +67,46 @@ async function markFeedbackForwarded(feedbackId: string, success: boolean) {
         .single();
       await client
         .from("feedback")
-        .update({ hq_retry_count: (data?.hq_retry_count ?? 0) + 1 })
+        .update({
+          hq_retry_count: (data?.hq_retry_count ?? 0) + 1,
+          hq_inflight_until: null,
+        })
         .eq("id", feedbackId);
     }
   } catch (err) {
     console.error("Failed to update feedback HQ status:", err);
+  }
+}
+
+/**
+ * Atomically claim a feedback row for HQ forwarding. Returns true only if
+ * THIS caller holds the claim. Prevents the initial send and the cron retry
+ * from forwarding the same message twice.
+ *
+ * Lock TTL: 2 minutes. Auto-expires so a crashed sender doesn't permanently
+ * block retries.
+ */
+async function tryClaimFeedback(feedbackId: string): Promise<boolean> {
+  const client = getServiceClient();
+  if (!client) return true; // Fail-open: better to risk a duplicate than lose the send.
+  const nowIso = new Date().toISOString();
+  const lockUntil = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+  try {
+    const { data, error } = await client
+      .from("feedback")
+      .update({ hq_inflight_until: lockUntil })
+      .eq("id", feedbackId)
+      .eq("hq_forwarded", false)
+      .or(`hq_inflight_until.is.null,hq_inflight_until.lt.${nowIso}`)
+      .select("id");
+    if (error) {
+      console.error("Claim query failed:", error);
+      return true; // Fail-open.
+    }
+    return Array.isArray(data) && data.length > 0;
+  } catch (err) {
+    console.error("Claim threw:", err);
+    return true;
   }
 }
 
