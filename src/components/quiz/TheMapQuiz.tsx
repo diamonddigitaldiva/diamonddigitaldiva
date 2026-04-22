@@ -76,15 +76,12 @@ export function TheMapQuiz() {
             <span className="wordmark text-[12px] hidden sm:inline">Diamond Digital Diva</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            {["The Diagnostic", "About", "Contact"].map((label) => (
-              <a
-                key={label}
-                href="#"
-                className="text-[11px] uppercase tracking-[0.25em] font-medium text-charcoal hover:text-amethyst transition-colors"
-              >
-                {label}
-              </a>
-            ))}
+            <a
+              href="/contact"
+              className="text-[11px] uppercase tracking-[0.25em] font-medium text-charcoal hover:text-amethyst transition-colors"
+            >
+              Contact
+            </a>
           </div>
         </div>
       </nav>

@@ -26,23 +26,31 @@ export function SiteFooter() {
         </nav>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 pb-8 text-[11px] text-charcoal/55 leading-relaxed">
-        <p>
-          <strong>Educational disclaimer:</strong> Diagnostic results are
-          educational and reflect your responses on the day taken. They are not
-          guarantees of business outcomes, revenue, or results.
-        </p>
-        <p className="mt-2">
-          <strong>Affiliate / partner disclosure:</strong> Some links from your
-          results page, the Boutique, and the Creator Access Hub may lead to
-          paid offers from Diamond Digital Diva or its partners. We may earn
-          from purchases made through those links.
-        </p>
-        <p className="mt-2">
-          <strong>Email marketing:</strong> By submitting your name and email
-          you agree to receive resources and occasional marketing emails. You
-          can unsubscribe anytime via the link in any email.
-        </p>
+      <div className="max-w-5xl mx-auto px-6 pb-8">
+        <details className="group text-[11px] text-charcoal/70 leading-relaxed border-t border-border/60 pt-4">
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-2 font-heading tracking-[0.2em] uppercase text-[11px] text-charcoal hover:text-amethyst transition-colors">
+            <span>Disclosures</span>
+            <span className="transition-transform group-open:rotate-180" aria-hidden>▾</span>
+          </summary>
+          <div className="mt-4 space-y-2 text-charcoal/60">
+            <p>
+              <strong>Educational disclaimer:</strong> Diagnostic results are
+              educational and reflect your responses on the day taken. They are not
+              guarantees of business outcomes, revenue, or results.
+            </p>
+            <p>
+              <strong>Affiliate / partner disclosure:</strong> Some links from your
+              results page, the Boutique, and the Creator Access Hub may lead to
+              paid offers from Diamond Digital Diva or its partners. We may earn
+              from purchases made through those links.
+            </p>
+            <p>
+              <strong>Email marketing:</strong> By submitting your name and email
+              you agree to receive resources and occasional marketing emails. You
+              can unsubscribe anytime via the link in any email.
+            </p>
+          </div>
+        </details>
       </div>
     </footer>
   );
