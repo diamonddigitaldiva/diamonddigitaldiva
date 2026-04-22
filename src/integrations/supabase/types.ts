@@ -41,30 +41,90 @@ export type Database = {
         }
         Relationships: []
       }
+      handoff_sessions: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          primary_stage: string
+          primary_stage_name: string | null
+          primary_stage_url: string | null
+          secondary_stage: string | null
+          secondary_stage_name: string | null
+          secondary_stage_url: string | null
+          source: string | null
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          first_name: string
+          id?: string
+          primary_stage: string
+          primary_stage_name?: string | null
+          primary_stage_url?: string | null
+          secondary_stage?: string | null
+          secondary_stage_name?: string | null
+          secondary_stage_url?: string | null
+          source?: string | null
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          first_name?: string
+          id?: string
+          primary_stage?: string
+          primary_stage_name?: string | null
+          primary_stage_url?: string | null
+          secondary_stage?: string | null
+          secondary_stage_name?: string | null
+          secondary_stage_url?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
       link_clicks: {
         Row: {
           created_at: string
+          email: string | null
+          first_name: string | null
+          handoff_session_id: string | null
           id: string
           link_name: string
           link_url: string | null
           primary_stage: string | null
           secondary_stage: string | null
+          source: string | null
         }
         Insert: {
           created_at?: string
+          email?: string | null
+          first_name?: string | null
+          handoff_session_id?: string | null
           id?: string
           link_name: string
           link_url?: string | null
           primary_stage?: string | null
           secondary_stage?: string | null
+          source?: string | null
         }
         Update: {
           created_at?: string
+          email?: string | null
+          first_name?: string | null
+          handoff_session_id?: string | null
           id?: string
           link_name?: string
           link_url?: string | null
           primary_stage?: string | null
           secondary_stage?: string | null
+          source?: string | null
         }
         Relationships: []
       }

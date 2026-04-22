@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { QuizButton } from "@/components/ui/quiz-button";
 import { FeedbackForm } from "./FeedbackForm";
 import { getUpsellsForStage } from "@/lib/quizData";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { forwardToHQ } from "@/lib/hqTracking";
+import { createCreatorAccessHubHandoffUrl, CREATOR_ACCESS_HUB_URL } from "@/lib/handoff";
 
 interface ResultScreenProps {
   primaryStage: string;
@@ -16,6 +18,46 @@ interface ResultScreenProps {
 
 export function ResultScreen({ primaryStage, secondaryStage, firstName, email, stageNames, links }: ResultScreenProps) {
   const upsells = getUpsellsForStage(primaryStage);
+  const [hubLoading, setHubLoading] = useState(false);
+
+  const handleHubClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (hubLoading) return;
+    setHubLoading(true);
+
+    const url = await createCreatorAccessHubHandoffUrl({
+      firstName,
+      email,
+      primaryStage,
+      primaryStageName: stageNames[primaryStage] ?? null,
+      primaryStageUrl: links[primaryStage] ?? null,
+      secondaryStage: secondaryStage ?? null,
+      secondaryStageName: secondaryStage ? stageNames[secondaryStage] ?? null : null,
+      secondaryStageUrl: secondaryStage ? links[secondaryStage] ?? null : null,
+    });
+
+    supabase.from("link_clicks").insert({
+      link_name: "creator_access_hub",
+      link_url: CREATOR_ACCESS_HUB_URL,
+      primary_stage: primaryStage,
+      secondary_stage: secondaryStage,
+      email,
+      first_name: firstName,
+      source: "map-diagnostic",
+    }).then(({ error }) => {
+      if (error) console.error("Click tracking failed");
+    });
+    forwardToHQ({
+      type: "link_click",
+      link_name: "creator_access_hub",
+      link_url: CREATOR_ACCESS_HUB_URL,
+      primary_stage: primaryStage,
+      secondary_stage: secondaryStage,
+    });
+
+    window.open(url, "_blank", "noopener,noreferrer");
+    setHubLoading(false);
+  };
 
   return (
     <div className="animate-fade-in text-center">
@@ -58,33 +100,23 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
           </a>
         )}
 
-        <a
-          href="https://creatoraccesshub.lovable.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
-          onClick={() => {
-            supabase.from("link_clicks").insert({
-              link_name: "creator_access_hub",
-              link_url: "https://creatoraccesshub.lovable.app",
-              primary_stage: primaryStage,
-              secondary_stage: secondaryStage,
-            }).then(({ error }) => {
-              if (error) console.error("Click tracking failed:", error);
-            });
-            forwardToHQ({
-              type: "link_click",
-              link_name: "creator_access_hub",
-              link_url: "https://creatoraccesshub.lovable.app",
-              primary_stage: primaryStage,
-              secondary_stage: secondaryStage,
-            });
-          }}
+        <button
+          type="button"
+          onClick={handleHubClick}
+          disabled={hubLoading}
+          className="block w-full"
         >
-          <QuizButton variant="ghost" className="w-full">
-            Visit the Creator Access Hub
+          <QuizButton variant="ghost" className="w-full pointer-events-none">
+            {hubLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Preparing your handoff…
+              </span>
+            ) : (
+              "Continue to the Creator Access Hub"
+            )}
           </QuizButton>
-        </a>
+        </button>
       </div>
 
       {/* Upsells Section */}
