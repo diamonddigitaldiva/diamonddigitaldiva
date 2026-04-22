@@ -218,18 +218,21 @@ serve(async (req) => {
     console.log(`Quiz retry complete: ${succeeded} succeeded, ${failed} failed`);
 
     // ---- Retry contact form submissions to HQ ----
+    const nowIso = new Date().toISOString();
     const { data: pendingContacts, error: contactFetchError } = await supabase
       .from('feedback')
-      .select('id, first_name, email, message, hq_retry_count, created_at')
+      .select('id, first_name, email, message, hq_retry_count, created_at, hq_inflight_until')
       .eq('entry_type', 'contact')
       .eq('hq_forwarded', false)
       .lt('hq_retry_count', MAX_RETRY_ATTEMPTS)
       .lt('created_at', cutoffTime)
+      .or(`hq_inflight_until.is.null,hq_inflight_until.lt.${nowIso}`)
       .order('created_at', { ascending: true })
       .limit(MAX_RETRIES_PER_RUN);
 
     let contactSucceeded = 0;
     let contactFailed = 0;
+    let contactSkipped = 0;
 
     if (contactFetchError) {
       console.error('Error fetching pending contacts:', contactFetchError.message);
@@ -237,7 +240,25 @@ serve(async (req) => {
       console.log(`Found ${pendingContacts.length} pending contact messages to retry`);
 
       for (const contact of pendingContacts) {
+        // Atomically claim the row so the live forward-to-hq function or a
+        // concurrent cron run doesn't double-send.
+        const lockUntil = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+        const { data: claimed, error: claimError } = await supabase
+          .from('feedback')
+          .update({ hq_inflight_until: lockUntil })
+          .eq('id', contact.id)
+          .eq('hq_forwarded', false)
+          .or(`hq_inflight_until.is.null,hq_inflight_until.lt.${nowIso}`)
+          .select('id');
+
+        if (claimError || !claimed || claimed.length === 0) {
+          console.log(`Skipping contact ${contact.id} — could not claim (already in flight or forwarded)`);
+          contactSkipped++;
+          continue;
+        }
+
         const ok = await forwardContactToHQ({
+          id: contact.id,
           first_name: contact.first_name,
           email: contact.email,
           message: contact.message,
@@ -251,19 +272,24 @@ serve(async (req) => {
               hq_forwarded: true,
               hq_forwarded_at: new Date().toISOString(),
               hq_retry_count: (contact.hq_retry_count || 0) + 1,
+              hq_inflight_until: null,
             })
             .eq('id', contact.id);
           contactSucceeded++;
         } else {
+          // Release the lock so the next cron run can try again.
           await supabase
             .from('feedback')
-            .update({ hq_retry_count: (contact.hq_retry_count || 0) + 1 })
+            .update({
+              hq_retry_count: (contact.hq_retry_count || 0) + 1,
+              hq_inflight_until: null,
+            })
             .eq('id', contact.id);
           contactFailed++;
         }
       }
 
-      console.log(`Contact retry complete: ${contactSucceeded} succeeded, ${contactFailed} failed`);
+      console.log(`Contact retry complete: ${contactSucceeded} succeeded, ${contactFailed} failed, ${contactSkipped} skipped`);
     }
 
     return new Response(
