@@ -27,6 +27,12 @@ const eventSchema = z.discriminatedUnion("type", [
     rating: z.number().int().min(1).max(5).optional().nullable(),
     has_message: z.boolean().default(false),
   }),
+  z.object({
+    type: z.literal("contact_message"),
+    first_name: z.string().trim().min(1).max(100),
+    email: z.string().trim().email().max(200),
+    message: z.string().trim().min(1).max(2000),
+  }),
 ]);
 
 Deno.serve(async (req) => {
@@ -92,6 +98,34 @@ Deno.serve(async (req) => {
           metadata: {
             rating: event.rating ?? null,
             has_message: event.has_message,
+          },
+        },
+      ];
+    } else if (event.type === "contact_message") {
+      payload.signups = [
+        {
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: event.first_name,
+          email: event.email,
+          metadata: {
+            channel: "contact_form",
+            message: event.message,
+          },
+        },
+      ];
+      payload.activity = [
+        {
+          activity_type: "note_added",
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: event.first_name,
+          email: event.email,
+          title: `Contact message from ${event.first_name}`,
+          description: event.message,
+          metadata: {
+            channel: "contact_form",
+            email: event.email,
           },
         },
       ];

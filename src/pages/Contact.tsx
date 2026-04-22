@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { forwardToHQ } from "@/lib/hqTracking";
 import { Mail, CheckCircle2, Loader2 } from "lucide-react";
 import { z } from "zod";
 
@@ -57,6 +58,13 @@ export default function Contact() {
 
     setSent(true);
     setMessage("");
+
+    forwardToHQ({
+      type: "contact_message",
+      first_name: parsed.data.firstName,
+      email: parsed.data.email,
+      message: parsed.data.message,
+    });
   };
 
   return (
