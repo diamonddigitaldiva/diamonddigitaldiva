@@ -95,6 +95,7 @@ export type Database = {
           email: string | null
           first_name: string | null
           handoff_session_id: string | null
+          hub_consent: boolean | null
           id: string
           link_name: string
           link_url: string | null
@@ -107,6 +108,7 @@ export type Database = {
           email?: string | null
           first_name?: string | null
           handoff_session_id?: string | null
+          hub_consent?: boolean | null
           id?: string
           link_name: string
           link_url?: string | null
@@ -119,6 +121,7 @@ export type Database = {
           email?: string | null
           first_name?: string | null
           handoff_session_id?: string | null
+          hub_consent?: boolean | null
           id?: string
           link_name?: string
           link_url?: string | null
