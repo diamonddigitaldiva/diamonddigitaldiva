@@ -93,6 +93,14 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
         </span>
       </label>
 
+      <p className="text-[11px] leading-relaxed text-charcoal/60 text-center mb-6">
+        By continuing you agree to our{" "}
+        <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-amethyst">Terms</a>{" "}
+        and{" "}
+        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-amethyst">Privacy Policy</a>,
+        and to receive resources and occasional marketing emails (unsubscribe anytime).
+      </p>
+
       <div className="flex justify-between gap-3">
         <QuizButton variant="ghost" onClick={onBack}>Back</QuizButton>
         <QuizButton onClick={handleSubmit}>Get My Result</QuizButton>
