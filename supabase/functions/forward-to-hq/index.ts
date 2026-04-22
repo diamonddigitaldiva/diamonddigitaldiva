@@ -140,6 +140,9 @@ Deno.serve(async (req) => {
         },
       ];
     } else if (event.type === "contact_message") {
+      const submittedAt = new Date().toISOString();
+      const dueAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48h SLA
+
       payload.signups = [
         {
           source: "map-contact-form",
@@ -149,6 +152,7 @@ Deno.serve(async (req) => {
           metadata: {
             channel: "contact_form",
             message: event.message,
+            submitted_at: submittedAt,
           },
         },
       ];
@@ -164,6 +168,31 @@ Deno.serve(async (req) => {
           metadata: {
             channel: "contact_form",
             email: event.email,
+            full_message: event.message,
+            submitted_at: submittedAt,
+          },
+        },
+      ];
+      payload.tasks = [
+        {
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: event.first_name,
+          email: event.email,
+          title: `Reply to contact message from ${event.first_name}`,
+          description:
+            `Check and respond to this contact form message within 48 hours.\n\n` +
+            `From: ${event.first_name} <${event.email}>\n` +
+            `Submitted: ${submittedAt}\n\n` +
+            `Message:\n${event.message}`,
+          due_at: dueAt,
+          priority: "normal",
+          metadata: {
+            channel: "contact_form",
+            email: event.email,
+            full_message: event.message,
+            submitted_at: submittedAt,
+            sla_hours: 48,
           },
         },
       ];
