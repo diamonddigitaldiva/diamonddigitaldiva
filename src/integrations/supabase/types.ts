@@ -18,7 +18,11 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          entry_type: string
           first_name: string
+          hq_forwarded: boolean
+          hq_forwarded_at: string | null
+          hq_retry_count: number
           id: string
           message: string
           rating: number | null
@@ -26,7 +30,11 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          entry_type?: string
           first_name: string
+          hq_forwarded?: boolean
+          hq_forwarded_at?: string | null
+          hq_retry_count?: number
           id?: string
           message: string
           rating?: number | null
@@ -34,7 +42,11 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          entry_type?: string
           first_name?: string
+          hq_forwarded?: boolean
+          hq_forwarded_at?: string | null
+          hq_retry_count?: number
           id?: string
           message?: string
           rating?: number | null

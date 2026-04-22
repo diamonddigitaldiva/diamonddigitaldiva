@@ -39,12 +39,17 @@ export default function Contact() {
     }
 
     setSubmitting(true);
-    const { error } = await supabase.from("feedback").insert({
-      first_name: parsed.data.firstName,
-      email: parsed.data.email,
-      message: parsed.data.message,
-      rating: null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("feedback")
+      .insert({
+        first_name: parsed.data.firstName,
+        email: parsed.data.email,
+        message: parsed.data.message,
+        rating: null,
+        entry_type: "contact",
+      })
+      .select("id")
+      .single();
     setSubmitting(false);
 
     if (error) {
@@ -59,11 +64,14 @@ export default function Contact() {
     setSent(true);
     setMessage("");
 
+    // Fire-and-forget forward to HQ. If this fails, the retry-webhooks cron
+    // job will pick up the unsent row and try again automatically.
     forwardToHQ({
       type: "contact_message",
       first_name: parsed.data.firstName,
       email: parsed.data.email,
       message: parsed.data.message,
+      feedback_id: inserted?.id,
     });
   };
 

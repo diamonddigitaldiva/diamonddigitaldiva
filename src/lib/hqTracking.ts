@@ -24,6 +24,7 @@ type HqEvent =
       first_name: string;
       email: string;
       message: string;
+      feedback_id?: string;
     };
 
 const DEDUPE_STORAGE_KEY = "hq_tracking_dedupe_v1";

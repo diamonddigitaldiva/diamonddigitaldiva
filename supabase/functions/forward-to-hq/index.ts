@@ -1,4 +1,5 @@
 import { z } from "https://esm.sh/zod@3.25.76";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,8 +33,45 @@ const eventSchema = z.discriminatedUnion("type", [
     first_name: z.string().trim().min(1).max(100),
     email: z.string().trim().email().max(200),
     message: z.string().trim().min(1).max(2000),
+    feedback_id: z.string().uuid().optional(),
   }),
 ]);
+
+function getServiceClient() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+async function markFeedbackForwarded(feedbackId: string, success: boolean) {
+  const client = getServiceClient();
+  if (!client) return;
+  try {
+    if (success) {
+      await client
+        .from("feedback")
+        .update({
+          hq_forwarded: true,
+          hq_forwarded_at: new Date().toISOString(),
+        })
+        .eq("id", feedbackId);
+    } else {
+      // Increment retry counter so the cron can prioritize / cap retries.
+      const { data } = await client
+        .from("feedback")
+        .select("hq_retry_count")
+        .eq("id", feedbackId)
+        .single();
+      await client
+        .from("feedback")
+        .update({ hq_retry_count: (data?.hq_retry_count ?? 0) + 1 })
+        .eq("id", feedbackId);
+    }
+  } catch (err) {
+    console.error("Failed to update feedback HQ status:", err);
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -150,6 +188,9 @@ Deno.serve(async (req) => {
         });
 
         if (hqRes.ok) {
+          if (event.type === "contact_message" && event.feedback_id) {
+            await markFeedbackForwarded(event.feedback_id, true);
+          }
           return new Response(JSON.stringify({ success: true, attempts: attempt }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -175,6 +216,12 @@ Deno.serve(async (req) => {
         const jitter = expDelay * (0.8 + Math.random() * 0.4);
         await new Promise((resolve) => setTimeout(resolve, jitter));
       }
+    }
+
+    // All attempts failed. For contact messages, leave hq_forwarded=false so
+    // the retry-webhooks cron picks it up later. Bump the retry counter.
+    if (event.type === "contact_message" && event.feedback_id) {
+      await markFeedbackForwarded(event.feedback_id, false);
     }
 
     const errMsg = lastError instanceof Error ? lastError.message : lastBody || "HQ ingest failed";
