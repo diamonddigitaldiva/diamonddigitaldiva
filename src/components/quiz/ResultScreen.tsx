@@ -45,6 +45,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, h
       email,
       first_name: firstName,
       source: "map-diagnostic",
+      hub_consent: hubConsent,
     }).then(({ error }) => {
       if (error) console.error("Click tracking failed");
     });
@@ -54,6 +55,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, h
       link_url: CREATOR_ACCESS_HUB_URL,
       primary_stage: primaryStage,
       secondary_stage: secondaryStage,
+      hub_consent: hubConsent,
     });
 
     window.open(url, "_blank", "noopener,noreferrer");
