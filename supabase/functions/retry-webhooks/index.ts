@@ -98,15 +98,12 @@ serve(async (req) => {
       );
     }
 
-    if (!failedSubmissions || failedSubmissions.length === 0) {
-      console.log('No failed submissions to retry');
-      return new Response(
-        JSON.stringify({ success: true, message: 'No failed submissions', retried: 0, succeeded: 0 }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const submissionsToRetry = failedSubmissions ?? [];
+    if (submissionsToRetry.length === 0) {
+      console.log('No failed quiz submissions to retry — checking contacts.');
+    } else {
+      console.log(`Found ${submissionsToRetry.length} failed quiz submissions to retry`);
     }
-
-    console.log(`Found ${failedSubmissions.length} failed submissions to retry`);
 
     let succeeded = 0;
     let failed = 0;
