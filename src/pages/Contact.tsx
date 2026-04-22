@@ -181,7 +181,7 @@ export default function Contact() {
       <ul>
         <li><strong>Business:</strong> Diamond Digital Diva</li>
         <li><strong>Email:</strong> {CONTACT_EMAIL}</li>
-        <li><strong>Hours:</strong> Monday–Friday, replies within 2 business days</li>
+        <li><strong>Replies within:</strong> 24–48 hours</li>
         <li><strong>Jurisdiction:</strong> United States</li>
       </ul>
     </LegalPage>
