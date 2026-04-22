@@ -378,7 +378,7 @@ serve(async (req) => {
           continue;
         }
 
-        const ok = await forwardContactToHQ({
+        const result = await forwardContactToHQ({
           id: contact.id,
           first_name: contact.first_name,
           email: contact.email,
@@ -386,7 +386,7 @@ serve(async (req) => {
           created_at: contact.created_at,
         });
 
-        if (ok) {
+        if (result.ok) {
           await supabase
             .from('feedback')
             .update({
@@ -394,6 +394,9 @@ serve(async (req) => {
               hq_forwarded_at: new Date().toISOString(),
               hq_retry_count: (contact.hq_retry_count || 0) + 1,
               hq_inflight_until: null,
+              hq_task_id: result.taskId,
+              hq_escalation_task_id: result.escalationTaskId,
+              hq_response: result.response as never,
             })
             .eq('id', contact.id);
           contactSucceeded++;
