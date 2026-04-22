@@ -180,16 +180,40 @@ Deno.serve(async (req) => {
       const submittedAt = new Date().toISOString();
       const dueAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48h SLA
 
+      // Stable idempotency key — same value used by initial send AND any
+      // retries (here or via the cron) so HQ deduplicates server-side.
+      // Falls back to a content hash if no feedback_id was supplied (legacy).
+      const idempotencyKey = event.feedback_id
+        ? `contact:${event.feedback_id}`
+        : `contact:${event.email.toLowerCase()}:${submittedAt}`;
+
+      // Try to claim the row so two concurrent senders don't both fire.
+      if (event.feedback_id) {
+        const claimed = await tryClaimFeedback(event.feedback_id);
+        if (!claimed) {
+          console.log(
+            `Skipping contact ${event.feedback_id} — already in flight or forwarded`
+          );
+          return new Response(
+            JSON.stringify({ success: true, skipped: true, reason: "already_in_flight" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      payload.idempotency_key = idempotencyKey;
       payload.signups = [
         {
           source: "map-contact-form",
           business: "ddd",
           first_name: event.first_name,
           email: event.email,
+          idempotency_key: idempotencyKey,
           metadata: {
             channel: "contact_form",
             message: event.message,
             submitted_at: submittedAt,
+            idempotency_key: idempotencyKey,
           },
         },
       ];
@@ -200,6 +224,7 @@ Deno.serve(async (req) => {
           business: "ddd",
           first_name: event.first_name,
           email: event.email,
+          idempotency_key: idempotencyKey,
           title: `Contact message from ${event.first_name}`,
           description: event.message,
           metadata: {
@@ -207,6 +232,7 @@ Deno.serve(async (req) => {
             email: event.email,
             full_message: event.message,
             submitted_at: submittedAt,
+            idempotency_key: idempotencyKey,
           },
         },
       ];
@@ -216,6 +242,7 @@ Deno.serve(async (req) => {
           business: "ddd",
           first_name: event.first_name,
           email: event.email,
+          idempotency_key: idempotencyKey,
           title: `Reply to contact message from ${event.first_name}`,
           description:
             `Check and respond to this contact form message within 48 hours.\n\n` +
@@ -230,6 +257,7 @@ Deno.serve(async (req) => {
             full_message: event.message,
             submitted_at: submittedAt,
             sla_hours: 48,
+            idempotency_key: idempotencyKey,
           },
         },
       ];
