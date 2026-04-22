@@ -8,6 +8,57 @@ const corsHeaders = {
 
 const MAX_RETRIES_PER_RUN = 50; // Limit retries per execution
 const RETRY_OLDER_THAN_MINUTES = 5; // Only retry submissions older than 5 minutes
+const MAX_RETRY_ATTEMPTS = 10; // Give up after this many tries to avoid infinite loops
+
+const HQ_INGEST_URL =
+  "https://qiwrlzqryctjyyetmnpt.supabase.co/functions/v1/ingest";
+
+async function forwardContactToHQ(submission: {
+  first_name: string;
+  email: string;
+  message: string;
+}): Promise<boolean> {
+  try {
+    const payload = {
+      signups: [
+        {
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: submission.first_name,
+          email: submission.email,
+          metadata: {
+            channel: "contact_form",
+            message: submission.message,
+          },
+        },
+      ],
+      activity: [
+        {
+          activity_type: "note_added",
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: submission.first_name,
+          email: submission.email,
+          title: `Contact message from ${submission.first_name}`,
+          description: submission.message,
+          metadata: {
+            channel: "contact_form",
+            email: submission.email,
+          },
+        },
+      ],
+    };
+    const res = await fetch(HQ_INGEST_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("Contact retry threw:", err);
+    return false;
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
