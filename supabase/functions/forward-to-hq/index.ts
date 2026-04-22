@@ -144,9 +144,10 @@ Deno.serve(async (req) => {
     }
 
     const errMsg = lastError instanceof Error ? lastError.message : lastBody || "HQ ingest failed";
+    // Fire-and-forget tracking: never surface upstream HQ failure as a 5xx to the client.
     return new Response(
-      JSON.stringify({ success: false, error: errMsg, status: lastStatus, attempts: MAX_ATTEMPTS }),
-      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: errMsg, status: lastStatus, attempts: MAX_ATTEMPTS, skipped: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
     console.error("forward-to-hq error:", error);
