@@ -18,6 +18,12 @@ type HqEvent =
       type: "feedback_submitted";
       rating?: number | null;
       has_message?: boolean;
+    }
+  | {
+      type: "contact_message";
+      first_name: string;
+      email: string;
+      message: string;
     };
 
 const DEDUPE_STORAGE_KEY = "hq_tracking_dedupe_v1";
