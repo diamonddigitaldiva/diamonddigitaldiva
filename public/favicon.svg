@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g transform="translate(32 32) rotate(45)">
+    <rect x="-22" y="-22" width="44" height="44" fill="#6A4C93"/>
+    <rect x="-17" y="-17" width="34" height="34" fill="none" stroke="#C9B27C" stroke-width="1"/>
+  </g>
+  <text x="32" y="32" text-anchor="middle" dominant-baseline="central"
+        font-family="Cinzel, serif" font-weight="600" font-size="11"
+        fill="#C9B27C" letter-spacing="1.5">DDD</text>
+</svg>

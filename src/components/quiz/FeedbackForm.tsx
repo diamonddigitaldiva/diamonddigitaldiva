@@ -64,17 +64,17 @@ export function FeedbackForm({ email, firstName }: FeedbackFormProps) {
 
   if (isSubmitted) {
     return (
-      <div className="mt-8 p-6 bg-soft-blush/20 rounded-xl border border-soft-blush/50 text-center animate-fade-in">
-        <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+      <div className="mt-10 p-6 bg-ivory rounded-sm border border-gold/40 text-center animate-fade-in">
+        <CheckCircle className="w-8 h-8 text-amethyst mx-auto mb-2" />
         <p className="text-sm text-charcoal">Thank you for your feedback!</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-8 p-6 bg-soft-blush/20 rounded-xl border border-soft-blush/50 animate-fade-in">
-      <h3 className="font-heading text-lg text-charcoal mb-4 text-center">How was your experience?</h3>
-      
+    <div className="mt-10 p-6 bg-ivory rounded-sm border border-gold/40 animate-fade-in">
+      <h3 className="font-heading text-xl text-charcoal mb-4 text-center">How was your experience?</h3>
+
       <div className="flex justify-center gap-1 mb-4">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
@@ -86,10 +86,10 @@ export function FeedbackForm({ email, firstName }: FeedbackFormProps) {
             className="p-1 transition-transform hover:scale-110"
           >
             <Star
-              className={`w-8 h-8 transition-colors ${
+              className={`w-7 h-7 transition-colors ${
                 star <= (hoveredRating || rating)
-                  ? 'fill-yellow-400 text-yellow-400'
-                  : 'text-charcoal/30'
+                  ? 'fill-gold text-gold'
+                  : 'text-charcoal/25'
               }`}
             />
           </button>
@@ -100,14 +100,14 @@ export function FeedbackForm({ email, firstName }: FeedbackFormProps) {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Share your thoughts about the quiz..."
-        className="mb-4 bg-white/80"
+        className="mb-4 bg-pearl border-border focus-visible:ring-amethyst/40"
         maxLength={1000}
       />
 
       <Button
         onClick={handleSubmit}
         disabled={isSubmitting || rating === 0}
-        className="w-full bg-charcoal hover:bg-charcoal/90 text-white"
+        className="w-full bg-amethyst hover:bg-amethyst-deep text-pearl uppercase tracking-[0.25em] text-[11px] font-semibold rounded-sm py-6"
       >
         {isSubmitting ? (
           <>

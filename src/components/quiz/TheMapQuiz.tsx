@@ -7,7 +7,7 @@ import { computeResults } from "@/lib/quizData";
 import { useQuizData } from "@/hooks/useQuizData";
 import { sendQuizResultsToWebhook } from "@/lib/webhook";
 import { forwardToHQ } from "@/lib/hqTracking";
-import logo from "@/assets/diamond-digital-diva-logo.png";
+import { Signet } from "@/components/brand/Signet";
 
 type Screen = "intro" | "quiz" | "lead" | "result";
 
@@ -22,52 +22,31 @@ export function TheMapQuiz() {
     secondary: null,
   });
 
-  const handleStart = () => {
-    setScreen("quiz");
-    setQuestionIndex(0);
-  };
-
-  const handleSelectAnswer = (key: string) => {
-    setAnswers((prev) => ({ ...prev, [questionIndex]: key }));
-  };
-
-  const handleBack = () => {
-    if (questionIndex > 0) {
-      setQuestionIndex((prev) => prev - 1);
-    }
-  };
-
+  const handleStart = () => { setScreen("quiz"); setQuestionIndex(0); };
+  const handleSelectAnswer = (key: string) => setAnswers((prev) => ({ ...prev, [questionIndex]: key }));
+  const handleBack = () => { if (questionIndex > 0) setQuestionIndex((p) => p - 1); };
   const handleNext = () => {
-    if (questionIndex < questions.length - 1) {
-      setQuestionIndex((prev) => prev + 1);
-    } else {
-      setScreen("lead");
-    }
+    if (questionIndex < questions.length - 1) setQuestionIndex((p) => p + 1);
+    else setScreen("lead");
   };
-
-  const handleLeadBack = () => {
-    setScreen("quiz");
-    setQuestionIndex(questions.length - 1);
-  };
+  const handleLeadBack = () => { setScreen("quiz"); setQuestionIndex(questions.length - 1); };
 
   const handleLeadSubmit = async (firstName: string, email: string) => {
     setLeadData({ firstName, email });
     const computed = computeResults(answers);
     setResults(computed);
-    
-    // Send results to webhook
+
     sendQuizResultsToWebhook({
       firstName,
       email,
       primaryStage: stageNames[computed.primary] || computed.primary,
       secondaryStage: computed.secondary ? stageNames[computed.secondary] : null,
-      primaryStageUrl: links[computed.primary] || '',
+      primaryStageUrl: links[computed.primary] || "",
       secondaryStageUrl: computed.secondary ? links[computed.secondary] : null,
       timestamp: new Date().toISOString(),
       source: window.location.origin,
     });
 
-    // Notify HQ that a quiz was completed (no PII — FOC handles that).
     forwardToHQ({
       type: "quiz_completed",
       primary_stage: computed.primary,
@@ -80,56 +59,74 @@ export function TheMapQuiz() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading quiz...</p>
+        <p className="eyebrow text-charcoal/60">Loading…</p>
       </div>
     );
   }
 
+  const isHero = screen === "intro";
+
   return (
-    <div className="min-h-screen flex flex-col py-8 px-4">
-      <div className="container max-w-2xl mx-auto">
-        <header className="mb-6 text-center">
-          <img 
-            src={logo}
-            alt="Diamond Digital Diva logo" 
-            className="mx-auto mb-5 max-w-[280px] h-auto"
-          />
-        </header>
+    <div className="min-h-screen flex flex-col">
+      {/* Nav */}
+      <nav className="w-full border-b border-border/60 bg-pearl/70 backdrop-blur-sm">
+        <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Signet size={44} />
+            <span className="wordmark text-[12px] hidden sm:inline">Diamond Digital Diva</span>
+          </div>
+          <div className="hidden md:flex items-center gap-8">
+            {["The Diagnostic", "About", "Contact"].map((label) => (
+              <a
+                key={label}
+                href="#"
+                className="text-[11px] uppercase tracking-[0.25em] font-medium text-charcoal hover:text-amethyst transition-colors"
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </nav>
 
-        <main className="quiz-card">
-          {screen === "intro" && <IntroScreen onStart={handleStart} />}
-          
-          {screen === "quiz" && (
-            <QuizScreen
-              questionIndex={questionIndex}
-              questions={questions}
-              answers={answers}
-              onSelectAnswer={handleSelectAnswer}
-              onBack={handleBack}
-              onNext={handleNext}
-            />
-          )}
-          
-          {screen === "lead" && (
-            <LeadScreen onBack={handleLeadBack} onSubmit={handleLeadSubmit} />
-          )}
-          
-          {screen === "result" && (
-            <ResultScreen
-              primaryStage={results.primary}
-              secondaryStage={results.secondary}
-              firstName={leadData.firstName}
-              email={leadData.email}
-              stageNames={stageNames}
-              links={links}
-            />
-          )}
-        </main>
+      {/* Main */}
+      <main className={`flex-1 w-full mx-auto px-6 py-12 md:py-20 ${isHero ? "max-w-[1200px]" : "max-w-2xl"}`}>
+        {isHero ? (
+          <IntroScreen onStart={handleStart} />
+        ) : (
+          <div className="quiz-card">
+            {screen === "quiz" && (
+              <QuizScreen
+                questionIndex={questionIndex}
+                questions={questions}
+                answers={answers}
+                onSelectAnswer={handleSelectAnswer}
+                onBack={handleBack}
+                onNext={handleNext}
+              />
+            )}
+            {screen === "lead" && <LeadScreen onBack={handleLeadBack} onSubmit={handleLeadSubmit} />}
+            {screen === "result" && (
+              <ResultScreen
+                primaryStage={results.primary}
+                secondaryStage={results.secondary}
+                firstName={leadData.firstName}
+                email={leadData.email}
+                stageNames={stageNames}
+                links={links}
+              />
+            )}
+          </div>
+        )}
+      </main>
 
-        <footer className="text-center text-sm text-muted-foreground mt-5 opacity-70">
-          Diamond Digital Diva
-        </footer>
-      </div>
+      {/* Footer */}
+      <footer className="border-t border-border/60 py-8">
+        <div className="flex flex-col items-center gap-3">
+          <Signet size={32} withShadow={false} />
+          <span className="wordmark text-[10px] text-charcoal/70">Diamond Digital Diva</span>
+        </div>
+      </footer>
     </div>
   );
 }

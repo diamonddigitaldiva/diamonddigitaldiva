@@ -35,42 +35,47 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
     onSubmit(firstName.trim(), email.trim());
   };
 
-  return (
-    <div className="animate-fade-in">
-      <h2 className="text-2xl mb-4">Almost done</h2>
-      <p className="text-muted-foreground mb-6">
-        Enter your details to receive your personalized results.
-      </p>
+  const inputClass =
+    "w-full mt-2 px-4 py-3 rounded-sm border border-border bg-pearl text-charcoal " +
+    "font-input text-lg focus:outline-none focus:border-amethyst focus:ring-1 focus:ring-amethyst/40 transition-colors";
 
-      <div className="space-y-4 mb-6">
+  return (
+    <div className="animate-fade-in max-w-xl mx-auto">
+      <div className="text-center mb-8">
+        <div className="eyebrow mb-3">Almost There</div>
+        <h2 className="font-heading text-3xl md:text-4xl text-charcoal mb-3">Your results await</h2>
+        <p className="text-charcoal/70 text-[15px]">
+          Enter your details to receive your personalized blueprint.
+        </p>
+      </div>
+
+      <div className="space-y-5 mb-8">
         <label className="block">
-          <span className="text-sm opacity-90">First name</span>
+          <span className="eyebrow text-charcoal/70">First name</span>
           <input
             type="text"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="w-full mt-2 px-4 py-3 rounded-lg border-2 border-soft-blush bg-secondary text-foreground font-input focus:outline-none focus:ring-2 focus:ring-soft-blush/50"
+            className={inputClass}
             placeholder="Your first name"
           />
         </label>
 
         <label className="block">
-          <span className="text-sm opacity-90">Email</span>
+          <span className="eyebrow text-charcoal/70">Email</span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full mt-2 px-4 py-3 rounded-lg border-2 border-soft-blush bg-secondary text-foreground font-input focus:outline-none focus:ring-2 focus:ring-soft-blush/50"
+            className={inputClass}
             placeholder="your@email.com"
           />
         </label>
       </div>
 
       <div className="flex justify-between gap-3">
-        <QuizButton variant="ghost" onClick={onBack} className="border-soft-blush hover:bg-soft-blush/20">
-          Back
-        </QuizButton>
-        <QuizButton onClick={handleSubmit} className="bg-soft-blush hover:bg-soft-blush/80 text-charcoal border-2 border-soft-blush">Get My Result</QuizButton>
+        <QuizButton variant="ghost" onClick={onBack}>Back</QuizButton>
+        <QuizButton onClick={handleSubmit}>Get My Result</QuizButton>
       </div>
     </div>
   );

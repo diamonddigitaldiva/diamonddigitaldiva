@@ -19,23 +19,26 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
 
   return (
     <div className="animate-fade-in text-center">
-      <h2 className="text-2xl md:text-3xl font-heading text-charcoal mb-2">Your Results</h2>
-      <p className="text-muted-foreground mb-8">
-        {firstName}, here's what we found for you.
+      <div className="eyebrow mb-3">Your Results</div>
+      <h2 className="text-3xl md:text-4xl font-heading text-charcoal mb-2">
+        {firstName}, here's your map
+      </h2>
+      <p className="text-charcoal/70 text-[15px] mb-8">
+        Here's what we found for you.
       </p>
 
-      <div className="space-y-4 mb-8">
-        <div className="p-6 bg-gradient-to-br from-charcoal to-charcoal/90 rounded-2xl shadow-lg border-2 border-soft-blush/50">
-          <div className="text-xs text-soft-blush uppercase tracking-wider mb-2">Primary Match</div>
-          <div className="font-heading text-xl md:text-2xl text-white">
+      <div className="space-y-4 mb-10">
+        <div className="p-7 bg-gradient-to-br from-true-black to-charcoal rounded-sm shadow-editorial border border-gold/40">
+          <div className="eyebrow text-gold mb-3">Primary Match</div>
+          <div className="font-heading text-2xl md:text-3xl text-pearl">
             {stageNames[primaryStage]}
           </div>
         </div>
 
         {secondaryStage && (
-          <div className="p-5 bg-soft-blush/30 rounded-xl border-2 border-soft-blush">
-            <div className="text-xs text-charcoal/70 uppercase tracking-wider mb-2">Secondary Match</div>
-            <div className="font-heading text-lg text-charcoal">
+          <div className="p-5 bg-ivory rounded-sm border border-amethyst/30">
+            <div className="eyebrow text-amethyst mb-2">Secondary Match</div>
+            <div className="font-heading text-xl text-charcoal">
               {stageNames[secondaryStage]}
             </div>
           </div>
@@ -43,25 +46,13 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
       </div>
 
       <div className="flex flex-col gap-3">
-        <a
-          href={links[primaryStage]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
-        >
-          <QuizButton className="w-full bg-soft-blush hover:bg-soft-blush/80 text-charcoal border-2 border-soft-blush">
-            Go to your next step
-          </QuizButton>
+        <a href={links[primaryStage]} target="_blank" rel="noopener noreferrer" className="block">
+          <QuizButton className="w-full">Go to your next step</QuizButton>
         </a>
 
         {secondaryStage && (
-          <a
-            href={links[secondaryStage]}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block"
-          >
-            <QuizButton variant="ghost" className="w-full text-charcoal border-charcoal/30 hover:bg-charcoal/5">
+          <a href={links[secondaryStage]} target="_blank" rel="noopener noreferrer" className="block">
+            <QuizButton variant="outline" className="w-full">
               Explore second match
             </QuizButton>
           </a>
@@ -90,7 +81,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
             });
           }}
         >
-          <QuizButton variant="ghost" className="w-full text-charcoal border-charcoal/30 hover:bg-charcoal/5">
+          <QuizButton variant="ghost" className="w-full">
             Visit the Creator Access Hub
           </QuizButton>
         </a>
@@ -110,12 +101,12 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
                 href={product.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block p-4 rounded-xl border border-border bg-card hover:border-soft-blush hover:shadow-md transition-all text-left"
+                className="block p-4 rounded-sm border border-border bg-pearl hover:border-amethyst hover:shadow-soft transition-all text-left"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {product.label && (
-                      <span className="inline-block text-[10px] uppercase tracking-wider font-semibold text-charcoal bg-soft-blush px-2 py-0.5 rounded-full mb-1.5">
+                      <span className="inline-block text-[10px] uppercase tracking-[0.25em] font-semibold text-pearl bg-amethyst px-2 py-0.5 rounded-sm mb-1.5">
                         {product.label}
                       </span>
                     )}
