@@ -108,7 +108,7 @@ serve(async (req) => {
     let succeeded = 0;
     let failed = 0;
 
-    for (const submission of failedSubmissions) {
+    for (const submission of submissionsToRetry) {
       try {
         // Reconstruct the payload
         const payload = {
@@ -217,7 +217,7 @@ serve(async (req) => {
         success: true,
         message: 'Retry complete',
         quiz: {
-          retried: failedSubmissions.length,
+          retried: submissionsToRetry.length,
           succeeded,
           failed,
         },
