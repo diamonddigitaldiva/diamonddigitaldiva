@@ -70,6 +70,12 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             boxShadow: "var(--card-shadow)",
           }}
         >
+          {/* Gold corner brackets */}
+          <span aria-hidden className="absolute top-0 left-0" style={{ width: 28, height: 28, borderTop: "2px solid hsl(var(--gold))", borderLeft: "2px solid hsl(var(--gold))" }} />
+          <span aria-hidden className="absolute top-0 right-0" style={{ width: 28, height: 28, borderTop: "2px solid hsl(var(--gold))", borderRight: "2px solid hsl(var(--gold))" }} />
+          <span aria-hidden className="absolute bottom-0 left-0" style={{ width: 28, height: 28, borderBottom: "2px solid hsl(var(--gold))", borderLeft: "2px solid hsl(var(--gold))" }} />
+          <span aria-hidden className="absolute bottom-0 right-0" style={{ width: 28, height: 28, borderBottom: "2px solid hsl(var(--gold))", borderRight: "2px solid hsl(var(--gold))" }} />
+
           <div className="flex justify-center mb-6">
             <Signet size={88} animate />
           </div>
@@ -104,7 +110,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             ))}
           </ul>
 
-          <div className="pt-6 border-t border-gold/40 flex items-center justify-around">
+          <div className="pt-2 flex items-center justify-around">
             {[
               { n: "12", l: "Questions" },
               { n: "4", l: "Minutes" },
