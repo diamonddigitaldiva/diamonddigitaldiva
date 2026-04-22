@@ -273,11 +273,17 @@ Deno.serve(async (req) => {
     let lastBody = "";
     let lastError: unknown = null;
 
+    const hqHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    if (typeof payload.idempotency_key === "string") {
+      hqHeaders["Idempotency-Key"] = payload.idempotency_key;
+      hqHeaders["X-Idempotency-Key"] = payload.idempotency_key;
+    }
+
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const hqRes = await fetch(HQ_INGEST_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: hqHeaders,
           body: JSON.stringify(payload),
         });
 
