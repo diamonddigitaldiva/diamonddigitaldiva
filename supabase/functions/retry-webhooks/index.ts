@@ -14,6 +14,7 @@ const HQ_INGEST_URL =
   "https://qiwrlzqryctjyyetmnpt.supabase.co/functions/v1/ingest";
 
 async function forwardContactToHQ(submission: {
+  id: string;
   first_name: string;
   email: string;
   message: string;
@@ -21,6 +22,9 @@ async function forwardContactToHQ(submission: {
 }): Promise<boolean> {
   try {
     const submittedAt = submission.created_at;
+    // Stable idempotency key — identical to the one used by the initial
+    // forward-to-hq send, so HQ deduplicates server-side.
+    const idempotencyKey = `contact:${submission.id}`;
     // Due 48h after original submission. If already past due, give a 24h grace.
     const dueAtMs = new Date(submittedAt).getTime() + 48 * 60 * 60 * 1000;
     const dueAt = new Date(
@@ -28,17 +32,20 @@ async function forwardContactToHQ(submission: {
     ).toISOString();
 
     const payload = {
+      idempotency_key: idempotencyKey,
       signups: [
         {
           source: "map-contact-form",
           business: "ddd",
           first_name: submission.first_name,
           email: submission.email,
+          idempotency_key: idempotencyKey,
           metadata: {
             channel: "contact_form",
             message: submission.message,
             submitted_at: submittedAt,
             retried: true,
+            idempotency_key: idempotencyKey,
           },
         },
       ],
@@ -49,6 +56,7 @@ async function forwardContactToHQ(submission: {
           business: "ddd",
           first_name: submission.first_name,
           email: submission.email,
+          idempotency_key: idempotencyKey,
           title: `Contact message from ${submission.first_name}`,
           description: submission.message,
           metadata: {
@@ -57,6 +65,7 @@ async function forwardContactToHQ(submission: {
             full_message: submission.message,
             submitted_at: submittedAt,
             retried: true,
+            idempotency_key: idempotencyKey,
           },
         },
       ],
@@ -66,6 +75,7 @@ async function forwardContactToHQ(submission: {
           business: "ddd",
           first_name: submission.first_name,
           email: submission.email,
+          idempotency_key: idempotencyKey,
           title: `Reply to contact message from ${submission.first_name}`,
           description:
             `Check and respond to this contact form message.\n\n` +
@@ -82,13 +92,18 @@ async function forwardContactToHQ(submission: {
             submitted_at: submittedAt,
             sla_hours: 48,
             retried: true,
+            idempotency_key: idempotencyKey,
           },
         },
       ],
     };
     const res = await fetch(HQ_INGEST_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+        "X-Idempotency-Key": idempotencyKey,
+      },
       body: JSON.stringify(payload),
     });
     return res.ok;
@@ -203,18 +218,21 @@ serve(async (req) => {
     console.log(`Quiz retry complete: ${succeeded} succeeded, ${failed} failed`);
 
     // ---- Retry contact form submissions to HQ ----
+    const nowIso = new Date().toISOString();
     const { data: pendingContacts, error: contactFetchError } = await supabase
       .from('feedback')
-      .select('id, first_name, email, message, hq_retry_count, created_at')
+      .select('id, first_name, email, message, hq_retry_count, created_at, hq_inflight_until')
       .eq('entry_type', 'contact')
       .eq('hq_forwarded', false)
       .lt('hq_retry_count', MAX_RETRY_ATTEMPTS)
       .lt('created_at', cutoffTime)
+      .or(`hq_inflight_until.is.null,hq_inflight_until.lt.${nowIso}`)
       .order('created_at', { ascending: true })
       .limit(MAX_RETRIES_PER_RUN);
 
     let contactSucceeded = 0;
     let contactFailed = 0;
+    let contactSkipped = 0;
 
     if (contactFetchError) {
       console.error('Error fetching pending contacts:', contactFetchError.message);
@@ -222,7 +240,25 @@ serve(async (req) => {
       console.log(`Found ${pendingContacts.length} pending contact messages to retry`);
 
       for (const contact of pendingContacts) {
+        // Atomically claim the row so the live forward-to-hq function or a
+        // concurrent cron run doesn't double-send.
+        const lockUntil = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+        const { data: claimed, error: claimError } = await supabase
+          .from('feedback')
+          .update({ hq_inflight_until: lockUntil })
+          .eq('id', contact.id)
+          .eq('hq_forwarded', false)
+          .or(`hq_inflight_until.is.null,hq_inflight_until.lt.${nowIso}`)
+          .select('id');
+
+        if (claimError || !claimed || claimed.length === 0) {
+          console.log(`Skipping contact ${contact.id} — could not claim (already in flight or forwarded)`);
+          contactSkipped++;
+          continue;
+        }
+
         const ok = await forwardContactToHQ({
+          id: contact.id,
           first_name: contact.first_name,
           email: contact.email,
           message: contact.message,
@@ -236,19 +272,24 @@ serve(async (req) => {
               hq_forwarded: true,
               hq_forwarded_at: new Date().toISOString(),
               hq_retry_count: (contact.hq_retry_count || 0) + 1,
+              hq_inflight_until: null,
             })
             .eq('id', contact.id);
           contactSucceeded++;
         } else {
+          // Release the lock so the next cron run can try again.
           await supabase
             .from('feedback')
-            .update({ hq_retry_count: (contact.hq_retry_count || 0) + 1 })
+            .update({
+              hq_retry_count: (contact.hq_retry_count || 0) + 1,
+              hq_inflight_until: null,
+            })
             .eq('id', contact.id);
           contactFailed++;
         }
       }
 
-      console.log(`Contact retry complete: ${contactSucceeded} succeeded, ${contactFailed} failed`);
+      console.log(`Contact retry complete: ${contactSucceeded} succeeded, ${contactFailed} failed, ${contactSkipped} skipped`);
     }
 
     return new Response(
@@ -264,6 +305,7 @@ serve(async (req) => {
           retried: pendingContacts?.length ?? 0,
           succeeded: contactSucceeded,
           failed: contactFailed,
+          skipped: contactSkipped,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

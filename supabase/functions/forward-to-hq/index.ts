@@ -54,10 +54,12 @@ async function markFeedbackForwarded(feedbackId: string, success: boolean) {
         .update({
           hq_forwarded: true,
           hq_forwarded_at: new Date().toISOString(),
+          hq_inflight_until: null,
         })
         .eq("id", feedbackId);
     } else {
-      // Increment retry counter so the cron can prioritize / cap retries.
+      // Release the in-flight lock and bump the retry counter so the cron
+      // can prioritize / cap retries.
       const { data } = await client
         .from("feedback")
         .select("hq_retry_count")
@@ -65,11 +67,46 @@ async function markFeedbackForwarded(feedbackId: string, success: boolean) {
         .single();
       await client
         .from("feedback")
-        .update({ hq_retry_count: (data?.hq_retry_count ?? 0) + 1 })
+        .update({
+          hq_retry_count: (data?.hq_retry_count ?? 0) + 1,
+          hq_inflight_until: null,
+        })
         .eq("id", feedbackId);
     }
   } catch (err) {
     console.error("Failed to update feedback HQ status:", err);
+  }
+}
+
+/**
+ * Atomically claim a feedback row for HQ forwarding. Returns true only if
+ * THIS caller holds the claim. Prevents the initial send and the cron retry
+ * from forwarding the same message twice.
+ *
+ * Lock TTL: 2 minutes. Auto-expires so a crashed sender doesn't permanently
+ * block retries.
+ */
+async function tryClaimFeedback(feedbackId: string): Promise<boolean> {
+  const client = getServiceClient();
+  if (!client) return true; // Fail-open: better to risk a duplicate than lose the send.
+  const nowIso = new Date().toISOString();
+  const lockUntil = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+  try {
+    const { data, error } = await client
+      .from("feedback")
+      .update({ hq_inflight_until: lockUntil })
+      .eq("id", feedbackId)
+      .eq("hq_forwarded", false)
+      .or(`hq_inflight_until.is.null,hq_inflight_until.lt.${nowIso}`)
+      .select("id");
+    if (error) {
+      console.error("Claim query failed:", error);
+      return true; // Fail-open.
+    }
+    return Array.isArray(data) && data.length > 0;
+  } catch (err) {
+    console.error("Claim threw:", err);
+    return true;
   }
 }
 
@@ -143,16 +180,40 @@ Deno.serve(async (req) => {
       const submittedAt = new Date().toISOString();
       const dueAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48h SLA
 
+      // Stable idempotency key — same value used by initial send AND any
+      // retries (here or via the cron) so HQ deduplicates server-side.
+      // Falls back to a content hash if no feedback_id was supplied (legacy).
+      const idempotencyKey = event.feedback_id
+        ? `contact:${event.feedback_id}`
+        : `contact:${event.email.toLowerCase()}:${submittedAt}`;
+
+      // Try to claim the row so two concurrent senders don't both fire.
+      if (event.feedback_id) {
+        const claimed = await tryClaimFeedback(event.feedback_id);
+        if (!claimed) {
+          console.log(
+            `Skipping contact ${event.feedback_id} — already in flight or forwarded`
+          );
+          return new Response(
+            JSON.stringify({ success: true, skipped: true, reason: "already_in_flight" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      payload.idempotency_key = idempotencyKey;
       payload.signups = [
         {
           source: "map-contact-form",
           business: "ddd",
           first_name: event.first_name,
           email: event.email,
+          idempotency_key: idempotencyKey,
           metadata: {
             channel: "contact_form",
             message: event.message,
             submitted_at: submittedAt,
+            idempotency_key: idempotencyKey,
           },
         },
       ];
@@ -163,6 +224,7 @@ Deno.serve(async (req) => {
           business: "ddd",
           first_name: event.first_name,
           email: event.email,
+          idempotency_key: idempotencyKey,
           title: `Contact message from ${event.first_name}`,
           description: event.message,
           metadata: {
@@ -170,6 +232,7 @@ Deno.serve(async (req) => {
             email: event.email,
             full_message: event.message,
             submitted_at: submittedAt,
+            idempotency_key: idempotencyKey,
           },
         },
       ];
@@ -179,6 +242,7 @@ Deno.serve(async (req) => {
           business: "ddd",
           first_name: event.first_name,
           email: event.email,
+          idempotency_key: idempotencyKey,
           title: `Reply to contact message from ${event.first_name}`,
           description:
             `Check and respond to this contact form message within 48 hours.\n\n` +
@@ -193,6 +257,7 @@ Deno.serve(async (req) => {
             full_message: event.message,
             submitted_at: submittedAt,
             sla_hours: 48,
+            idempotency_key: idempotencyKey,
           },
         },
       ];
@@ -208,11 +273,17 @@ Deno.serve(async (req) => {
     let lastBody = "";
     let lastError: unknown = null;
 
+    const hqHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    if (typeof payload.idempotency_key === "string") {
+      hqHeaders["Idempotency-Key"] = payload.idempotency_key;
+      hqHeaders["X-Idempotency-Key"] = payload.idempotency_key;
+    }
+
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const hqRes = await fetch(HQ_INGEST_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: hqHeaders,
           body: JSON.stringify(payload),
         });
 

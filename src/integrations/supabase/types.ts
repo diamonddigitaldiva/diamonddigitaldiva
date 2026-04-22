@@ -22,6 +22,7 @@ export type Database = {
           first_name: string
           hq_forwarded: boolean
           hq_forwarded_at: string | null
+          hq_inflight_until: string | null
           hq_retry_count: number
           id: string
           message: string
@@ -34,6 +35,7 @@ export type Database = {
           first_name: string
           hq_forwarded?: boolean
           hq_forwarded_at?: string | null
+          hq_inflight_until?: string | null
           hq_retry_count?: number
           id?: string
           message: string
@@ -46,6 +48,7 @@ export type Database = {
           first_name?: string
           hq_forwarded?: boolean
           hq_forwarded_at?: string | null
+          hq_inflight_until?: string | null
           hq_retry_count?: number
           id?: string
           message?: string
