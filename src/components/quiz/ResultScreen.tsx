@@ -81,7 +81,7 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
             });
           }}
         >
-          <QuizButton variant="ghost" className="w-full text-charcoal border-charcoal/30 hover:bg-charcoal/5">
+          <QuizButton variant="ghost" className="w-full">
             Visit the Creator Access Hub
           </QuizButton>
         </a>
@@ -101,12 +101,12 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
                 href={product.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block p-4 rounded-xl border border-border bg-card hover:border-soft-blush hover:shadow-md transition-all text-left"
+                className="block p-4 rounded-sm border border-border bg-pearl hover:border-amethyst hover:shadow-soft transition-all text-left"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {product.label && (
-                      <span className="inline-block text-[10px] uppercase tracking-wider font-semibold text-charcoal bg-soft-blush px-2 py-0.5 rounded-full mb-1.5">
+                      <span className="inline-block text-[10px] uppercase tracking-[0.25em] font-semibold text-pearl bg-amethyst px-2 py-0.5 rounded-sm mb-1.5">
                         {product.label}
                       </span>
                     )}
