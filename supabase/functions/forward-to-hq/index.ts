@@ -179,6 +179,10 @@ Deno.serve(async (req) => {
     } else if (event.type === "contact_message") {
       const submittedAt = new Date().toISOString();
       const dueAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48h SLA
+      // Escalation task: becomes due once the 48h reply window closes, with a
+      // 24h follow-up window before it itself is overdue (total 72h from now).
+      const escalationDueAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+      const escalationStartAt = dueAt; // Don't escalate before the primary SLA expires.
 
       // Stable idempotency key — same value used by initial send AND any
       // retries (here or via the cron) so HQ deduplicates server-side.
