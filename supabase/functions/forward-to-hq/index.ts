@@ -179,6 +179,10 @@ Deno.serve(async (req) => {
     } else if (event.type === "contact_message") {
       const submittedAt = new Date().toISOString();
       const dueAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48h SLA
+      // Escalation task: becomes due once the 48h reply window closes, with a
+      // 24h follow-up window before it itself is overdue (total 72h from now).
+      const escalationDueAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+      const escalationStartAt = dueAt; // Don't escalate before the primary SLA expires.
 
       // Stable idempotency key — same value used by initial send AND any
       // retries (here or via the cron) so HQ deduplicates server-side.
@@ -258,6 +262,41 @@ Deno.serve(async (req) => {
             submitted_at: submittedAt,
             sla_hours: 48,
             idempotency_key: idempotencyKey,
+            task_role: "primary_reply",
+          },
+        },
+        {
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: event.first_name,
+          email: event.email,
+          idempotency_key: `${idempotencyKey}:escalation`,
+          title: `ESCALATION: Unanswered contact from ${event.first_name} (48h+)`,
+          description:
+            `This contact message has not been marked replied within the 48-hour SLA.\n` +
+            `Confirm a reply was sent (or send one now) within the next 24 hours.\n\n` +
+            `From: ${event.first_name} <${event.email}>\n` +
+            `Originally submitted: ${submittedAt}\n` +
+            `Primary reply was due: ${dueAt}\n` +
+            `Escalation follow-up due: ${escalationDueAt}\n\n` +
+            `Message:\n${event.message}\n\n` +
+            `If the reply has already been sent, mark the primary "Reply to contact message" task as complete to resolve this escalation.`,
+          start_at: escalationStartAt,
+          due_at: escalationDueAt,
+          priority: "high",
+          metadata: {
+            channel: "contact_form",
+            email: event.email,
+            full_message: event.message,
+            submitted_at: submittedAt,
+            sla_hours: 72,
+            follow_up_window_hours: 24,
+            primary_due_at: dueAt,
+            escalation_starts_at: escalationStartAt,
+            idempotency_key: `${idempotencyKey}:escalation`,
+            parent_idempotency_key: idempotencyKey,
+            task_role: "escalation",
+            triggers_when: "primary_reply_not_completed_after_48h",
           },
         },
       ];

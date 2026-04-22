@@ -30,6 +30,13 @@ async function forwardContactToHQ(submission: {
     const dueAt = new Date(
       Math.max(dueAtMs, Date.now() + 24 * 60 * 60 * 1000)
     ).toISOString();
+    // Escalation: triggers when the primary 48h reply window closes, with a
+    // 24h follow-up window before the escalation itself is overdue.
+    const escalationStartAt = dueAt;
+    const escalationDueAtMs = new Date(submittedAt).getTime() + 72 * 60 * 60 * 1000;
+    const escalationDueAt = new Date(
+      Math.max(escalationDueAtMs, Date.now() + 48 * 60 * 60 * 1000)
+    ).toISOString();
 
     const payload = {
       idempotency_key: idempotencyKey,
@@ -93,6 +100,42 @@ async function forwardContactToHQ(submission: {
             sla_hours: 48,
             retried: true,
             idempotency_key: idempotencyKey,
+            task_role: "primary_reply",
+          },
+        },
+        {
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: submission.first_name,
+          email: submission.email,
+          idempotency_key: `${idempotencyKey}:escalation`,
+          title: `ESCALATION: Unanswered contact from ${submission.first_name} (48h+)`,
+          description:
+            `This contact message has not been marked replied within the 48-hour SLA.\n` +
+            `Confirm a reply was sent (or send one now) within the next 24 hours.\n\n` +
+            `From: ${submission.first_name} <${submission.email}>\n` +
+            `Originally submitted: ${submittedAt}\n` +
+            `Primary reply was due: ${dueAt}\n` +
+            `Escalation follow-up due: ${escalationDueAt}\n\n` +
+            `Message:\n${submission.message}\n\n` +
+            `If the reply has already been sent, mark the primary "Reply to contact message" task as complete to resolve this escalation.`,
+          start_at: escalationStartAt,
+          due_at: escalationDueAt,
+          priority: "high",
+          metadata: {
+            channel: "contact_form",
+            email: submission.email,
+            full_message: submission.message,
+            submitted_at: submittedAt,
+            sla_hours: 72,
+            follow_up_window_hours: 24,
+            primary_due_at: dueAt,
+            escalation_starts_at: escalationStartAt,
+            retried: true,
+            idempotency_key: `${idempotencyKey}:escalation`,
+            parent_idempotency_key: idempotencyKey,
+            task_role: "escalation",
+            triggers_when: "primary_reply_not_completed_after_48h",
           },
         },
       ],
