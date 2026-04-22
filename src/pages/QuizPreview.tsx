@@ -59,6 +59,7 @@ export default function QuizPreview() {
                 secondaryStage="AICA"
                 firstName="Jane"
                 email="jane@example.com"
+                hubConsent={true}
                 stageNames={stageNames}
                 links={links}
               />

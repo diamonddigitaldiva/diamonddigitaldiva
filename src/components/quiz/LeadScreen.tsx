@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { QuizButton } from "@/components/ui/quiz-button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
 interface LeadScreenProps {
   onBack: () => void;
-  onSubmit: (firstName: string, email: string) => void;
+  onSubmit: (firstName: string, email: string, hubConsent: boolean) => void;
 }
 
 export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [hubConsent, setHubConsent] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = () => {
@@ -32,7 +34,7 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
       return;
     }
 
-    onSubmit(firstName.trim(), email.trim());
+    onSubmit(firstName.trim(), email.trim(), hubConsent);
   };
 
   const inputClass =
@@ -49,7 +51,7 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
         </p>
       </div>
 
-      <div className="space-y-5 mb-8">
+      <div className="space-y-5 mb-6">
         <label className="block">
           <span className="eyebrow text-charcoal/70">First name</span>
           <input
@@ -72,6 +74,24 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
           />
         </label>
       </div>
+
+      <label
+        htmlFor="hub-consent"
+        className="flex items-start gap-3 p-4 mb-8 rounded-sm border border-border bg-pearl/60 cursor-pointer hover:border-amethyst/50 transition-colors"
+      >
+        <Checkbox
+          id="hub-consent"
+          checked={hubConsent}
+          onCheckedChange={(v) => setHubConsent(v === true)}
+          className="mt-0.5"
+        />
+        <span className="text-[13px] leading-relaxed text-charcoal/80">
+          I authorize Diamond Digital Diva to send my <strong>name, email, and diagnostic
+          results</strong> to the <strong>Creator Access Hub</strong> so Ava can give me
+          tailored recommendations and so my activity can be linked to my results for
+          reporting. I can withdraw consent at any time by contacting support.
+        </span>
+      </label>
 
       <div className="flex justify-between gap-3">
         <QuizButton variant="ghost" onClick={onBack}>Back</QuizButton>

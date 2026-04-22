@@ -12,17 +12,18 @@ interface ResultScreenProps {
   secondaryStage: string | null;
   firstName: string;
   email: string;
+  hubConsent: boolean;
   stageNames: Record<string, string>;
   links: Record<string, string>;
 }
 
-export function ResultScreen({ primaryStage, secondaryStage, firstName, email, stageNames, links }: ResultScreenProps) {
+export function ResultScreen({ primaryStage, secondaryStage, firstName, email, hubConsent, stageNames, links }: ResultScreenProps) {
   const upsells = getUpsellsForStage(primaryStage);
   const [hubLoading, setHubLoading] = useState(false);
 
   const handleHubClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (hubLoading) return;
+    if (hubLoading || !hubConsent) return;
     setHubLoading(true);
 
     const url = await createCreatorAccessHubHandoffUrl({
@@ -103,8 +104,9 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
         <button
           type="button"
           onClick={handleHubClick}
-          disabled={hubLoading}
-          className="block w-full"
+          disabled={hubLoading || !hubConsent}
+          className="block w-full disabled:opacity-60 disabled:cursor-not-allowed"
+          title={!hubConsent ? "You did not authorize sharing your details with the Creator Access Hub." : undefined}
         >
           <QuizButton variant="ghost" className="w-full pointer-events-none">
             {hubLoading ? (
@@ -112,11 +114,18 @@ export function ResultScreen({ primaryStage, secondaryStage, firstName, email, s
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Preparing your handoff…
               </span>
-            ) : (
+            ) : hubConsent ? (
               "Continue to the Creator Access Hub"
+            ) : (
+              "Hub handoff not authorized"
             )}
           </QuizButton>
         </button>
+        {!hubConsent && (
+          <p className="text-[11px] text-charcoal/60 text-center -mt-1">
+            You opted out of sharing your details with the Creator Access Hub. You can still browse it directly via the Boutique.
+          </p>
+        )}
       </div>
 
       {/* Upsells Section */}
