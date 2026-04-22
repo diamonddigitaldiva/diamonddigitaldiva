@@ -9,8 +9,8 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
     <div>
       {/* SECTION 2 — Hero */}
       <section
-        className="text-center mx-auto"
-        style={{ maxWidth: 880, padding: "100px 24px 80px" }}
+        className="text-center mx-auto hero-section"
+        style={{ maxWidth: 880 }}
       >
         <div className="flex justify-center animate-fade-up" style={{ animationDelay: "0s" }}>
           <Signet size={88} animate />
@@ -80,8 +80,8 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
 
       {/* SECTION 3 — Diagnostic Card */}
       <section
-        className="relative mx-auto animate-fade-up"
-        style={{ maxWidth: 880, padding: "40px 24px 120px", animationDelay: "0.6s" }}
+        className="relative mx-auto animate-fade-up card-section"
+        style={{ maxWidth: 880, animationDelay: "0.6s" }}
       >
         {/* Decorative diamond outline */}
         <div
@@ -216,9 +216,17 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
       </section>
 
       <style>{`
+        .hero-section { padding: 100px 24px 80px; }
+        .card-section { padding: 40px 24px 120px; }
         .diagnostic-card { padding: 80px 64px; }
+        @media (max-width: 768px) {
+          .hero-section { padding: 56px 20px 32px; }
+          .card-section { padding: 16px 20px 72px; }
+        }
         @media (max-width: 640px) {
           .diagnostic-card { padding: 56px 28px; }
+          .hero-section { padding: 48px 18px 24px; }
+          .card-section { padding: 12px 18px 64px; }
         }
         .map-cta:hover {
           background: hsl(var(--amethyst-deep, var(--amethyst)));
