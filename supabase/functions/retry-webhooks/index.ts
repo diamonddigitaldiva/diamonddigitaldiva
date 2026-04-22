@@ -13,13 +13,20 @@ const MAX_RETRY_ATTEMPTS = 10; // Give up after this many tries to avoid infinit
 const HQ_INGEST_URL =
   "https://qiwrlzqryctjyyetmnpt.supabase.co/functions/v1/ingest";
 
+type HQForwardResult = {
+  ok: boolean;
+  taskId: string | null;
+  escalationTaskId: string | null;
+  response: unknown;
+};
+
 async function forwardContactToHQ(submission: {
   id: string;
   first_name: string;
   email: string;
   message: string;
   created_at: string;
-}): Promise<boolean> {
+}): Promise<HQForwardResult> {
   try {
     const submittedAt = submission.created_at;
     // Stable idempotency key — identical to the one used by the initial
