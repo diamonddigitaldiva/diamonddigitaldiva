@@ -20,10 +20,13 @@ export type Database = {
           email: string
           entry_type: string
           first_name: string
+          hq_escalation_task_id: string | null
           hq_forwarded: boolean
           hq_forwarded_at: string | null
           hq_inflight_until: string | null
+          hq_response: Json | null
           hq_retry_count: number
+          hq_task_id: string | null
           id: string
           message: string
           rating: number | null
@@ -33,10 +36,13 @@ export type Database = {
           email: string
           entry_type?: string
           first_name: string
+          hq_escalation_task_id?: string | null
           hq_forwarded?: boolean
           hq_forwarded_at?: string | null
           hq_inflight_until?: string | null
+          hq_response?: Json | null
           hq_retry_count?: number
+          hq_task_id?: string | null
           id?: string
           message: string
           rating?: number | null
@@ -46,10 +52,13 @@ export type Database = {
           email?: string
           entry_type?: string
           first_name?: string
+          hq_escalation_task_id?: string | null
           hq_forwarded?: boolean
           hq_forwarded_at?: string | null
           hq_inflight_until?: string | null
+          hq_response?: Json | null
           hq_retry_count?: number
+          hq_task_id?: string | null
           id?: string
           message?: string
           rating?: number | null
