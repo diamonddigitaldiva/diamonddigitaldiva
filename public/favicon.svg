@@ -1,9 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <g transform="translate(32 32) rotate(45)">
-    <rect x="-22" y="-22" width="44" height="44" fill="#6A4C93"/>
-    <rect x="-17" y="-17" width="34" height="34" fill="none" stroke="#C9B27C" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- The MAP™ Favicon — Diamond Digital Diva -->
+  <!-- Outer rotated square (the diamond shape) -->
+  <g transform="rotate(45 32 32)">
+    <!-- Amethyst fill -->
+    <rect x="9" y="9" width="46" height="46" fill="#6A4C93"/>
+    <!-- Inner gold border -->
+    <rect x="13" y="13" width="38" height="38" fill="none" stroke="#C9B27C" stroke-width="1"/>
   </g>
-  <text x="32" y="32" text-anchor="middle" dominant-baseline="central"
-        font-family="Cinzel, serif" font-weight="600" font-size="11"
-        fill="#C9B27C" letter-spacing="1.5">DDD</text>
+  <!-- Italic M monogram (upright, matches "The MAP" italic treatment) -->
+  <text x="32" y="41"
+        text-anchor="middle"
+        font-family="Cormorant Garamond, Georgia, serif"
+        font-weight="500"
+        font-style="italic"
+        font-size="26"
+        fill="#C9B27C">M</text>
 </svg>
