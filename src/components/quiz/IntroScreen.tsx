@@ -6,10 +6,10 @@ interface IntroScreenProps {
 
 export function IntroScreen({ onStart }: IntroScreenProps) {
   return (
-    <div>
+    <div className="intro-scroll">
       {/* SECTION 2 — Hero */}
       <section
-        className="text-center mx-auto hero-section"
+        className="text-center mx-auto hero-section intro-snap"
         style={{ maxWidth: 880 }}
       >
         <div className="flex justify-center animate-fade-up" style={{ animationDelay: "0s" }}>
@@ -80,7 +80,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
 
       {/* SECTION 3 — Diagnostic Card */}
       <section
-        className="relative mx-auto animate-fade-up card-section"
+        className="relative mx-auto animate-fade-up card-section intro-snap"
         style={{ maxWidth: 880, animationDelay: "0.6s" }}
       >
         {/* Decorative diamond outline */}
@@ -216,6 +216,18 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
       </section>
 
       <style>{`
+        @media (max-width: 768px) {
+          .intro-scroll {
+            scroll-snap-type: y proximity;
+          }
+          .intro-snap {
+            scroll-snap-align: start;
+            scroll-snap-stop: normal;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .intro-scroll { scroll-snap-type: none; }
+        }
         .hero-section { padding: 100px 24px 80px; }
         .card-section { padding: 40px 24px 120px; }
         .diagnostic-card { padding: 80px 64px; }
