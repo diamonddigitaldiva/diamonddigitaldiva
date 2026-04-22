@@ -101,6 +101,34 @@ Deno.serve(async (req) => {
           },
         },
       ];
+    } else if (event.type === "contact_message") {
+      payload.signups = [
+        {
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: event.first_name,
+          email: event.email,
+          metadata: {
+            channel: "contact_form",
+            message: event.message,
+          },
+        },
+      ];
+      payload.activity = [
+        {
+          activity_type: "note_added",
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: event.first_name,
+          email: event.email,
+          title: `Contact message from ${event.first_name}`,
+          description: event.message,
+          metadata: {
+            channel: "contact_form",
+            email: event.email,
+          },
+        },
+      ];
     }
 
     // Retry with exponential backoff: 4 attempts, ~250ms / 500ms / 1000ms delays.
