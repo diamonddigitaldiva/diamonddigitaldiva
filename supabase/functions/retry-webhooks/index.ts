@@ -17,8 +17,16 @@ async function forwardContactToHQ(submission: {
   first_name: string;
   email: string;
   message: string;
+  created_at: string;
 }): Promise<boolean> {
   try {
+    const submittedAt = submission.created_at;
+    // Due 48h after original submission. If already past due, give a 24h grace.
+    const dueAtMs = new Date(submittedAt).getTime() + 48 * 60 * 60 * 1000;
+    const dueAt = new Date(
+      Math.max(dueAtMs, Date.now() + 24 * 60 * 60 * 1000)
+    ).toISOString();
+
     const payload = {
       signups: [
         {
@@ -29,6 +37,8 @@ async function forwardContactToHQ(submission: {
           metadata: {
             channel: "contact_form",
             message: submission.message,
+            submitted_at: submittedAt,
+            retried: true,
           },
         },
       ],
@@ -44,6 +54,34 @@ async function forwardContactToHQ(submission: {
           metadata: {
             channel: "contact_form",
             email: submission.email,
+            full_message: submission.message,
+            submitted_at: submittedAt,
+            retried: true,
+          },
+        },
+      ],
+      tasks: [
+        {
+          source: "map-contact-form",
+          business: "ddd",
+          first_name: submission.first_name,
+          email: submission.email,
+          title: `Reply to contact message from ${submission.first_name}`,
+          description:
+            `Check and respond to this contact form message.\n\n` +
+            `From: ${submission.first_name} <${submission.email}>\n` +
+            `Originally submitted: ${submittedAt}\n` +
+            `(Delivered via retry — original send failed)\n\n` +
+            `Message:\n${submission.message}`,
+          due_at: dueAt,
+          priority: "normal",
+          metadata: {
+            channel: "contact_form",
+            email: submission.email,
+            full_message: submission.message,
+            submitted_at: submittedAt,
+            sla_hours: 48,
+            retried: true,
           },
         },
       ],
