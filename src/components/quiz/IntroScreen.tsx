@@ -6,7 +6,7 @@ interface IntroScreenProps {
 
 export function IntroScreen({ onStart }: IntroScreenProps) {
   return (
-    <div className="intro-scroll">
+    <div className="intro-scroll w-full">
       {/* SECTION 2 — Hero */}
       <section
         className="text-center mx-auto hero-section intro-snap"
@@ -228,17 +228,24 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
         @media (prefers-reduced-motion: reduce) {
           .intro-scroll { scroll-snap-type: none; }
         }
-        .hero-section { padding: 100px 24px 80px; }
-        .card-section { padding: 40px 24px 120px; }
-        .diagnostic-card { padding: 80px 64px; }
-        @media (max-width: 768px) {
-          .hero-section { padding: 56px 20px 32px; }
-          .card-section { padding: 16px 20px 72px; }
+        .hero-section {
+          padding: clamp(48px, 8vh, 96px) 24px clamp(24px, 4vh, 56px);
+        }
+        .card-section {
+          padding: clamp(16px, 3vh, 40px) 24px clamp(64px, 10vh, 120px);
+        }
+        .diagnostic-card { padding: clamp(48px, 7vw, 80px) clamp(28px, 6vw, 64px); }
+        @media (min-width: 1024px) {
+          .intro-scroll {
+            min-height: calc(100vh - 160px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
         }
         @media (max-width: 640px) {
-          .diagnostic-card { padding: 56px 28px; }
-          .hero-section { padding: 48px 18px 24px; }
-          .card-section { padding: 12px 18px 64px; }
+          .hero-section { padding: 40px 18px 20px; }
+          .card-section { padding: 12px 18px 56px; }
         }
         .map-cta:hover {
           background: hsl(var(--amethyst-deep, var(--amethyst)));
