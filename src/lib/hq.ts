@@ -1,4 +1,4 @@
-const HQ_URL = "https://ztsortihbrewwnpgfjix.supabase.co/functions/v1/ingest";
+import { supabase } from "@/integrations/supabase/client";
 
 export type HQActivityType =
   | "lead_created"
@@ -37,14 +37,10 @@ export interface HQReportPayload {
 
 export async function hqReport(payload: HQReportPayload) {
   try {
-    await fetch(HQ_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-hq-token": import.meta.env.VITE_HQ_INGEST_TOKEN ?? "",
-      },
-      body: JSON.stringify(payload),
+    const { error } = await supabase.functions.invoke("report-to-hq", {
+      body: payload,
     });
+    if (error) console.warn("HQ report failed", error);
   } catch (e) {
     console.warn("HQ report failed", e);
   }
