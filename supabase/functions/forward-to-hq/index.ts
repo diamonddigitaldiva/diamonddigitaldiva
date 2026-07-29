@@ -163,9 +163,35 @@ Deno.serve(async (req) => {
     });
   }
 
+  const limit = checkRateLimit(clientKey(req));
+  if (!limit.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Rate limit exceeded" }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Retry-After": String(limit.retryAfterSeconds),
+        },
+      }
+    );
+  }
+
   try {
-    const body = await req.json();
-    const parsed = eventSchema.safeParse(body);
+    const read = await readLimitedJson(req);
+    if (!read.ok) {
+      return new Response(
+        JSON.stringify({
+          error: read.reason === "too_large" ? "Payload too large" : "Invalid JSON body",
+        }),
+        {
+          status: read.reason === "too_large" ? 413 : 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    const parsed = eventSchema.safeParse(read.value);
     if (!parsed.success) {
       return new Response(
         JSON.stringify({ error: "Validation failed", details: parsed.error.flatten() }),
