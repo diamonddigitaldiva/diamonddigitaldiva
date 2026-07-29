@@ -1,5 +1,10 @@
-import { z } from "https://esm.sh/zod@3.25.76";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  checkRateLimit,
+  clientKey,
+  eventSchema,
+  readLimitedJson,
+} from "./validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,32 +15,6 @@ const corsHeaders = {
 const HQ_INGEST_URL =
   "https://qiwrlzqryctjyyetmnpt.supabase.co/functions/v1/ingest";
 
-const eventSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("quiz_completed"),
-    primary_stage: z.string().max(20),
-    secondary_stage: z.string().max(20).optional().nullable(),
-  }),
-  z.object({
-    type: z.literal("link_click"),
-    link_name: z.string().max(100),
-    link_url: z.string().max(500).optional().nullable(),
-    primary_stage: z.string().max(20).optional().nullable(),
-    secondary_stage: z.string().max(20).optional().nullable(),
-  }),
-  z.object({
-    type: z.literal("feedback_submitted"),
-    rating: z.number().int().min(1).max(5).optional().nullable(),
-    has_message: z.boolean().default(false),
-  }),
-  z.object({
-    type: z.literal("contact_message"),
-    first_name: z.string().trim().min(1).max(100),
-    email: z.string().trim().email().max(200),
-    message: z.string().trim().min(1).max(2000),
-    feedback_id: z.string().uuid().optional(),
-  }),
-]);
 
 function getServiceClient() {
   const url = Deno.env.get("SUPABASE_URL");
@@ -184,9 +163,35 @@ Deno.serve(async (req) => {
     });
   }
 
+  const limit = checkRateLimit(clientKey(req));
+  if (!limit.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Rate limit exceeded" }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Retry-After": String(limit.retryAfterSeconds),
+        },
+      }
+    );
+  }
+
   try {
-    const body = await req.json();
-    const parsed = eventSchema.safeParse(body);
+    const read = await readLimitedJson(req);
+    if (!read.ok) {
+      return new Response(
+        JSON.stringify({
+          error: read.reason === "too_large" ? "Payload too large" : "Invalid JSON body",
+        }),
+        {
+          status: read.reason === "too_large" ? 413 : 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    const parsed = eventSchema.safeParse(read.value);
     if (!parsed.success) {
       return new Response(
         JSON.stringify({ error: "Validation failed", details: parsed.error.flatten() }),
@@ -375,6 +380,13 @@ Deno.serve(async (req) => {
     let lastError: unknown = null;
 
     const hqHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    // Server-side credential only — never logged, never returned to the client.
+    const hqToken = Deno.env.get("HQ_INGEST_TOKEN");
+    if (hqToken) {
+      hqHeaders["x-hq-token"] = hqToken;
+    } else {
+      console.warn("HQ_INGEST_TOKEN is not configured; forwarding unauthenticated");
+    }
     if (typeof payload.idempotency_key === "string") {
       hqHeaders["Idempotency-Key"] = payload.idempotency_key;
       hqHeaders["X-Idempotency-Key"] = payload.idempotency_key;

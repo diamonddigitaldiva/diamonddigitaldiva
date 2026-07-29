@@ -5,3 +5,5 @@ verify_jwt = false
 
 [functions.retry-webhooks]
 verify_jwt = true
+[functions.forward-to-hq]
+verify_jwt = false
