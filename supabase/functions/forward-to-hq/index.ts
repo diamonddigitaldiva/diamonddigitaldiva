@@ -1,5 +1,10 @@
-import { z } from "https://esm.sh/zod@3.25.76";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  checkRateLimit,
+  clientKey,
+  eventSchema,
+  readLimitedJson,
+} from "./validate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,32 +15,6 @@ const corsHeaders = {
 const HQ_INGEST_URL =
   "https://qiwrlzqryctjyyetmnpt.supabase.co/functions/v1/ingest";
 
-const eventSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("quiz_completed"),
-    primary_stage: z.string().max(20),
-    secondary_stage: z.string().max(20).optional().nullable(),
-  }),
-  z.object({
-    type: z.literal("link_click"),
-    link_name: z.string().max(100),
-    link_url: z.string().max(500).optional().nullable(),
-    primary_stage: z.string().max(20).optional().nullable(),
-    secondary_stage: z.string().max(20).optional().nullable(),
-  }),
-  z.object({
-    type: z.literal("feedback_submitted"),
-    rating: z.number().int().min(1).max(5).optional().nullable(),
-    has_message: z.boolean().default(false),
-  }),
-  z.object({
-    type: z.literal("contact_message"),
-    first_name: z.string().trim().min(1).max(100),
-    email: z.string().trim().email().max(200),
-    message: z.string().trim().min(1).max(2000),
-    feedback_id: z.string().uuid().optional(),
-  }),
-]);
 
 function getServiceClient() {
   const url = Deno.env.get("SUPABASE_URL");
