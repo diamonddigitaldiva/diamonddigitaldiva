@@ -1,5 +1,6 @@
 import { QuizButton } from "@/components/ui/quiz-button";
 import { cn } from "@/lib/utils";
+import * as RadioGroup from "@radix-ui/react-radio-group";
 
 interface Question {
   text: string;
@@ -29,6 +30,8 @@ export function QuizScreen({
 
   if (!question) return null;
 
+  const headingId = `quiz-question-${questionIndex}`;
+
   return (
     <div className="animate-fade-in">
       {/* Progress */}
@@ -36,30 +39,64 @@ export function QuizScreen({
         <span className="eyebrow text-charcoal/60">
           Question {questionIndex + 1} of {questions.length}
         </span>
-        <span className="eyebrow text-amethyst">{Math.round(progress)}%</span>
+        <span className="eyebrow text-amethyst" aria-hidden="true">
+          {Math.round(progress)}%
+        </span>
       </div>
-      <div className="h-[3px] bg-border rounded-full overflow-hidden mb-8">
+      <div
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={questions.length}
+        aria-valuenow={questionIndex + 1}
+        aria-valuetext={`Question ${questionIndex + 1} of ${questions.length}`}
+        className="h-[3px] bg-border rounded-full overflow-hidden mb-8"
+      >
         <div
           className="h-full bg-amethyst transition-all duration-500 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      <h2 className="font-heading text-2xl md:text-3xl text-charcoal mb-8 leading-tight">
+      {/* Screen-reader announcement of question changes */}
+      <p aria-live="polite" className="sr-only">
+        Question {questionIndex + 1} of {questions.length}: {question.text}
+      </p>
+
+      <h2
+        id={headingId}
+        className="font-heading text-2xl md:text-3xl text-charcoal mb-8 leading-tight"
+      >
         {question.text}
       </h2>
 
-      <div className="flex flex-col gap-3 mb-8">
+      <RadioGroup.Root
+        aria-labelledby={headingId}
+        value={selectedAnswer ?? ""}
+        onValueChange={onSelectAnswer}
+        loop={false}
+        className="flex flex-col gap-3 mb-8"
+      >
         {Object.entries(question.options).map(([key, value]) => (
-          <div
+          <RadioGroup.Item
             key={key}
-            onClick={() => onSelectAnswer(key)}
-            className={cn("quiz-option", selectedAnswer === key && "selected")}
+            value={key}
+            onKeyDown={(e) => {
+              // Radix selects on Space; mirror that for Enter.
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onSelectAnswer(key);
+              }
+            }}
+            className={cn(
+              "quiz-option w-full text-left",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-amethyst focus-visible:ring-offset-2 focus-visible:ring-offset-ivory",
+              selectedAnswer === key && "selected"
+            )}
           >
             <div className="text-[14px] text-charcoal leading-relaxed">{value}</div>
-          </div>
+          </RadioGroup.Item>
         ))}
-      </div>
+      </RadioGroup.Root>
 
       <div className="flex justify-between gap-3">
         <QuizButton variant="ghost" onClick={onBack} disabled={questionIndex === 0}>
