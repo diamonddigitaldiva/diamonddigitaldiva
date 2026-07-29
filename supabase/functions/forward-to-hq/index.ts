@@ -380,6 +380,13 @@ Deno.serve(async (req) => {
     let lastError: unknown = null;
 
     const hqHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    // Server-side credential only — never logged, never returned to the client.
+    const hqToken = Deno.env.get("HQ_INGEST_TOKEN");
+    if (hqToken) {
+      hqHeaders["x-hq-token"] = hqToken;
+    } else {
+      console.warn("HQ_INGEST_TOKEN is not configured; forwarding unauthenticated");
+    }
     if (typeof payload.idempotency_key === "string") {
       hqHeaders["Idempotency-Key"] = payload.idempotency_key;
       hqHeaders["X-Idempotency-Key"] = payload.idempotency_key;
