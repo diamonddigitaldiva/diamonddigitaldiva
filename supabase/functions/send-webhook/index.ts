@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeV2 } from "./v2.ts";
 
 // CORS headers - allow all origins for public quiz
 const corsHeaders = {
@@ -253,6 +254,10 @@ serve(async (req) => {
     }
 
     const payload = validation.data;
+    // Additive, versioned v2 data. Dropped entirely if malformed; legacy
+    // fields above are unchanged so existing CRM automations keep working.
+    const v2 = sanitizeV2(rawPayload as Record<string, unknown>);
+    const outbound = v2 ? { ...payload, ...v2 } : payload;
     
     // Log only that a submission was received (no PII)
     console.log("Quiz submission received, saving to database...");
@@ -274,6 +279,9 @@ serve(async (req) => {
         secondary_stage_url: payload.secondaryStageUrl,
         source: payload.source,
         webhook_sent: false,
+        assessment_version: v2?.assessmentVersion ?? null,
+        answers: v2?.answers ?? null,
+        result: v2?.result ?? null,
       })
       .select('id')
       .single();
@@ -292,7 +300,7 @@ serve(async (req) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(outbound),
     });
 
     const responseStatus = response.status;
