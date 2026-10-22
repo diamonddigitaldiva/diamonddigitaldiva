@@ -14,11 +14,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, LogOut, CheckCircle, Clock, FileText, Link, List, RotateCcw, MessageSquare } from 'lucide-react';
+import { RefreshCw, LogOut, CheckCircle, Clock, FileText, Link, List, RotateCcw, MessageSquare, ClipboardList } from 'lucide-react';
 import { format } from 'date-fns';
 import { QuestionsEditor } from '@/components/admin/QuestionsEditor';
 import { LinksEditor } from '@/components/admin/LinksEditor';
 import { FeedbackViewer } from '@/components/admin/FeedbackViewer';
+import { AssessmentEditor } from '@/components/admin/AssessmentEditor';
 
 interface QuizSubmission {
   id: string;
@@ -31,6 +32,8 @@ interface QuizSubmission {
   retry_count: number;
   created_at: string;
   source: string | null;
+  assessment_version: string | null;
+  result: unknown;
 }
 
 export default function Admin() {
@@ -159,18 +162,22 @@ export default function Admin() {
 
       <main className="container py-6">
         <Tabs defaultValue="submissions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-lg">
+          <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1">
             <TabsTrigger value="submissions" className="flex items-center gap-2">
               <List className="w-4 h-4" />
               Submissions
             </TabsTrigger>
+            <TabsTrigger value="assessment" className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              Assessment
+            </TabsTrigger>
             <TabsTrigger value="questions" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Questions
+              Legacy questions
             </TabsTrigger>
             <TabsTrigger value="links" className="flex items-center gap-2">
               <Link className="w-4 h-4" />
-              Links
+              Legacy links
             </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
@@ -232,7 +239,8 @@ export default function Admin() {
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Primary Stage</TableHead>
+                        <TableHead>Version</TableHead>
+                        <TableHead>Result</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Retries</TableHead>
                         <TableHead>Submitted</TableHead>
@@ -243,7 +251,15 @@ export default function Admin() {
                         <TableRow key={submission.id}>
                           <TableCell className="font-medium">{submission.first_name}</TableCell>
                           <TableCell>{submission.email}</TableCell>
-                          <TableCell>{submission.primary_stage}</TableCell>
+                          <TableCell className="text-xs">
+                            {submission.assessment_version ?? 'Legacy v1'}
+                          </TableCell>
+                          <TableCell>
+                            {submission.primary_stage}
+                            {!submission.assessment_version && (
+                              <span className="block text-xs text-muted-foreground">v1 product-stage result, shown as recorded</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             {submission.webhook_sent ? (
                               <Badge className="bg-emerald-600 text-white">
@@ -268,6 +284,10 @@ export default function Admin() {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="assessment">
+            <AssessmentEditor />
           </TabsContent>
 
           <TabsContent value="questions">

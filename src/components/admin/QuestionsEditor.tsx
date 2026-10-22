@@ -193,6 +193,10 @@ export function QuestionsEditor() {
 
   return (
     <div className="space-y-6">
+      <div className="quiz-card text-sm text-muted-foreground" role="note">
+        <strong className="text-foreground">Legacy v1 questions.</strong> Kept for old records only. The live
+        assessment does not read these, so changes here can't affect current results or recommendations.
+      </div>
       <div className="flex justify-end">
         <Button onClick={addQuestion} disabled={isAdding}>
           {isAdding ? (
