@@ -151,9 +151,10 @@ const TIME_BY_OPTION: Record<string, TimeBand> = {
   time_15p: "15p",
 };
 
+// Optional mirror fields keep property access type-safe without strict narrowing.
 export type ValidationResult =
-  | { ok: true; answers: Record<(typeof QUESTION_IDS)[number], string> }
-  | { ok: false; missing: string[]; invalid: string[] };
+  | { ok: true; answers: Record<(typeof QUESTION_IDS)[number], string>; missing?: undefined; invalid?: undefined }
+  | { ok: false; missing: string[]; invalid: string[]; answers?: undefined };
 
 /** Every question must have exactly one valid option ID. Unknown keys are ignored. */
 export function validateAnswers(input: unknown): ValidationResult {
@@ -210,8 +211,8 @@ export interface AssessmentResult {
 }
 
 export type BuildResult =
-  | { ok: true; result: AssessmentResult }
-  | { ok: false; missing: string[]; invalid: string[] };
+  | { ok: true; result: AssessmentResult; missing?: undefined; invalid?: undefined }
+  | { ok: false; missing: string[]; invalid: string[]; result?: undefined };
 
 function emptyScores(): Record<Priority, number> {
   return { direction: 0, clarity: 0, validation: 0, conversion: 0, capacity: 0, systems: 0, growth: 0 };
@@ -311,7 +312,7 @@ function ownedNote(owned: string, priority: Priority): string | null {
  */
 export function buildResult(input: unknown, catalog: unknown = CATALOG): BuildResult {
   const v = validateAnswers(input);
-  if (!v.ok) return v;
+  if (!v.ok || !v.answers) return { ok: false, missing: v.missing ?? [], invalid: v.invalid ?? [] };
   const a = v.answers;
 
   const scores = emptyScores();
