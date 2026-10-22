@@ -29,7 +29,7 @@ class RO { observe() {} unobserve() {} disconnect() {} }
 (globalThis as unknown as { ResizeObserver: typeof RO }).ResizeObserver = RO;
 
 import { TheMapQuiz } from "./TheMapQuiz";
-import { ASSESSMENT_QUESTIONS } from "@/lib/assessment";
+import { ASSESSMENT_QUESTIONS, OWNER_APPROVED_LINKS, RETIRED_URLS } from "@/lib/assessment";
 
 const PICKS: Record<string, string> = {
   q_stage: "Launched. Something is live, but sales are uneven or haven't started.",
@@ -96,12 +96,14 @@ describe("The MAP flow", () => {
     expect(screen.queryByRole("button", { name: /continue to the creator access hub/i })).toBeNull();
     expect(handoffSingle).not.toHaveBeenCalled();
 
-    // No retired offers, every link is a CAH page without query strings.
+    // No retired destinations and no personal data in any outbound link.
     for (const a of screen.getAllByRole("link")) {
       const href = a.getAttribute("href") ?? "";
       if (href.startsWith("http")) {
-        expect(href).not.toContain("?");
-        expect(href).not.toMatch(/\/(foc|dwa|ata|mpv|tacm|create-launch-sell|story-algorithm)\b/);
+        expect(RETIRED_URLS.has(href)).toBe(false);
+        expect(href).not.toMatch(/jane|example\.com|%40|@/i);
+        if (href.startsWith("https://creatoraccesshub.diamonddigitaldiva.com")) expect(href).not.toContain("?");
+        else expect(OWNER_APPROVED_LINKS.has(href)).toBe(true);
       }
     }
     expect(screen.queryByText(/check your inbox/i)).toBeNull();

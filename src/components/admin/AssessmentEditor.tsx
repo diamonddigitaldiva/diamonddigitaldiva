@@ -10,11 +10,11 @@ import {
   ASSESSMENT_QUESTIONS,
   ASSESSMENT_VERSION,
   CATALOG,
-  CATALOG_EXCLUSIONS,
   CATALOG_LAST_REVIEWED,
   MAX_OVERRIDE_LENGTH,
+  REASON_LABELS,
   overrideKey,
-  resourceUrl,
+  recommendability,
 } from "@/lib/assessment";
 
 /**
@@ -141,40 +141,65 @@ export function AssessmentEditor() {
       <div className="quiz-card space-y-3">
         <h2 className="font-heading text-lg">Creator Access Hub catalog</h2>
         <p className="text-sm text-muted-foreground">
-          Last reviewed {CATALOG_LAST_REVIEWED}. Curated by hand from Hub resource pages. Automatic sync with the
+          Last reviewed {CATALOG_LAST_REVIEWED}. Curated by hand from Hub resource pages and owner confirmations. Automatic sync with the
           Hub catalog is not implemented, so update the catalog file when Hub offers change.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-muted-foreground">
-                <th className="py-1 pr-3">Resource</th>
-                <th className="py-1 pr-3">Kind</th>
+                <th className="py-1 pr-3">Product</th>
+                <th className="py-1 pr-3">Product status</th>
+                <th className="py-1 pr-3">CAH listing</th>
+                <th className="py-1 pr-3">Link</th>
                 <th className="py-1 pr-3">Recommended</th>
               </tr>
             </thead>
             <tbody>
-              {CATALOG.map((e) => (
-                <tr key={e.id} className="border-t border-border">
-                  <td className="py-1 pr-3">
-                    <a href={resourceUrl(e.id)} target="_blank" rel="noopener noreferrer" className="underline">{e.name}</a>
-                    <div className="text-xs text-muted-foreground">{e.summary}</div>
-                  </td>
-                  <td className="py-1 pr-3">{e.kind}</td>
-                  <td className="py-1 pr-3">{e.matchable ? (e.eligibilityNote ?? "When matched") : "No (scope not established)"}</td>
-                </tr>
-              ))}
+              {CATALOG.map((e) => {
+                const r = recommendability(e);
+                return (
+                  <tr key={e.id} className="border-t border-border align-top">
+                    <td className="py-2 pr-3">
+                      <div className="font-medium">{e.name}</div>
+                      <code className="text-xs text-muted-foreground">{e.id}</code>
+                      {e.summary && <div className="text-xs text-muted-foreground">{e.summary}</div>}
+                      {e.scopeNote && <div className="text-xs text-amber-700">{e.scopeNote}</div>}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {e.product.status.replace(/_/g, " ")}
+                      <div className="text-xs text-muted-foreground">{e.product.source.replace(/-/g, " ")}</div>
+                      {e.product.note && <div className="text-xs text-muted-foreground max-w-xs">{e.product.note}</div>}
+                    </td>
+                    <td className="py-2 pr-3">{e.cahListing.replace(/-/g, " ")}</td>
+                    <td className="py-2 pr-3 max-w-xs">
+                      {e.destination ? (
+                        <>
+                          <a href={e.destination.url} target="_blank" rel="noopener noreferrer" className="underline break-all text-xs">
+                            {e.destination.kind === "cah-resource" ? "CAH resource page" : "Owner-provided link"}
+                          </a>
+                          <div className="text-xs">Verification: {e.destination.verification.state} ({e.destination.verification.checkedAt})</div>
+                          <div className="text-xs text-muted-foreground">{e.destination.verification.note}</div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">None</span>
+                      )}
+                      {(e.retiredDestinations ?? []).map((d) => (
+                        <div key={d.url} className="text-xs text-muted-foreground line-through break-all">{d.url}</div>
+                      ))}
+                    </td>
+                    <td className="py-2 pr-3 text-xs">
+                      {r.ok ? (e.eligibilityNote ?? "When matched") : `No: ${REASON_LABELS[r.reason]}`}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        <h3 className="font-heading text-base pt-2">Never recommended</h3>
-        <ul className="text-sm space-y-1">
-          {CATALOG_EXCLUSIONS.map((x) => (
-            <li key={x.id}>
-              <code>{x.id}</code> {x.name}: <span className="text-muted-foreground">{x.reason.replace(/-/g, " ")}</span>
-            </li>
-          ))}
-        </ul>
+        <p className="text-xs text-muted-foreground">
+          An archived Hub listing is not treated as proof a product is discontinued. Product status and link status are tracked separately.
+        </p>
       </div>
     </div>
   );

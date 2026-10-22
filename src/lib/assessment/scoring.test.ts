@@ -2,7 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   ASSESSMENT_QUESTIONS,
   ASSESSMENT_VERSION,
-  EXCLUDED_IDS,
+  NOT_RECOMMENDABLE_IDS,
+  RETIRED_URLS,
+  OWNER_APPROVED_LINKS,
+  recommendability,
   CATALOG,
   buildResult,
   validateAnswers,
@@ -164,11 +167,14 @@ describe("exhaustive safety over every possible answer combination", () => {
       count++;
       expect(r.resources.length).toBeLessThanOrEqual(2);
       for (const res of r.resources) {
-        if (EXCLUDED_IDS.has(res.id)) throw new Error(`excluded ${res.id} recommended`);
+        if (NOT_RECOMMENDABLE_IDS.has(res.id)) throw new Error(`excluded ${res.id} recommended`);
         const entry = catalogById.get(res.id);
-        if (!entry || !entry.matchable) throw new Error(`unmatchable ${res.id} recommended`);
-        if (!res.url.startsWith("https://creatoraccesshub.diamonddigitaldiva.com/resources/")) throw new Error(res.url);
-        if (res.url.includes("?")) throw new Error("query string in resource url");
+        if (!entry || !recommendability(entry).ok) throw new Error(`unrecommendable ${res.id} recommended`);
+        if (RETIRED_URLS.has(res.url)) throw new Error(`retired url ${res.url}`);
+        const isCah = res.url.startsWith("https://creatoraccesshub.diamonddigitaldiva.com/resources/");
+        if (!isCah && !OWNER_APPROVED_LINKS.has(res.url)) throw new Error(res.url);
+        if (isCah && res.url.includes("?")) throw new Error("query string in resource url");
+        if (/[@]|jane/i.test(res.url)) throw new Error("personal data in url");
       }
       if (r.resources[0]?.kind === "tool" && r.priority !== "systems") {
         throw new Error(`tool led for ${r.priority}: ${JSON.stringify(answers)}`);

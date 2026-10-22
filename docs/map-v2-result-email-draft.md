@@ -23,6 +23,7 @@ Legacy fields keep their names; v2 fields are inside `result`.
 | [Resource 2 name] / [Resource 2 link] | `result.resources[1].name` / `.url` (may be empty) |
 
 Rules: only show the creator path and resource blocks when those fields are present.
+Resource links are either Creator Access Hub pages or an owner-approved external checkout (currently Digital Wealth Academy 4.0). Never state a price.
 If `result.spend` is `free_only`, never show a resource block.
 Legacy rows without `assessmentVersion` must keep using the old template.
 

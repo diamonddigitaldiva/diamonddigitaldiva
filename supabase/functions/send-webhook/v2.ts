@@ -6,6 +6,25 @@
 
 export const CAH_PREFIX = "https://creatoraccesshub.diamonddigitaldiva.com/";
 
+/**
+ * Exact owner-approved external resource links (kept in sync with
+ * OWNER_APPROVED_LINKS in src/lib/assessment/catalog.ts; a test checks this).
+ */
+export const APPROVED_EXTERNAL_RESOURCE_URLS: ReadonlySet<string> = new Set([
+  "https://www.fanbasis.com/agency-checkout/digitalwealthacademy/rkq5k?affiliate=DiamondDigitalDiva",
+]);
+
+/** Retired destinations that must never be stored as a recommendation (synced with RETIRED_URLS). */
+export const RETIRED_RESOURCE_URLS: ReadonlySet<string> = new Set([
+  "https://creatoraccesshub.diamonddigitaldiva.com/resources/ata",
+  "https://creatoraccesshub.diamonddigitaldiva.com/resources/mpv",
+  "https://creatoraccesshub.diamonddigitaldiva.com/resources/tacm",
+  "https://creatoraccesshub.diamonddigitaldiva.com/resources/story-algorithm",
+  "https://creatoraccesshub.diamonddigitaldiva.com/resources/foc",
+  "https://creatoraccesshub.diamonddigitaldiva.com/resources/create-launch-sell",
+  "https://creatoraccesshub.diamonddigitaldiva.com/resources/dwa",
+]);
+
 const VERSION_RE = /^[a-z0-9][a-z0-9.\-]{0,39}$/;
 const ID_RE = /^[a-z0-9_]{1,60}$/;
 const SLUG_RE = /^[a-z0-9-]{1,60}$/;
@@ -21,6 +40,10 @@ const str = (v: unknown, max: number): v is string =>
 const nullableId = (v: unknown) => v === null || (typeof v === "string" && ID_RE.test(v));
 const cahUrl = (v: unknown): v is string =>
   typeof v === "string" && v.length <= 300 && v.startsWith(CAH_PREFIX) && !v.includes("?") && !v.includes("#");
+const resourceLink = (v: unknown): v is string =>
+  typeof v === "string" &&
+  !RETIRED_RESOURCE_URLS.has(v) &&
+  (cahUrl(v) || APPROVED_EXTERNAL_RESOURCE_URLS.has(v));
 
 export function sanitizeV2(raw: Record<string, unknown>): V2Fields | null {
   const { assessmentVersion, answers, result } = raw;
@@ -61,7 +84,7 @@ export function sanitizeV2(raw: Record<string, unknown>): V2Fields | null {
   const cleanResources: { id: string; name: string; url: string }[] = [];
   for (const x of resources) {
     const o = x as Record<string, unknown>;
-    if (!o || !SLUG_RE.test(String(o.id ?? "")) || !str(o.name, 120) || !cahUrl(o.url)) return null;
+    if (!o || !SLUG_RE.test(String(o.id ?? "")) || !str(o.name, 120) || !resourceLink(o.url)) return null;
     cleanResources.push({ id: o.id as string, name: o.name as string, url: o.url as string });
   }
 
