@@ -252,6 +252,7 @@ export function ResultScreen({ result, firstName, email, hubConsent }: ResultScr
                   <div className="flex-1 min-w-0">
                     <div className="font-heading text-sm text-charcoal">{product.name}</div>
                     <p className="text-xs text-muted-foreground mt-0.5">{product.summary}</p>
+                    <p className="text-[11px] text-charcoal/75 mt-1">Opens: {product.destinationLabel}</p>
                   </div>
                   <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" aria-hidden="true" />
                 </div>

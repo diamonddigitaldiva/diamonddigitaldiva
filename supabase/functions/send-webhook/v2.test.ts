@@ -64,3 +64,16 @@ Deno.test("strips unknown result keys", () => {
   const out = sanitizeV2(a as unknown as Record<string, unknown>);
   assertEquals(out !== null && "email" in out.result, false);
 });
+
+Deno.test("accepts the owner-approved DWA link but rejects the retired CAH dwa page", () => {
+  const a = valid();
+  a.result.resources[0] = {
+    id: "dwa",
+    name: "Digital Wealth Academy 4.0",
+    url: "https://www.fanbasis.com/agency-checkout/digitalwealthacademy/rkq5k?affiliate=DiamondDigitalDiva",
+  };
+  assertEquals(sanitizeV2(a) !== null, true);
+  const b = valid();
+  b.result.resources[0] = { id: "dwa", name: "DWA", url: "https://creatoraccesshub.diamonddigitaldiva.com/resources/dwa" };
+  assertEquals(sanitizeV2(b), null);
+});
