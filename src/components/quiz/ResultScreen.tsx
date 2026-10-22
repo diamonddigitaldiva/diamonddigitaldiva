@@ -196,7 +196,13 @@ export function ResultScreen({ result, firstName, email, hubConsent }: ResultScr
               "Continue to the Creator Access Hub with my results"
             )}
           </QuizButton>
-        ) : (
+        ) : null}
+        {hubConsent && hubStatus.kind === "idle" && (
+          <p className="text-[11px] text-charcoal/80 text-center -mt-1">
+            Opens in a new tab. If your browser blocks pop-ups, a direct link will appear here.
+          </p>
+        )}
+        {hubConsent ? null : (
           <>
             <a
               href={CREATOR_ACCESS_HUB_URL}
