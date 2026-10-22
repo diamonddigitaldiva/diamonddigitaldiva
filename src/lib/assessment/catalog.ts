@@ -201,7 +201,7 @@ export const CATALOG: CatalogEntry[] = [
   {
     id: "dwa",
     name: "Digital Wealth Academy 4.0",
-    summary: "Owner-confirmed current program. Review the checkout page for details before deciding.",
+    summary: "Review the checkout page for current details before deciding.",
     kind: "training",
     product: {
       status: "active",
