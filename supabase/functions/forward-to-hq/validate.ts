@@ -24,6 +24,7 @@ export const eventSchema = z
       type: z.literal("quiz_completed"),
       primary_stage: z.string().max(20),
       secondary_stage: z.string().max(20).optional().nullable(),
+      assessment_version: z.string().max(40).optional().nullable(),
     }),
     z.object({
       type: z.literal("link_click"),
@@ -31,6 +32,7 @@ export const eventSchema = z
       link_url: z.string().max(500).optional().nullable(),
       primary_stage: z.string().max(20).optional().nullable(),
       secondary_stage: z.string().max(20).optional().nullable(),
+      assessment_version: z.string().max(40).optional().nullable(),
     }),
     z.object({
       type: z.literal("feedback_submitted"),

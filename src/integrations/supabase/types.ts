@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      assessment_text_overrides: {
+        Row: {
+          assessment_version: string
+          created_at: string
+          id: string
+          item_key: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_version: string
+          created_at?: string
+          id?: string
+          item_key: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_version?: string
+          created_at?: string
+          id?: string
+          item_key?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           created_at: string
@@ -67,6 +94,7 @@ export type Database = {
       }
       handoff_sessions: {
         Row: {
+          assessment_version: string | null
           consumed_at: string | null
           created_at: string
           email: string
@@ -82,6 +110,7 @@ export type Database = {
           source: string | null
         }
         Insert: {
+          assessment_version?: string | null
           consumed_at?: string | null
           created_at?: string
           email: string
@@ -97,6 +126,7 @@ export type Database = {
           source?: string | null
         }
         Update: {
+          assessment_version?: string | null
           consumed_at?: string | null
           created_at?: string
           email?: string
@@ -115,6 +145,7 @@ export type Database = {
       }
       link_clicks: {
         Row: {
+          assessment_version: string | null
           created_at: string
           email: string | null
           first_name: string | null
@@ -128,6 +159,7 @@ export type Database = {
           source: string | null
         }
         Insert: {
+          assessment_version?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
@@ -141,6 +173,7 @@ export type Database = {
           source?: string | null
         }
         Update: {
+          assessment_version?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
@@ -202,12 +235,15 @@ export type Database = {
       }
       quiz_submissions: {
         Row: {
+          answers: Json | null
+          assessment_version: string | null
           created_at: string
           email: string
           first_name: string
           id: string
           primary_stage: string
           primary_stage_url: string | null
+          result: Json | null
           retry_count: number
           secondary_stage: string | null
           secondary_stage_url: string | null
@@ -216,12 +252,15 @@ export type Database = {
           webhook_sent_at: string | null
         }
         Insert: {
+          answers?: Json | null
+          assessment_version?: string | null
           created_at?: string
           email: string
           first_name: string
           id?: string
           primary_stage: string
           primary_stage_url?: string | null
+          result?: Json | null
           retry_count?: number
           secondary_stage?: string | null
           secondary_stage_url?: string | null
@@ -230,12 +269,15 @@ export type Database = {
           webhook_sent_at?: string | null
         }
         Update: {
+          answers?: Json | null
+          assessment_version?: string | null
           created_at?: string
           email?: string
           first_name?: string
           id?: string
           primary_stage?: string
           primary_stage_url?: string | null
+          result?: Json | null
           retry_count?: number
           secondary_stage?: string | null
           secondary_stage_url?: string | null
@@ -345,12 +387,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -374,11 +416,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -399,11 +441,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -424,11 +466,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -441,11 +483,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

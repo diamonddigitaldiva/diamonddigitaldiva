@@ -89,3 +89,22 @@ Deno.test("secret absence is detectable and non-fatal", () => {
   const token = Deno.env.get("HQ_INGEST_TOKEN_TEST_ABSENT");
   assertEquals(token, undefined);
 });
+
+Deno.test("accepts versioned v2 quiz_completed and keeps assessment_version", () => {
+  const parsed = eventSchema.parse({
+    type: "quiz_completed",
+    primary_stage: "validation",
+    secondary_stage: "books_publishing",
+    assessment_version: "map-v2.0",
+  });
+  assertEquals(parsed.type === "quiz_completed" && parsed.assessment_version, "map-v2.0");
+});
+
+Deno.test("rejects oversized assessment_version", () => {
+  const parsed = eventSchema.safeParse({
+    type: "quiz_completed",
+    primary_stage: "validation",
+    assessment_version: "x".repeat(41),
+  });
+  assertEquals(parsed.success, false);
+});

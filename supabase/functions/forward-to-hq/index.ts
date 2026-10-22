@@ -210,6 +210,8 @@ Deno.serve(async (req) => {
           metadata: {
             primary_stage: event.primary_stage,
             secondary_stage: event.secondary_stage ?? null,
+            // null = legacy v1 (product code). v2+: priority ID + avenue ID.
+            assessment_version: event.assessment_version ?? null,
           },
         },
       ];
@@ -226,6 +228,7 @@ Deno.serve(async (req) => {
             link_url: event.link_url ?? null,
             primary_stage: event.primary_stage ?? null,
             secondary_stage: event.secondary_stage ?? null,
+            assessment_version: event.assessment_version ?? null,
           },
         },
       ];

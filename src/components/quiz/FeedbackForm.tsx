@@ -83,6 +83,8 @@ export function FeedbackForm({ email, firstName }: FeedbackFormProps) {
             onClick={() => setRating(star)}
             onMouseEnter={() => setHoveredRating(star)}
             onMouseLeave={() => setHoveredRating(0)}
+            aria-label={`Rate ${star} out of 5`}
+            aria-pressed={rating === star}
             className="p-1 transition-transform hover:scale-110"
           >
             <Star

@@ -294,6 +294,14 @@ serve(async (req) => {
           secondaryStageUrl: submission.secondary_stage_url,
           timestamp: submission.created_at,
           source: submission.source,
+          // v2+ rows resend their stored versioned data; legacy rows stay as-is.
+          ...(submission.assessment_version
+            ? {
+                assessmentVersion: submission.assessment_version,
+                answers: submission.answers,
+                result: submission.result,
+              }
+            : {}),
         };
 
         console.log(`Retrying submission ${submission.id}...`);

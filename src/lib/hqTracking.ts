@@ -5,6 +5,7 @@ type HqEvent =
       type: "quiz_completed";
       primary_stage: string;
       secondary_stage?: string | null;
+      assessment_version?: string | null;
     }
   | {
       type: "link_click";
@@ -13,6 +14,7 @@ type HqEvent =
       primary_stage?: string | null;
       secondary_stage?: string | null;
       hub_consent?: boolean | null;
+      assessment_version?: string | null;
     }
   | {
       type: "feedback_submitted";
@@ -60,7 +62,7 @@ function dedupeKey(event: HqEvent): string | null {
   // Feedback is intentionally NOT deduped — repeated submissions matter.
   switch (event.type) {
     case "quiz_completed":
-      return `quiz_completed:${event.primary_stage}:${event.secondary_stage ?? ""}`;
+      return `quiz_completed:${event.assessment_version ?? "v1"}:${event.primary_stage}:${event.secondary_stage ?? ""}`;
     case "link_click":
       return `link_click:${event.link_name}:${event.primary_stage ?? ""}:${event.secondary_stage ?? ""}`;
     default:
@@ -89,7 +91,7 @@ export function forwardToHQ(event: HqEvent) {
     .invoke("forward-to-hq", { body: event })
     .then(({ error }) => {
       if (error) {
-        console.error("HQ forward failed:", error);
+        console.error("HQ forward failed");
         // On failure, allow the event to be retried later by clearing its key.
         if (key) {
           const store = loadStore();
@@ -97,5 +99,8 @@ export function forwardToHQ(event: HqEvent) {
           saveStore(store);
         }
       }
+    })
+    .catch(() => {
+      console.error("HQ forward failed");
     });
 }
