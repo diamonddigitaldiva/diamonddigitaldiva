@@ -1,3 +1,11 @@
+/**
+ * LEGACY v1 (letter-to-product tally). NOT used by the live assessment.
+ *
+ * Kept only so old records and the legacy admin tabs stay interpretable.
+ * The live assessment is src/lib/assessment (versioned). Do not import this
+ * module from new result or recommendation code; its product codes include
+ * archived offers. The v1 upsell layer was removed in the v2 refresh.
+ */
 export interface Question {
   text: string;
   options: Record<string, string>;
@@ -204,103 +212,6 @@ export const LINKS: Record<string, string> = {
   CPM: "https://shop.beacons.ai/diamonddigitaldiva/3fbc71c2-f595-471d-a840-04ea2f5a4204",
   BOUTIQUE: "https://beacons.ai/diamonddigitaldiva"
 };
-
-// Upsell configuration
-export interface UpsellProduct {
-  name: string;
-  description: string;
-  url: string;
-  label?: string; // e.g. "Budget-Friendly Alternative", "Recommended Add-On"
-}
-
-// Products that are considered high-ticket (over $150) → FOC upsell
-const HIGH_TICKET_STAGES = ["CFW", "DWA", "ATA", "TACM", "TSA", "MPV", "AIS", "TSS", "TDP"];
-
-const UPSELL_PRODUCTS: Record<string, UpsellProduct> = {
-  antiCloneDecoder: {
-    name: "The Anti-Clone Decoder",
-    description: "Decode what makes your brand unique and eliminate copycat energy.",
-    url: "https://shop.beacons.ai/diamonddigitaldiva/7e778ca6-ee40-47de-8c70-078e3c0613ac",
-  },
-  promptBank: {
-    name: "PromptBank",
-    description: "Curated library of high-converting prompts for AI tools.",
-    url: "https://stan.store/affiliates/76fa35b2-b072-4e55-b50a-bc522d34c823",
-  },
-  afterTheAlgorithm: {
-    name: "After The Algorithm",
-    description: "Master the algorithm and grow your reach with strategic insights.",
-    url: "https://stan.store/affiliates/533fdf9b-b338-4f22-b5fe-a7f7c2637585",
-  },
-  openArtAI: {
-    name: "OpenArt AI",
-    description: "Create stunning AI-generated artwork for your content and brand.",
-    url: "https://openart.ai/home?ref=kristopher01",
-  },
-  createLaunchSell: {
-    name: "Create Launch Sell",
-    description: "The complete blueprint for creating, launching, and selling digital products.",
-    url: "https://stan.store/affiliates/73f3347c-ff55-448e-a5ce-916f3421f401",
-    label: "Budget-Friendly Alternative",
-  },
-  funnelsOfCourse: {
-    name: "Funnels of Course (FOC)",
-    description: "Complete funnel building system — design high-converting funnels that turn visitors into buyers.",
-    url: "https://funnelsofcourse.com/foc-home?am_id=elleni1987",
-    label: "Recommended Add-On",
-  },
-  facelessLaunch: {
-    name: "The Faceless Launch",
-    description: "Complete launch system for faceless creators. Everything you need to launch your digital products without showing your face.",
-    url: "https://stan.store/affiliates/fd776c11-5dc2-4102-8291-e10d98729d7d",
-    label: "Budget-Friendly Alternative",
-  },
-  theSecretSauce: {
-    name: "The Secret Sauce (TSS)",
-    description: "Psychology-based content and conversion system. Build trust and create content that sells without a big following.",
-    url: "https://stan.store/affiliates/494d42e8-1d91-44ac-93f4-fd97b9368525",
-  },
-  tacmProduct: {
-    name: "The Anti-Clone Method (TACM)",
-    description: "Positioning system that rebuilds your voice, offers, and content into something buyers chase.",
-    url: "https://stan.store/affiliates/b65c8924-96d7-4b85-bf01-8f7a41c7de7d",
-  },
-  tsaProduct: {
-    name: "The Story Advantage (TSA)",
-    description: "Master storytelling that sells — craft narratives that captivate and convert.",
-    url: "https://stan.store/affiliates/b6f875c9-80ff-4073-b7c4-4555497ee91a",
-  },
-};
-
-// Mapping: which upsells to show for each primary stage result
-const STAGE_UPSELLS: Record<string, string[]> = {
-  AICA: ["promptBank", "afterTheAlgorithm", "openArtAI", "theSecretSauce"],
-  AIS: ["promptBank", "afterTheAlgorithm", "openArtAI", "theSecretSauce"],
-  CFW: ["createLaunchSell", "theSecretSauce"],
-  DWA: ["createLaunchSell", "theSecretSauce"],
-  MPV: ["createLaunchSell", "theSecretSauce"],
-  TACM: ["tsaProduct"],
-  TSA: ["tacmProduct"],
-  ATA: ["afterTheAlgorithm", "tacmProduct"],
-  TSS: ["facelessLaunch"],
-};
-
-export function getUpsellsForStage(stageCode: string): UpsellProduct[] {
-  const upsells: UpsellProduct[] = [];
-  const keys = STAGE_UPSELLS[stageCode] || [];
-
-  keys.forEach(key => {
-    const product = UPSELL_PRODUCTS[key];
-    if (product) upsells.push(product);
-  });
-
-  // Add FOC upsell for high-ticket stages
-  if (HIGH_TICKET_STAGES.includes(stageCode)) {
-    upsells.push(UPSELL_PRODUCTS.funnelsOfCourse);
-  }
-
-  return upsells;
-}
 
 export function computeResults(answers: Record<number, string>): { primary: string; secondary: string | null } {
   const score: Record<string, number> = {};
