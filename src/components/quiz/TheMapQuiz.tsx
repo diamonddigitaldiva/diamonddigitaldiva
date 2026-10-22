@@ -3,27 +3,36 @@ import { IntroScreen } from "./IntroScreen";
 import { QuizScreen } from "./QuizScreen";
 import { LeadScreen } from "./LeadScreen";
 import { ResultScreen } from "./ResultScreen";
-import { computeResults } from "@/lib/quizData";
-import { useQuizData } from "@/hooks/useQuizData";
+import { useAssessment } from "@/hooks/useAssessment";
 import { sendQuizResultsToWebhook } from "@/lib/webhook";
 import { forwardToHQ } from "@/lib/hqTracking";
 import { Signet } from "@/components/brand/Signet";
+import { useToast } from "@/hooks/use-toast";
+import {
+  buildResult,
+  resultSnapshot,
+  CAH_BASE_URL,
+  type AssessmentResult,
+} from "@/lib/assessment";
 
 type Screen = "intro" | "quiz" | "lead" | "result";
 
 export function TheMapQuiz() {
-  const { questions, stageNames, links, isLoading } = useQuizData();
+  const { questions, isLoading, version } = useAssessment();
+  const { toast } = useToast();
   const [screen, setScreen] = useState<Screen>("intro");
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [leadData, setLeadData] = useState({ firstName: "", email: "", hubConsent: false });
-  const [results, setResults] = useState<{ primary: string; secondary: string | null }>({
-    primary: "",
-    secondary: null,
-  });
+  const [result, setResult] = useState<AssessmentResult | null>(null);
+
+  const currentId = questions[questionIndex]?.id;
 
   const handleStart = () => { setScreen("quiz"); setQuestionIndex(0); };
-  const handleSelectAnswer = (key: string) => setAnswers((prev) => ({ ...prev, [questionIndex]: key }));
+  const handleSelectAnswer = (optionId: string) => {
+    if (!currentId) return;
+    setAnswers((prev) => ({ ...prev, [currentId]: optionId }));
+  };
   const handleBack = () => { if (questionIndex > 0) setQuestionIndex((p) => p - 1); };
   const handleNext = () => {
     if (questionIndex < questions.length - 1) setQuestionIndex((p) => p + 1);
@@ -31,26 +40,47 @@ export function TheMapQuiz() {
   };
   const handleLeadBack = () => { setScreen("quiz"); setQuestionIndex(questions.length - 1); };
 
-  const handleLeadSubmit = async (firstName: string, email: string, hubConsent: boolean) => {
-    setLeadData({ firstName, email, hubConsent });
-    const computed = computeResults(answers);
-    setResults(computed);
+  const handleLeadSubmit = (firstName: string, email: string, hubConsent: boolean) => {
+    const built = buildResult(answers);
+    if (!built.ok) {
+      // Never show a result from incomplete answers. Send them back to the first gap.
+      const firstGap = [...built.missing, ...built.invalid][0];
+      const idx = Math.max(0, questions.findIndex((q) => q.id === firstGap));
+      toast({
+        title: "One answer is missing",
+        description: "Please answer every question so your result reflects you.",
+        variant: "destructive",
+      });
+      setScreen("quiz");
+      setQuestionIndex(idx);
+      return;
+    }
 
+    const r = built.result;
+    setLeadData({ firstName, email, hubConsent });
+    setResult(r);
+
+    // Legacy-compatible fields keep their names. primaryStage now carries the
+    // priority label (never a product), and v2 data is versioned and additive.
     sendQuizResultsToWebhook({
       firstName,
       email,
-      primaryStage: stageNames[computed.primary] || computed.primary,
-      secondaryStage: computed.secondary ? stageNames[computed.secondary] : null,
-      primaryStageUrl: links[computed.primary] || "",
-      secondaryStageUrl: computed.secondary ? links[computed.secondary] : null,
+      primaryStage: r.priorityLabel,
+      secondaryStage: null,
+      primaryStageUrl: r.creatorPath?.url ?? CAH_BASE_URL,
+      secondaryStageUrl: null,
       timestamp: new Date().toISOString(),
       source: window.location.origin,
+      assessmentVersion: version,
+      answers: r.answers,
+      result: resultSnapshot(r),
     });
 
     forwardToHQ({
       type: "quiz_completed",
-      primary_stage: computed.primary,
-      secondary_stage: computed.secondary,
+      primary_stage: r.priority,
+      secondary_stage: r.avenue,
+      assessment_version: version,
     });
 
     setScreen("result");
@@ -89,7 +119,7 @@ export function TheMapQuiz() {
       {/* Main */}
       {isHero ? (
         <main className="flex-1 w-full">
-          <IntroScreen onStart={handleStart} />
+          <IntroScreen onStart={handleStart} questionCount={questions.length} />
         </main>
       ) : (
         <main className="flex-1 w-full mx-auto px-6 py-12 md:py-20 max-w-2xl">
@@ -105,15 +135,12 @@ export function TheMapQuiz() {
               />
             )}
             {screen === "lead" && <LeadScreen onBack={handleLeadBack} onSubmit={handleLeadSubmit} />}
-            {screen === "result" && (
+            {screen === "result" && result && (
               <ResultScreen
-                primaryStage={results.primary}
-                secondaryStage={results.secondary}
+                result={result}
                 firstName={leadData.firstName}
                 email={leadData.email}
                 hubConsent={leadData.hubConsent}
-                stageNames={stageNames}
-                links={links}
               />
             )}
           </div>
