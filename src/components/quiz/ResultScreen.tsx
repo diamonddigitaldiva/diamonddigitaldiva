@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { QuizButton } from "@/components/ui/quiz-button";
+import { QuizButton, quizButtonClasses } from "@/components/ui/quiz-button";
 import { FeedbackForm } from "./FeedbackForm";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -173,32 +173,29 @@ export function ResultScreen({ result, firstName, email, hubConsent }: ResultScr
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackClick(`creator_path:${result.creatorPath!.slug}`, result.creatorPath!.url)}
-            className="block"
+            className={quizButtonClasses("outline", "w-full")}
           >
-            <QuizButton variant="outline" className="w-full" tabIndex={-1}>
-              Explore the {result.creatorPath.label} path
-            </QuizButton>
+            Explore the {result.creatorPath.label} path
           </a>
         )}
 
         {hubConsent ? (
-          <button
+          <QuizButton
             type="button"
+            variant="ghost"
             onClick={handleHubClick}
             disabled={hubLoading}
-            className="block w-full disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full"
           >
-            <QuizButton variant="ghost" className="w-full pointer-events-none" tabIndex={-1}>
-              {hubLoading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Preparing your handoff…
-                </span>
-              ) : (
-                "Continue to the Creator Access Hub with my results"
-              )}
-            </QuizButton>
-          </button>
+            {hubLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                Preparing your handoff…
+              </span>
+            ) : (
+              "Continue to the Creator Access Hub with my results"
+            )}
+          </QuizButton>
         ) : (
           <>
             <a
@@ -206,11 +203,9 @@ export function ResultScreen({ result, firstName, email, hubConsent }: ResultScr
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackClick("cah_browse", CREATOR_ACCESS_HUB_URL)}
-              className="block"
+              className={quizButtonClasses("ghost", "w-full")}
             >
-              <QuizButton variant="ghost" className="w-full" tabIndex={-1}>
-                Browse the Creator Access Hub
-              </QuizButton>
+              Browse the Creator Access Hub
             </a>
             <p className="text-[11px] text-charcoal/60 text-center -mt-1">
               You chose not to share your details, so the Hub opens without your results.

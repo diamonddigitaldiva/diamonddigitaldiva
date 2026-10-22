@@ -2,9 +2,10 @@ import { Signet } from "@/components/brand/Signet";
 
 interface IntroScreenProps {
   onStart: () => void;
+  questionCount?: number;
 }
 
-export function IntroScreen({ onStart }: IntroScreenProps) {
+export function IntroScreen({ onStart, questionCount = 8 }: IntroScreenProps) {
   return (
     <div className="intro-scroll w-full">
       {/* SECTION 2 — Hero */}
@@ -25,7 +26,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             className="text-amethyst font-semibold uppercase"
             style={{ fontSize: 10, letterSpacing: "0.4em" }}
           >
-            The Diagnostic
+            The Creator Assessment
           </span>
           <span className="block bg-amethyst" style={{ width: 40, height: 1 }} />
         </div>
@@ -59,7 +60,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             animationDelay: "0.4s",
           }}
         >
-          The Messaging &amp; Positioning Diagnostic System for women building a digital empire.
+          A practical check-in for creators: find the avenue that fits and the one thing holding you back.
         </p>
 
         <p
@@ -72,8 +73,8 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             animationDelay: "0.5s",
           }}
         >
-          Four minutes of honest answers. A diagnostic that meets you where you are, a messaging
-          blueprint built for your stage, and training that finally fits.
+          A few minutes of honest answers. Whether you're just exploring or already selling, you'll get
+          a clear priority, one action to take this week and a realistic short plan. No purchase required.
         </p>
       </section>
 
@@ -115,7 +116,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             className="text-amethyst font-semibold uppercase"
             style={{ fontSize: 10, letterSpacing: "0.4em", marginBottom: 20 }}
           >
-            Begin Your Diagnostic
+            Begin Your Assessment
           </div>
 
           <p
@@ -130,9 +131,9 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             style={{ maxWidth: 480, marginBottom: 48, display: "flex", flexDirection: "column", gap: 18 }}
           >
             {[
-              "Identify your exact stage in the digital journey",
-              "Receive a custom messaging & positioning blueprint",
-              "Unlock training tailored to where you actually are",
+              "See which creator avenue fits you right now",
+              "Name the one bottleneck worth fixing first",
+              "Leave with a next step you can take with what you already have",
             ].map((feature) => (
               <li
                 key={feature}
@@ -160,9 +161,9 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             }}
           >
             {[
-              { n: "12", l: "Questions" },
-              { n: "4", l: "Minutes" },
-              { n: "∞", l: "Clarity" },
+              { n: String(questionCount), l: "Questions" },
+              { n: "3", l: "Minutes" },
+              { n: "1", l: "Next Step" },
             ].map((s) => (
               <div key={s.l} className="text-center" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <div
@@ -207,7 +208,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             style={{ fontSize: 10, letterSpacing: "0.2em" }}
           >
             <span className="font-semibold" style={{ color: "hsl(var(--gold-deep, var(--gold)))" }}>
-              4 Min
+              3 Min
             </span>{" "}
             · Honest Answers Only
           </div>

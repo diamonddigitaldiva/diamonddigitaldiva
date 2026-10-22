@@ -47,7 +47,7 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
         <div className="eyebrow mb-3">Almost There</div>
         <h2 className="font-heading text-3xl md:text-4xl text-charcoal mb-3">Your results await</h2>
         <p className="text-charcoal/70 text-[15px]">
-          Enter your details to receive your personalized blueprint.
+          Enter your details to see your MAP on the next screen.
         </p>
       </div>
 
@@ -86,7 +86,7 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
           className="mt-0.5"
         />
         <span className="text-[13px] leading-relaxed text-charcoal/80">
-          I authorize Diamond Digital Diva to send my <strong>name, email, and diagnostic
+          I authorize Diamond Digital Diva to send my <strong>name, email, and MAP
           results</strong> to the <strong>Creator Access Hub</strong> so Ava can give me
           tailored recommendations and so my activity can be linked to my results for
           reporting. I can withdraw consent at any time by contacting support.
@@ -103,7 +103,7 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
 
       <div className="flex justify-between gap-3">
         <QuizButton variant="ghost" onClick={onBack}>Back</QuizButton>
-        <QuizButton onClick={handleSubmit}>Get My Result</QuizButton>
+        <QuizButton onClick={handleSubmit}>See My Result</QuizButton>
       </div>
     </div>
   );
