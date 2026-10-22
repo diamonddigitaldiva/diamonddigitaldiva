@@ -216,6 +216,8 @@ export function IntroScreen({ onStart, questionCount = 8 }: IntroScreenProps) {
       </section>
 
       <style>{`
+        /* The decorative diamond is wider than small screens; clip it without a scrollbar. */
+        .intro-scroll { overflow-x: clip; }
         @media (max-width: 768px) {
           .intro-scroll {
             scroll-snap-type: y proximity;

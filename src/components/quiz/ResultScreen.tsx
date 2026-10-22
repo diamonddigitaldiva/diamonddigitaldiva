@@ -207,7 +207,7 @@ export function ResultScreen({ result, firstName, email, hubConsent }: ResultScr
             >
               Browse the Creator Access Hub
             </a>
-            <p className="text-[11px] text-charcoal/60 text-center -mt-1">
+            <p className="text-[11px] text-charcoal/80 text-center -mt-1">
               You chose not to share your details, so the Hub opens without your results.
             </p>
           </>

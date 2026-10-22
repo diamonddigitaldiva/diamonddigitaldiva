@@ -32,7 +32,7 @@ export function QuizScreen({
     <div className="animate-fade-in">
       {/* Progress */}
       <div className="flex items-center justify-between mb-3">
-        <span className="eyebrow text-charcoal/60">
+        <span className="eyebrow text-charcoal/80">
           Question {questionIndex + 1} of {questions.length}
         </span>
         <span className="eyebrow text-amethyst" aria-hidden="true">
@@ -41,6 +41,7 @@ export function QuizScreen({
       </div>
       <div
         role="progressbar"
+        aria-label="Assessment progress"
         aria-valuemin={1}
         aria-valuemax={questions.length}
         aria-valuenow={questionIndex + 1}
