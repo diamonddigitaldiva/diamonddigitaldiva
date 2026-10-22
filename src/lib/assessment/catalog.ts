@@ -352,9 +352,9 @@ function isHttps(url: string): boolean {
  */
 export function recommendability(
   e: CatalogEntry
-): { ok: true } | { ok: false; reason: NotRecommendableReason } {
-  if (e.product.status !== "active") return { ok: false, reason: "product-not-active" };
+): { ok: true; reason?: undefined } | { ok: false; reason: NotRecommendableReason } {
   if (e.eligibilityNotEvidenced) return { ok: false, reason: "eligibility-not-evidenced" };
+  if (e.product.status !== "active") return { ok: false, reason: "product-not-active" };
   const d = e.destination;
   if (!d || !isHttps(d.url)) return { ok: false, reason: "no-destination" };
   if (RETIRED_URLS.has(d.url) || (e.retiredDestinations ?? []).some((r) => r.url === d.url))
