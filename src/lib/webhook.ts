@@ -1,5 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Legacy-compatible CRM payload. The first eight fields keep their original
+ * names and types so existing automations keep working. v2 data is additive
+ * and versioned (`assessmentVersion`, `answers`, `result`).
+ */
 export interface QuizResultPayload {
   firstName: string;
   email: string;
@@ -9,44 +14,21 @@ export interface QuizResultPayload {
   secondaryStageUrl: string | null;
   timestamp: string;
   source: string;
+  assessmentVersion?: string;
+  answers?: Record<string, string>;
+  result?: Record<string, unknown>;
 }
 
-export async function sendQuizResultsToWebhook(
-  payload: QuizResultPayload
-): Promise<boolean> {
-  // Only log non-sensitive info in development
-  if (import.meta.env.DEV) {
-    console.log("Quiz submission initiated");
-  }
-
+export async function sendQuizResultsToWebhook(payload: QuizResultPayload): Promise<boolean> {
   try {
-    const { data, error } = await supabase.functions.invoke('send-webhook', {
-      body: payload,
-    });
-
+    const { data, error } = await supabase.functions.invoke("send-webhook", { body: payload });
     if (error) {
-      // Log generic error message only in development
-      if (import.meta.env.DEV) {
-        console.error("Edge function error occurred");
-      }
+      if (import.meta.env.DEV) console.error("Edge function error occurred");
       return false;
     }
-
-    if (data?.success) {
-      if (import.meta.env.DEV) {
-        console.log("Quiz submission completed successfully");
-      }
-      return true;
-    } else {
-      if (import.meta.env.DEV) {
-        console.error("Quiz submission failed");
-      }
-      return false;
-    }
-  } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error("Quiz submission error occurred");
-    }
+    return Boolean(data?.success);
+  } catch {
+    if (import.meta.env.DEV) console.error("Quiz submission error occurred");
     return false;
   }
 }

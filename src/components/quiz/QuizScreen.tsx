@@ -1,17 +1,13 @@
 import { QuizButton } from "@/components/ui/quiz-button";
 import { cn } from "@/lib/utils";
 import * as RadioGroup from "@radix-ui/react-radio-group";
-
-interface Question {
-  text: string;
-  options: Record<string, string>;
-}
+import type { AssessmentQuestion } from "@/lib/assessment";
 
 interface QuizScreenProps {
   questionIndex: number;
-  questions: Question[];
-  answers: Record<number, string>;
-  onSelectAnswer: (key: string) => void;
+  questions: AssessmentQuestion[];
+  answers: Record<string, string>;
+  onSelectAnswer: (optionId: string) => void;
   onBack: () => void;
   onNext: () => void;
 }
@@ -26,11 +22,11 @@ export function QuizScreen({
 }: QuizScreenProps) {
   const question = questions[questionIndex];
   const progress = ((questionIndex + 1) / questions.length) * 100;
-  const selectedAnswer = answers[questionIndex];
 
   if (!question) return null;
 
-  const headingId = `quiz-question-${questionIndex}`;
+  const selectedAnswer = answers[question.id];
+  const headingId = `quiz-question-${question.id}`;
 
   return (
     <div className="animate-fade-in">
@@ -76,24 +72,25 @@ export function QuizScreen({
         loop={false}
         className="flex flex-col gap-3 mb-8"
       >
-        {Object.entries(question.options).map(([key, value]) => (
+        {question.options.map((option) => (
           <RadioGroup.Item
-            key={key}
-            value={key}
+            key={option.id}
+            value={option.id}
+            data-option-id={option.id}
             onKeyDown={(e) => {
               // Radix selects on Space; mirror that for Enter.
               if (e.key === "Enter") {
                 e.preventDefault();
-                onSelectAnswer(key);
+                onSelectAnswer(option.id);
               }
             }}
             className={cn(
               "quiz-option w-full text-left",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-amethyst focus-visible:ring-offset-2 focus-visible:ring-offset-ivory",
-              selectedAnswer === key && "selected"
+              selectedAnswer === option.id && "selected"
             )}
           >
-            <div className="text-[14px] text-charcoal leading-relaxed">{value}</div>
+            <div className="text-[14px] text-charcoal leading-relaxed">{option.label}</div>
           </RadioGroup.Item>
         ))}
       </RadioGroup.Root>
@@ -103,7 +100,7 @@ export function QuizScreen({
           Back
         </QuizButton>
         <QuizButton onClick={onNext} disabled={!selectedAnswer}>
-          Next
+          {questionIndex === questions.length - 1 ? "Finish" : "Next"}
         </QuizButton>
       </div>
     </div>

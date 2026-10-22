@@ -11,18 +11,24 @@ export interface HandoffPayload {
   secondaryStage?: string | null;
   secondaryStageName?: string | null;
   secondaryStageUrl?: string | null;
+  assessmentVersion?: string | null;
+}
+
+export interface HandoffResult {
+  url: string;
+  /** true when a session was created and the Hub can read the results. */
+  attached: boolean;
 }
 
 /**
- * Creates a short-lived (2h) handoff session in the shared backend and
- * returns a URL that the Creator Access Hub can read by `?session=<uuid>`.
+ * Creates a short-lived (2h) handoff session in the shared backend. Only
+ * call this after the person has consented to sharing.
  *
- * If session creation fails for any reason, we still return a safe fallback
- * URL so the user is never blocked from reaching the Hub.
+ * The URL carries only an opaque session ID, never a name or email. If the
+ * session can't be created, returns the plain Hub URL with attached=false so
+ * the UI can say the results were not attached.
  */
-export async function createCreatorAccessHubHandoffUrl(
-  payload: HandoffPayload
-): Promise<string> {
+export async function createCreatorAccessHubHandoff(payload: HandoffPayload): Promise<HandoffResult> {
   try {
     const { data, error } = await supabase
       .from("handoff_sessions")
@@ -35,6 +41,7 @@ export async function createCreatorAccessHubHandoffUrl(
         secondary_stage: payload.secondaryStage ?? null,
         secondary_stage_name: payload.secondaryStageName ?? null,
         secondary_stage_url: payload.secondaryStageUrl ?? null,
+        assessment_version: payload.assessmentVersion ?? null,
         source: "map-diagnostic",
       })
       .select("id")
@@ -42,12 +49,12 @@ export async function createCreatorAccessHubHandoffUrl(
 
     if (error || !data?.id) {
       console.error("Handoff session create failed");
-      return CREATOR_ACCESS_HUB_URL;
+      return { url: CREATOR_ACCESS_HUB_URL, attached: false };
     }
 
-    return `${CREATOR_ACCESS_HUB_URL}/?session=${data.id}`;
-  } catch (err) {
+    return { url: `${CREATOR_ACCESS_HUB_URL}/?session=${encodeURIComponent(data.id)}`, attached: true };
+  } catch {
     console.error("Handoff session unexpected error");
-    return CREATOR_ACCESS_HUB_URL;
+    return { url: CREATOR_ACCESS_HUB_URL, attached: false };
   }
 }
