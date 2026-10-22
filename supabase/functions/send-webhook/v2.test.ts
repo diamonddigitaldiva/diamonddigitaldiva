@@ -54,8 +54,7 @@ Deno.test("rejects mismatched version and bad answer IDs", () => {
   const a = valid();
   a.result.version = "map-v9";
   assertEquals(sanitizeV2(a), null);
-  const b = valid() as ReturnType<typeof valid> & { answers: Record<string, string> };
-  b.answers = { "Q STAGE!": "x" };
+  const b: Record<string, unknown> = { ...valid(), answers: { "Q STAGE!": "x" } };
   assertEquals(sanitizeV2(b), null);
 });
 
