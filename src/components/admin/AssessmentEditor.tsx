@@ -82,12 +82,13 @@ export function AssessmentEditor() {
     setDrafts((d) => { const n = { ...d }; delete n[key]; return n; });
   };
 
-  const Row = ({ itemKey, fallback }: { itemKey: string; fallback: string }) => {
+  // Plain render function (not a component) so inputs keep focus while typing.
+  const renderRow = (itemKey: string, fallback: string) => {
     const value = drafts[itemKey] ?? "";
     const isOverridden = saved[itemKey] !== undefined;
     const dirty = value.trim() !== (saved[itemKey] ?? "");
     return (
-      <div className="space-y-1">
+      <div key={itemKey} className="space-y-1">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <code>{itemKey}</code>
           {isOverridden && <Badge variant="secondary">Edited</Badge>}
@@ -129,12 +130,10 @@ export function AssessmentEditor() {
       {ASSESSMENT_QUESTIONS.map((q, i) => (
         <div key={q.id} className="quiz-card space-y-4">
           <h3 className="font-heading text-base">Question {i + 1}</h3>
-          <Row itemKey={overrideKey(q.id)} fallback={q.text} />
+          {renderRow(overrideKey(q.id), q.text)}
           <div className="space-y-3 pl-4 border-l border-border">
             <Label className="text-xs uppercase tracking-wide">Answers</Label>
-            {q.options.map((o) => (
-              <Row key={o.id} itemKey={overrideKey(q.id, o.id)} fallback={o.label} />
-            ))}
+            {q.options.map((o) => renderRow(overrideKey(q.id, o.id), o.label))}
           </div>
         </div>
       ))}
