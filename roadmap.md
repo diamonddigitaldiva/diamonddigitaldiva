@@ -19,6 +19,10 @@
 - [x] send-webhook saves before CRM delivery; reports saved/delivered/queued; rejects malformed declared v3 and unknown versions with 400
 - [x] Lead form: service-only wording, no marketing-enrollment claim; payload carries no marketing consent
 
+## Retry reliability (done)
+- [x] One retry schedule (every 10 min) active; duplicate 15-min schedule paused, not deleted
+- [x] Quiz retries claim rows atomically, max 10 attempts, lock released on failure, bounded 20s post timeout; initial send holds the lock
+
 ## Earlier (done)
 - [x] MAP v2 refresh, DWA owner correction, pop-up blocker note
 
