@@ -238,9 +238,14 @@ export type Database = {
           answers: Json | null
           assessment_version: string | null
           created_at: string
+          crm_forwarding_status: string | null
           email: string
           first_name: string
           id: string
+          marketing_consent: boolean | null
+          marketing_consent_at: string | null
+          marketing_consent_source: string | null
+          marketing_consent_version: string | null
           primary_stage: string
           primary_stage_url: string | null
           result: Json | null
@@ -256,9 +261,14 @@ export type Database = {
           answers?: Json | null
           assessment_version?: string | null
           created_at?: string
+          crm_forwarding_status?: string | null
           email: string
           first_name: string
           id?: string
+          marketing_consent?: boolean | null
+          marketing_consent_at?: string | null
+          marketing_consent_source?: string | null
+          marketing_consent_version?: string | null
           primary_stage: string
           primary_stage_url?: string | null
           result?: Json | null
@@ -274,9 +284,14 @@ export type Database = {
           answers?: Json | null
           assessment_version?: string | null
           created_at?: string
+          crm_forwarding_status?: string | null
           email?: string
           first_name?: string
           id?: string
+          marketing_consent?: boolean | null
+          marketing_consent_at?: string | null
+          marketing_consent_source?: string | null
+          marketing_consent_version?: string | null
           primary_stage?: string
           primary_stage_url?: string | null
           result?: Json | null
@@ -354,9 +369,14 @@ export type Database = {
           answers: Json | null
           assessment_version: string | null
           created_at: string
+          crm_forwarding_status: string | null
           email: string
           first_name: string
           id: string
+          marketing_consent: boolean | null
+          marketing_consent_at: string | null
+          marketing_consent_source: string | null
+          marketing_consent_version: string | null
           primary_stage: string
           primary_stage_url: string | null
           result: Json | null
