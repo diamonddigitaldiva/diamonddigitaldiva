@@ -27,6 +27,6 @@ Read-only review from The MAP project only (updated 2026-11-01 with owner-suppli
 5. **When Passive by Design gets a destination:** the paid-Claude question currently only appears for the AI services and client services interests, so it would also need to appear for digital products and affiliate respondents. Until then, the engine safely leaves it out.
 
 ## Unresolved before publish
-- **Marketing consent:** the lead form now says only "We use your details to save your MAP result. See Terms and Privacy Policy." No marketing-consent field is sent to the CRM. Whether the CRM's own workflow enrolls MAP leads in marketing email is unverified (the CRM was not inspected or changed), so no live email delivery or opt-in can be claimed. Review the CRM workflow before publishing.
+- **Marketing consent:** the lead form has a separate, optional, unchecked marketing checkbox. The server stores `marketing_consent` with its own timestamp, source and wording version. New (v3) leads reach the CRM only when consent is `true`, and the payload carries `marketingConsent: true` plus its metadata; leads without consent are saved in the app only and never sent or retried. Old v1/v2 forwarding is unchanged. How the CRM's own workflows use the flag is unverified (the CRM was not inspected or changed), so no external marketing or email delivery is claimed.
 - Chromebook eligibility for Paid with AI ("laptop/PC with Chrome") is treated as not qualifying.
 - Device needs for AICA and the Faceless Amazon KDP Blueprint aren't documented, so phone users aren't excluded from them.

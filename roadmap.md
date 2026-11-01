@@ -23,6 +23,12 @@
 - [x] One retry schedule (every 10 min) active; duplicate 15-min schedule paused, not deleted
 - [x] Quiz retries claim rows atomically, max 10 attempts, lock released on failure, bounded 20s post timeout; initial send holds the lock
 
+## Consent and disclosure (done)
+- [x] Affiliate disclosure before resource links; rel="sponsored" for evidenced affiliate links (DWA only)
+- [x] Product summaries describe training, no outcome promises; titles kept exact
+- [x] Optional unchecked marketing checkbox; explicit consent stored with server time/source/version
+- [x] New v3 leads without consent saved in the app only, never sent to the CRM or retried; v1/v2 unchanged
+
 ## Earlier (done)
 - [x] MAP v2 refresh, DWA owner correction, pop-up blocker note
 
@@ -30,5 +36,6 @@
 - [ ] Sender name/address for result email
 - [ ] CAH per-offer MAP eligibility metadata + read-only catalog feed (CAH-side)
 - [ ] Decision Point waitlist link (no verified destination yet)
-- [ ] CRM-side marketing enrollment for MAP leads is unverified (CRM workflows not inspected or changed); confirm the CRM does not auto-subscribe leads without consent before publish
+- [ ] CRM-side handling of the new `marketingConsent` flag is unverified (CRM workflows not inspected or changed); configure the CRM to use it before publish
+- [ ] Production publish deferred until CAH integration
 - [ ] Destinations for Passive by Design, Pin Prompt & Profit, After the Avatar (CAH); Quote Society / Insta Expand pending; Offer Fix scope
