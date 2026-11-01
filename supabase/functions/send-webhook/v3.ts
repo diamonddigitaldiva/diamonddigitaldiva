@@ -1,8 +1,9 @@
 /**
  * Server-side v3 handling. The client's v3 `result` is never trusted: answers
  * are validated with the shared definition and the result is re-derived with
- * the shared engine. If answers are malformed or incomplete, all v3 data is
- * dropped (the lead itself is never blocked).
+ * the shared engine. Returns null for malformed or incomplete answers; the
+ * caller (submission.ts) then rejects the whole request with 400 before any
+ * write or send.
  */
 import {
   MAP_V3_VERSION,

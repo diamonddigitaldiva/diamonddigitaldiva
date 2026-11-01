@@ -7,12 +7,29 @@ import { forwardToHQ } from "@/lib/hqTracking";
 import { createCreatorAccessHubHandoff, CREATOR_ACCESS_HUB_URL } from "@/lib/handoff";
 import type { V3Focus, V3Result } from "@/lib/assessment/v3";
 
+/**
+ * What actually happened to the submission. Never claims an email was sent:
+ * whether the CRM sends one is not verified from this app.
+ */
+export type SaveStatus = "pending" | "saved" | "saved_queued" | "saved_undelivered" | "received" | "failed";
+
 interface ResultScreenProps {
   result: V3Result;
   firstName: string;
   email: string;
   hubConsent: boolean;
+  saveStatus?: SaveStatus;
+  canRetrySave?: boolean;
+  onRetrySave?: () => void;
 }
+
+const SAVE_MESSAGE: Record<Exclude<SaveStatus, "failed">, string> = {
+  pending: "Saving your result…",
+  saved: "Your result has been saved.",
+  saved_queued: "Your result has been saved. Passing it on to our team is delayed and will be retried automatically.",
+  saved_undelivered: "Your result has been saved. It hasn't been passed on to our team yet.",
+  received: "Your result has been received.",
+};
 
 type HubStatus =
   | { kind: "idle" }
@@ -34,7 +51,15 @@ const ALT_HEADING: Record<V3Focus["role"], string> = {
   pivot: "Also worth exploring",
 };
 
-export function ResultScreen({ result, firstName, email, hubConsent }: ResultScreenProps) {
+export function ResultScreen({
+  result,
+  firstName,
+  email,
+  hubConsent,
+  saveStatus = "saved",
+  canRetrySave = false,
+  onRetrySave,
+}: ResultScreenProps) {
   const [hubLoading, setHubLoading] = useState(false);
   const [hubStatus, setHubStatus] = useState<HubStatus>({ kind: "idle" });
   const { primary, alternate } = result;
@@ -136,6 +161,29 @@ export function ResultScreen({ result, firstName, email, hubConsent }: ResultScr
         <p className="text-charcoal/70 text-[15px] mb-8">
           Based on your answers, here's what fits, what may be missing and a practical next step.
         </p>
+      </div>
+
+      <div role="status" aria-live="polite" data-testid="save-status" className="mb-6 text-center">
+        {saveStatus === "failed" ? (
+          <div className="p-4 rounded-sm border border-destructive/40 bg-pearl text-[13px] text-charcoal leading-relaxed">
+            <p>
+              We couldn't save your result just now. It's still shown below, so you can read it, save it or take a
+              screenshot.
+            </p>
+            {canRetrySave && onRetrySave ? (
+              <QuizButton type="button" variant="ghost" onClick={onRetrySave} className="mt-3">
+                Try saving again
+              </QuizButton>
+            ) : (
+              <p className="mt-2 text-charcoal/75">Please save or screenshot this page before you leave.</p>
+            )}
+          </div>
+        ) : (
+          <p className="text-[12px] text-charcoal/75 inline-flex items-center gap-2">
+            {saveStatus === "pending" && <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />}
+            {SAVE_MESSAGE[saveStatus]}
+          </p>
+        )}
       </div>
 
       <div className="space-y-4 mb-8">

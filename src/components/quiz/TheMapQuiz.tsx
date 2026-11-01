@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IntroScreen } from "./IntroScreen";
 import { QuizScreen } from "./QuizScreen";
 import { LeadScreen } from "./LeadScreen";
-import { ResultScreen } from "./ResultScreen";
+import { ResultScreen, type SaveStatus } from "./ResultScreen";
 import { useAssessment } from "@/hooks/useAssessment";
-import { sendQuizResultsToWebhook } from "@/lib/webhook";
+import { sendQuizResultsToWebhook, type QuizResultPayload } from "@/lib/webhook";
 import { forwardToHQ } from "@/lib/hqTracking";
 import { Signet } from "@/components/brand/Signet";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,8 @@ import { clearDraft, loadDraft, saveDraft } from "@/lib/assessment/draft";
 type Screen = "intro" | "quiz" | "lead" | "result";
 
 const FIRST_ID = V3_QUESTIONS[0].id;
+/** Explicit "try again" presses allowed after a failed save (no automatic resends). */
+export const MAX_SAVE_RETRIES = 3;
 
 export function TheMapQuiz() {
   const { questions, isLoading, version } = useAssessment();
@@ -33,6 +35,35 @@ export function TheMapQuiz() {
   const [restored, setRestored] = useState(false);
   const [leadData, setLeadData] = useState({ firstName: "", email: "", hubConsent: false });
   const [result, setResult] = useState<V3Result | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("pending");
+  const [retriesLeft, setRetriesLeft] = useState(MAX_SAVE_RETRIES);
+  const payloadRef = useRef<QuizResultPayload | null>(null);
+  const inFlight = useRef(false);
+
+  /** One send at a time. The draft (answers only) is kept until the result is saved. */
+  const submitResult = useCallback(async () => {
+    const payload = payloadRef.current;
+    if (!payload || inFlight.current) return;
+    inFlight.current = true;
+    setSaveStatus("pending");
+    const outcome = await sendQuizResultsToWebhook(payload);
+    inFlight.current = false;
+    if (outcome.saved) {
+      setSaveStatus(outcome.delivered ? "saved" : outcome.queued ? "saved_queued" : "saved_undelivered");
+    } else if (outcome.delivered) {
+      setSaveStatus("received");
+    } else {
+      setSaveStatus("failed");
+      return;
+    }
+    clearDraft();
+  }, []);
+
+  const handleRetrySave = () => {
+    if (saveStatus !== "failed" || retriesLeft <= 0 || inFlight.current) return;
+    setRetriesLeft((n) => n - 1);
+    void submitResult();
+  };
 
   // Restore an in-progress draft (answers only, never name/email).
   useEffect(() => {
@@ -98,6 +129,8 @@ export function TheMapQuiz() {
   };
 
   const handleLeadSubmit = (firstName: string, email: string, hubConsent: boolean) => {
+    // Ignore repeat presses while a submission is already being sent.
+    if (inFlight.current || payloadRef.current) return;
     const built = buildResultV3(answers);
     if (!built.ok) {
       // Never show a result from incomplete answers. Send them back to the first gap.
@@ -119,7 +152,7 @@ export function TheMapQuiz() {
 
     // Legacy-compatible fields keep their names/types; v3 data is versioned and
     // additive. The server re-derives the v3 result from the answers.
-    sendQuizResultsToWebhook({
+    payloadRef.current = {
       firstName,
       email,
       ...legacyFieldsV3(r),
@@ -128,7 +161,9 @@ export function TheMapQuiz() {
       assessmentVersion: version,
       answers: r.answers,
       result: resultSnapshotV3(r),
-    });
+    };
+    setRetriesLeft(MAX_SAVE_RETRIES);
+    void submitResult();
 
     forwardToHQ({
       type: "quiz_completed",
@@ -137,7 +172,6 @@ export function TheMapQuiz() {
       assessment_version: version,
     });
 
-    clearDraft();
     setRestored(false);
     setScreen("result");
   };
@@ -201,6 +235,9 @@ export function TheMapQuiz() {
                 firstName={leadData.firstName}
                 email={leadData.email}
                 hubConsent={leadData.hubConsent}
+                saveStatus={saveStatus}
+                canRetrySave={retriesLeft > 0}
+                onRetrySave={handleRetrySave}
               />
             )}
           </div>
