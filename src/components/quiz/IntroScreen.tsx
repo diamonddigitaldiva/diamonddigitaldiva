@@ -2,10 +2,9 @@ import { Signet } from "@/components/brand/Signet";
 
 interface IntroScreenProps {
   onStart: () => void;
-  questionCount?: number;
 }
 
-export function IntroScreen({ onStart, questionCount = 8 }: IntroScreenProps) {
+export function IntroScreen({ onStart }: IntroScreenProps) {
   return (
     <div className="intro-scroll w-full">
       {/* SECTION 2 — Hero */}
@@ -60,7 +59,7 @@ export function IntroScreen({ onStart, questionCount = 8 }: IntroScreenProps) {
             animationDelay: "0.4s",
           }}
         >
-          A practical check-in for creators: find the avenue that fits and the one thing holding you back.
+          Find your starting point or your next move.
         </p>
 
         <p
@@ -73,8 +72,8 @@ export function IntroScreen({ onStart, questionCount = 8 }: IntroScreenProps) {
             animationDelay: "0.5s",
           }}
         >
-          A few minutes of honest answers. Whether you're just exploring or already selling, you'll get
-          a clear priority, one action to take this week and a realistic short plan. No purchase required.
+          Whether you’re exploring online income or already building something, The MAP helps you identify
+          what fits, what may be missing and a practical next step.
         </p>
       </section>
 
@@ -131,9 +130,9 @@ export function IntroScreen({ onStart, questionCount = 8 }: IntroScreenProps) {
             style={{ maxWidth: 480, marginBottom: 48, display: "flex", flexDirection: "column", gap: 18 }}
           >
             {[
-              "See which creator avenue fits you right now",
-              "Name the one bottleneck worth fixing first",
-              "Leave with a next step you can take with what you already have",
+              "See what fits you, even if you're interested in more than one thing",
+              "Spot what may be missing in what you've already started",
+              "Leave with a practical next step. No purchase required",
             ].map((feature) => (
               <li
                 key={feature}
@@ -161,8 +160,8 @@ export function IntroScreen({ onStart, questionCount = 8 }: IntroScreenProps) {
             }}
           >
             {[
-              { n: String(questionCount), l: "Questions" },
-              { n: "3", l: "Minutes" },
+              { n: "11–17", l: "Questions" },
+              { n: "5", l: "Minutes" },
               { n: "1", l: "Next Step" },
             ].map((s) => (
               <div key={s.l} className="text-center" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -208,7 +207,7 @@ export function IntroScreen({ onStart, questionCount = 8 }: IntroScreenProps) {
             style={{ fontSize: 10, letterSpacing: "0.2em" }}
           >
             <span className="font-semibold" style={{ color: "hsl(var(--gold-deep, var(--gold)))" }}>
-              3 Min
+              About 5 Min
             </span>{" "}
             · Honest Answers Only
           </div>

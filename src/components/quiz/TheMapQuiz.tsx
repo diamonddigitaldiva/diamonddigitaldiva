@@ -84,9 +84,11 @@ export function TheMapQuiz() {
   };
 
   const handleBack = () => {
+    setRestored(false);
     if (position > 0) setCurrentId(visible[position - 1].id);
   };
   const handleNext = () => {
+    setRestored(false);
     if (position < visible.length - 1) setCurrentId(visible[position + 1].id);
     else setScreen("lead");
   };

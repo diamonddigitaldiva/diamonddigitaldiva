@@ -15,7 +15,7 @@ export interface QuizResultPayload {
   timestamp: string;
   source: string;
   assessmentVersion?: string;
-  answers?: Record<string, string>;
+  answers?: Record<string, unknown>;
   result?: Record<string, unknown>;
 }
 
