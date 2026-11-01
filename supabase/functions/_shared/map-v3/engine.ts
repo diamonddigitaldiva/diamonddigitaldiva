@@ -542,7 +542,11 @@ type Exclusion =
   | "free-only"
   | "over-budget";
 
-function checkEntry(c: Ctx, e: V3CatalogEntry): { ok: true; claudeConsider: boolean } | { ok: false; reason: Exclusion } {
+// Optional mirror fields keep narrowing working without strictNullChecks.
+function checkEntry(
+  c: Ctx,
+  e: V3CatalogEntry
+): { ok: true; claudeConsider: boolean; reason?: undefined } | { ok: false; reason: Exclusion; claudeConsider?: undefined } {
   if (e.ownedVia.some((id) => c.owned.has(id))) return { ok: false, reason: "already-owned" };
   if ((e.includedIn ?? []).some((id) => c.owned.has(id))) return { ok: false, reason: "included-in-owned" };
   const r = e.requires ?? {};

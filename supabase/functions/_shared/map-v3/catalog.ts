@@ -375,7 +375,9 @@ const isHttps = (u: string) => {
 };
 
 /** Answer-independent eligibility. */
-export function v3Recommendability(e: V3CatalogEntry): { ok: true } | { ok: false; reason: V3NotRecommendable } {
+export function v3Recommendability(
+  e: V3CatalogEntry
+): { ok: true; reason?: undefined } | { ok: false; reason: V3NotRecommendable } {
   if (e.status !== "active") return { ok: false, reason: "status-not-active" };
   const d = e.destination;
   if (!d || !isHttps(d.url)) return { ok: false, reason: "no-destination" };
