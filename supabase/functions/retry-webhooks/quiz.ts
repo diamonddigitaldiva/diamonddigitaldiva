@@ -39,8 +39,8 @@ export interface QuizRow {
 }
 
 export interface QuizRetryDeps {
-  /** Atomically claims one eligible row, or null when none are left. */
-  claimNext: () => Promise<QuizRow | null>;
+  /** Atomically claims one eligible row not in `exclude`, or null when none are left. */
+  claimNext: (exclude: string[]) => Promise<QuizRow | null>;
   /** Counts the attempt and releases the lock. */
   finish: (id: string, delivered: boolean) => Promise<void>;
   /** One bounded POST; may throw on network error or timeout. */
@@ -73,10 +73,13 @@ export async function retryQuizSubmissions(deps: QuizRetryDeps) {
   let claimed = 0;
   let succeeded = 0;
   let failed = 0;
+  const attempted: string[] = [];
 
   while (claimed < MAX_RETRIES_PER_RUN && now() - started < RUN_BUDGET_MS) {
-    const row = await deps.claimNext();
+    // A released (failed) row is never re-claimed within the same run.
+    const row = await deps.claimNext(attempted);
     if (!row) break;
+    attempted.push(row.id);
     claimed++;
 
     let delivered = false;

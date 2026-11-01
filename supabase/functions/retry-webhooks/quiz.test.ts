@@ -29,9 +29,11 @@ const row = (id: string, extra: Partial<Stored> = {}): Stored => ({
 
 function store(rows: Stored[]) {
   const posts: string[] = [];
-  const claim = async () => {
+  const claim = async (exclude: string[]) => {
     await Promise.resolve(); // yield, like a real round trip
-    const r = rows.find((x) => !x.webhook_sent && !x.locked && (x.retry_count ?? 0) < MAX_RETRY_ATTEMPTS);
+    const r = rows.find(
+      (x) => !x.webhook_sent && !x.locked && (x.retry_count ?? 0) < MAX_RETRY_ATTEMPTS && !exclude.includes(x.id)
+    );
     if (!r) return null;
     r.locked = true; // atomic in the fake: no await between check and set
     return { ...r };
@@ -59,13 +61,12 @@ function deps(s: ReturnType<typeof store>, post: QuizRetryDeps["post"]): QuizRet
 }
 
 Deno.test("two overlapping runs never post the same row twice", async () => {
-  const rows = [row("a"), row("b"), row("c"), row("d")];
+  const rows = ["a", "b", "c", "d"].map((id, i) => row(id, { email: `t${i}@example.invalid` }));
   const s = store(rows);
   const ok = () => Promise.resolve({ ok: true, status: 200 });
   const [r1, r2] = await Promise.all([retryQuizSubmissions(deps(s, ok)), retryQuizSubmissions(deps(s, ok))]);
   assertEquals(s.posts.length, 4);
-  const ids = s.posts.map((b) => JSON.parse(b).timestamp + rows.length);
-  assertEquals(ids.length, 4);
+  assertEquals(new Set(s.posts.map((b) => JSON.parse(b).email)).size, 4);
   assertEquals(r1.succeeded + r2.succeeded, 4);
   assertEquals(rows.every((r) => r.webhook_sent && r.retry_count === 1 && !r.locked), true);
 });
@@ -102,15 +103,12 @@ Deno.test("thrown network/timeout errors count as an attempt and release the loc
   assertEquals(s.posts.length, 1);
 });
 
-Deno.test("a failed row is attempted once per run, not looped within a run", async () => {
-  const rows = [row("a")];
+Deno.test("a failed row is attempted only once per run even though its lock is released", async () => {
+  const rows = [row("a"), row("b")];
   const s = store(rows);
-  let calls = 0;
-  // Fake claim returns the released row again; one run must still stop at the cap.
-  const out = await retryQuizSubmissions(deps(s, () => { calls++; return Promise.resolve({ ok: false, status: 500 }); }));
-  assertEquals(out.retried <= MAX_RETRY_ATTEMPTS, true);
-  assertEquals(calls, out.retried);
-  assertEquals(rows[0].retry_count, out.retried);
+  const out = await retryQuizSubmissions(deps(s, () => Promise.resolve({ ok: false, status: 500 })));
+  assertEquals(out, { retried: 2, succeeded: 0, failed: 2 });
+  assertEquals(rows.map((r) => r.retry_count), [1, 1]);
 });
 
 Deno.test("versioned stored data is resent unchanged; legacy rows stay legacy", async () => {
