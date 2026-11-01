@@ -98,7 +98,7 @@ export async function retryQuizSubmissions(deps: QuizRetryDeps) {
   let failed = 0;
   const attempted: string[] = [];
 
-  while (claimed < MAX_RETRIES_PER_RUN && now() - started < RUN_BUDGET_MS) {
+  while (attempted.length < MAX_RETRIES_PER_RUN && now() - started < RUN_BUDGET_MS) {
     // A released (failed) row is never re-claimed within the same run.
     const row = await deps.claimNext(attempted);
     if (!row) break;
