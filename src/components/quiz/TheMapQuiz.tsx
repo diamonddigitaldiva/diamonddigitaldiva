@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { IntroScreen } from "./IntroScreen";
 import { QuizScreen } from "./QuizScreen";
 import { LeadScreen } from "./LeadScreen";
@@ -9,50 +9,105 @@ import { forwardToHQ } from "@/lib/hqTracking";
 import { Signet } from "@/components/brand/Signet";
 import { useToast } from "@/hooks/use-toast";
 import {
-  buildResult,
-  resultSnapshot,
-  CAH_BASE_URL,
-  type AssessmentResult,
-} from "@/lib/assessment";
+  buildResultV3,
+  legacyFieldsV3,
+  pruneV3,
+  resultSnapshotV3,
+  V3_QUESTIONS,
+  type V3AnswerValue,
+  type V3Answers,
+  type V3Result,
+} from "@/lib/assessment/v3";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/assessment/draft";
 
 type Screen = "intro" | "quiz" | "lead" | "result";
+
+const FIRST_ID = V3_QUESTIONS[0].id;
 
 export function TheMapQuiz() {
   const { questions, isLoading, version } = useAssessment();
   const { toast } = useToast();
   const [screen, setScreen] = useState<Screen>("intro");
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [currentId, setCurrentId] = useState<string>(FIRST_ID);
+  const [answers, setAnswers] = useState<V3Answers>({});
+  const [restored, setRestored] = useState(false);
   const [leadData, setLeadData] = useState({ firstName: "", email: "", hubConsent: false });
-  const [result, setResult] = useState<AssessmentResult | null>(null);
+  const [result, setResult] = useState<V3Result | null>(null);
 
-  const currentId = questions[questionIndex]?.id;
+  // Restore an in-progress draft (answers only, never name/email).
+  useEffect(() => {
+    const d = loadDraft();
+    if (d && Object.keys(d.answers).length) {
+      setAnswers(d.answers);
+      setCurrentId(d.currentId);
+      setScreen(d.screen);
+      setRestored(true);
+    }
+  }, []);
 
-  const handleStart = () => { setScreen("quiz"); setQuestionIndex(0); };
-  const handleSelectAnswer = (optionId: string) => {
-    if (!currentId) return;
-    setAnswers((prev) => ({ ...prev, [currentId]: optionId }));
+  const visible = useMemo(() => questions.filter((q) => !q.showIf || q.showIf(answers)), [questions, answers]);
+
+  // If the current question became hidden, move to the next visible one in order.
+  const current = useMemo(() => {
+    const hit = visible.find((q) => q.id === currentId);
+    if (hit) return hit;
+    const order = V3_QUESTIONS.findIndex((q) => q.id === currentId);
+    return visible.find((q) => V3_QUESTIONS.findIndex((x) => x.id === q.id) > order) ?? visible[visible.length - 1];
+  }, [visible, currentId]);
+  const position = visible.findIndex((q) => q.id === current?.id);
+
+  useEffect(() => {
+    if (screen === "quiz" || screen === "lead") saveDraft(answers, current?.id ?? FIRST_ID, screen);
+  }, [answers, current, screen]);
+
+  const handleStart = () => {
+    setScreen("quiz");
+    setCurrentId(FIRST_ID);
   };
-  const handleBack = () => { if (questionIndex > 0) setQuestionIndex((p) => p - 1); };
+
+  const handleStartOver = () => {
+    clearDraft();
+    setAnswers({});
+    setRestored(false);
+    setCurrentId(FIRST_ID);
+    setScreen("quiz");
+  };
+
+  const handleChange = (key: string, value: V3AnswerValue | undefined) => {
+    setAnswers((prev) => {
+      const next: V3Answers = { ...prev };
+      if (value === undefined) delete next[key];
+      else next[key] = value;
+      // Changing an earlier answer can hide later questions: drop their stale answers.
+      return pruneV3(next);
+    });
+  };
+
+  const handleBack = () => {
+    if (position > 0) setCurrentId(visible[position - 1].id);
+  };
   const handleNext = () => {
-    if (questionIndex < questions.length - 1) setQuestionIndex((p) => p + 1);
+    if (position < visible.length - 1) setCurrentId(visible[position + 1].id);
     else setScreen("lead");
   };
-  const handleLeadBack = () => { setScreen("quiz"); setQuestionIndex(questions.length - 1); };
+  const handleLeadBack = () => {
+    setScreen("quiz");
+    setCurrentId(visible[visible.length - 1].id);
+  };
 
   const handleLeadSubmit = (firstName: string, email: string, hubConsent: boolean) => {
-    const built = buildResult(answers);
+    const built = buildResultV3(answers);
     if (!built.ok) {
       // Never show a result from incomplete answers. Send them back to the first gap.
-      const firstGap = [...built.missing, ...built.invalid][0];
-      const idx = Math.max(0, questions.findIndex((q) => q.id === firstGap));
+      const gaps = new Set([...built.missing, ...built.invalid]);
+      const first = visible.find((q) => gaps.has(q.id) || (q.sideText && gaps.has(q.sideText.key)));
       toast({
-        title: "One answer is missing",
-        description: "Please answer every question so your result reflects you.",
+        title: "One answer needs attention",
+        description: "Please answer every required question so your result reflects you.",
         variant: "destructive",
       });
       setScreen("quiz");
-      setQuestionIndex(idx);
+      if (first) setCurrentId(first.id);
       return;
     }
 
@@ -60,29 +115,28 @@ export function TheMapQuiz() {
     setLeadData({ firstName, email, hubConsent });
     setResult(r);
 
-    // Legacy-compatible fields keep their names. primaryStage now carries the
-    // priority label (never a product), and v2 data is versioned and additive.
+    // Legacy-compatible fields keep their names/types; v3 data is versioned and
+    // additive. The server re-derives the v3 result from the answers.
     sendQuizResultsToWebhook({
       firstName,
       email,
-      primaryStage: r.priorityLabel,
-      secondaryStage: null,
-      primaryStageUrl: r.creatorPath?.url ?? CAH_BASE_URL,
-      secondaryStageUrl: null,
+      ...legacyFieldsV3(r),
       timestamp: new Date().toISOString(),
       source: window.location.origin,
       assessmentVersion: version,
       answers: r.answers,
-      result: resultSnapshot(r),
+      result: resultSnapshotV3(r),
     });
 
     forwardToHQ({
       type: "quiz_completed",
-      primary_stage: r.priority,
-      secondary_stage: r.avenue,
+      primary_stage: r.primary.id,
+      secondary_stage: r.alternate?.id ?? null,
       assessment_version: version,
     });
 
+    clearDraft();
+    setRestored(false);
     setScreen("result");
   };
 
@@ -98,7 +152,6 @@ export function TheMapQuiz() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Nav */}
       <nav className="w-full border-b border-border/60 bg-pearl/70 backdrop-blur-sm">
         <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -116,22 +169,27 @@ export function TheMapQuiz() {
         </div>
       </nav>
 
-      {/* Main */}
       {isHero ? (
         <main className="flex-1 w-full">
-          <IntroScreen onStart={handleStart} questionCount={questions.length} />
+          <IntroScreen onStart={handleStart} />
         </main>
       ) : (
-        <main className="flex-1 w-full mx-auto px-6 py-12 md:py-20 max-w-2xl">
-          <div className="quiz-card">
-            {screen === "quiz" && (
+        <main className="flex-1 w-full mx-auto px-4 sm:px-6 py-10 md:py-20 max-w-2xl">
+          <div className="quiz-card !px-5 !py-8 sm:!p-8 md:!p-12">
+            {screen === "quiz" && current && (
               <QuizScreen
-                questionIndex={questionIndex}
-                questions={questions}
+                key={current.id}
+                question={current}
+                position={position + 1}
+                total={visible.length}
                 answers={answers}
-                onSelectAnswer={handleSelectAnswer}
+                onChange={handleChange}
                 onBack={handleBack}
                 onNext={handleNext}
+                canGoBack={position > 0}
+                isLast={position === visible.length - 1}
+                restored={restored}
+                onStartOver={handleStartOver}
               />
             )}
             {screen === "lead" && <LeadScreen onBack={handleLeadBack} onSubmit={handleLeadSubmit} />}
@@ -147,7 +205,6 @@ export function TheMapQuiz() {
         </main>
       )}
 
-      {/* Footer */}
       <footer className="border-t border-border/60 py-8">
         <div className="flex flex-col items-center gap-3">
           <Signet size={32} withShadow={false} />
