@@ -20,39 +20,39 @@ export interface HandoffResult {
   attached: boolean;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const opt = (v: string | null | undefined) => (v == null ? undefined : v);
+
 /**
  * Creates a short-lived (2h) handoff session in the shared backend. Only
  * call this after the person has consented to sharing.
  *
- * The URL carries only an opaque session ID, never a name or email. If the
- * session can't be created, returns the plain Hub URL with attached=false so
- * the UI can say the results were not attached.
+ * Guests can't read handoff_sessions, so the session is created through the
+ * `create_handoff_session` function, which validates the input and returns
+ * only the opaque session ID. The URL carries only that ID, never a name or
+ * email. If the session can't be created, returns the plain Hub URL with
+ * attached=false so the UI can say the results were not attached.
  */
 export async function createCreatorAccessHubHandoff(payload: HandoffPayload): Promise<HandoffResult> {
   try {
-    const { data, error } = await supabase
-      .from("handoff_sessions")
-      .insert({
-        first_name: payload.firstName,
-        email: payload.email,
-        primary_stage: payload.primaryStage,
-        primary_stage_name: payload.primaryStageName ?? null,
-        primary_stage_url: payload.primaryStageUrl ?? null,
-        secondary_stage: payload.secondaryStage ?? null,
-        secondary_stage_name: payload.secondaryStageName ?? null,
-        secondary_stage_url: payload.secondaryStageUrl ?? null,
-        assessment_version: payload.assessmentVersion ?? null,
-        source: "map-diagnostic",
-      })
-      .select("id")
-      .single();
+    const { data, error } = await supabase.rpc("create_handoff_session", {
+      _first_name: payload.firstName,
+      _email: payload.email,
+      _primary_stage: payload.primaryStage,
+      _primary_stage_name: opt(payload.primaryStageName),
+      _primary_stage_url: opt(payload.primaryStageUrl),
+      _secondary_stage: opt(payload.secondaryStage),
+      _secondary_stage_name: opt(payload.secondaryStageName),
+      _secondary_stage_url: opt(payload.secondaryStageUrl),
+      _assessment_version: opt(payload.assessmentVersion),
+    });
 
-    if (error || !data?.id) {
+    if (error || typeof data !== "string" || !UUID_RE.test(data)) {
       console.error("Handoff session create failed");
       return { url: CREATOR_ACCESS_HUB_URL, attached: false };
     }
 
-    return { url: `${CREATOR_ACCESS_HUB_URL}/?session=${encodeURIComponent(data.id)}`, attached: true };
+    return { url: `${CREATOR_ACCESS_HUB_URL}/?session=${encodeURIComponent(data)}`, attached: true };
   } catch {
     console.error("Handoff session unexpected error");
     return { url: CREATOR_ACCESS_HUB_URL, attached: false };
