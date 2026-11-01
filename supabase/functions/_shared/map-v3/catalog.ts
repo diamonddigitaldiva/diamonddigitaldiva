@@ -8,13 +8,18 @@
  * - Paid recommendations must be on the owner's paid shortlist AND have
  *   evidenced scope, an active status and a routable, non-retired link.
  * - Shortlist membership alone never makes something recommendable.
- * - Prices are not verified for any entry, so none is shown or treated as
- *   within a budget. Free-only respondents only see owner-stated free items.
- * - Device / plan prerequisites can exclude an entry.
+ * - Prices: only owner-supplied, publicly corroborated prices are "verified".
+ *   Conflicting or missing prices stay "unverified". A capped budget only
+ *   accepts free or verified-within-cap items; it never guesses.
+ * - Where only a temporary discount was seen, the regular price is used for
+ *   budget checks and the discount is not shown.
+ * - Device / plan / platform / comfort prerequisites can exclude an entry.
  * - Archived CAH rows or retired URLs never by themselves mean a product is
- *   discontinued (DWA is live; its old CAH page is retired).
+ *   discontinued (DWA is live; its old CAH page is retired; After the Avatar
+ *   only has an obsolete archived link).
  * - No commission-based ranking. Order is editorial and only breaks ties.
- * - Tools are never recommended as a business model.
+ * - Tools are never recommended as a business model (never first unless the
+ *   need is tools, systems or content).
  */
 
 import type { Platform } from "./definition.ts";
@@ -52,8 +57,8 @@ export type FocusRole = "start" | "improve" | "expand" | "pivot";
 
 export type V3Price =
   | { state: "free-owner-stated" }
-  | { state: "unverified" }
-  | { state: "verified"; usd: number; checkedAt: string; source: string };
+  | { state: "unverified"; note?: string }
+  | { state: "verified"; usd: number; checkedAt: string; source: string; note?: string };
 
 export interface V3Destination {
   kind: "cah-resource" | "owner-provided";
@@ -70,12 +75,28 @@ export interface V3Requirements {
   paidClaude?: boolean;
   /** Built around reaching out to businesses or clients. */
   outreach?: boolean;
+  /** Built around direct messages with potential customers. */
+  messages?: boolean;
   /** Built around faceless content. */
   faceless?: boolean;
+  /** Built around creating with an AI avatar. */
+  avatar?: boolean;
+  /** Needs an AI avatar already (evidenced by currently working on AI avatars/content). */
+  existingAvatar?: boolean;
   /** For existing digital-product sellers only. */
   digitalOffer?: boolean;
+  /** Needs a product or offer already (own offer, or digital products with sales). */
+  offer?: boolean;
   /** Needs something to sell already (own offer or past sales). */
   somethingToSell?: boolean;
+  /** Only for people who haven't made a sale yet. */
+  noSalesYet?: boolean;
+  /**
+   * Social platform fit (from the platforms question).
+   * required: must have picked one of these.
+   * avoid-mismatch: excluded only when platforms were picked and none match.
+   */
+  socialPlatforms?: { ids: string[]; mode: "required" | "avoid-mismatch" };
 }
 
 export interface V3CatalogEntry {
@@ -85,7 +106,9 @@ export interface V3CatalogEntry {
   summary: string;
   kind: "training" | "community" | "workbook" | "framework" | "tool";
   status: "active" | "pending" | "being_updated" | "coming_soon" | "unconfirmed";
-  statusSource: "owner-confirmed" | "owner-listed" | "cah-flag" | "unconfirmed";
+  statusSource: "owner-confirmed" | "owner-listed" | "cah-active-read" | "cah-flag" | "unconfirmed";
+  /** Where the scope summary comes from. */
+  scopeSource?: "owner-supplied-research" | "cah-listing" | "owner";
   /** On the owner's paid shortlist (eligibility allow-list for paid items). */
   shortlist: boolean;
   price: V3Price;
@@ -115,15 +138,27 @@ export const V3_RETIRED_URLS: ReadonlySet<string> = new Set(
 /** Exact owner-provided external links that may be routed to. */
 export const V3_OWNER_LINKS: ReadonlySet<string> = new Set([DWA_URL, MWYK_URL]);
 
+/** CAH resource page. Only marked verified because it was actually checked. */
 const cah = (id: string): V3Destination => ({
   kind: "cah-resource",
   url: cahResource(id),
   verification: "verified",
   checkedAt: "2026-11-01",
-  note: "Read-only check: CAH resource page returned 200.",
+  note: "Read-only check on 2026-11-01: CAH resource page returned 200 (unknown IDs return 404).",
 });
 
+const RESEARCH = "Owner-supplied research, 2026-11-01";
+const priced = (usd: number, source: string, note?: string): V3Price => ({
+  state: "verified",
+  usd,
+  checkedAt: "2026-11-01",
+  source: `${RESEARCH}: ${source}`,
+  ...(note ? { note } : {}),
+});
+const CAH_ACTIVE = { status: "active" as const, statusSource: "cah-active-read" as const, scopeSource: "owner-supplied-research" as const };
+
 const NOT_MATCHED = { paths: [] as PathId[], gaps: [] as GapId[] };
+const ALL_ROLES: FocusRole[] = ["start", "improve", "expand", "pivot"];
 
 export const V3_CATALOG: V3CatalogEntry[] = [
   {
@@ -147,73 +182,183 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     ownedVia: [],
   },
   {
-    id: "the-offer-fix",
-    name: "The Offer Fix™",
-    summary: "A guided workbook for existing digital-product sellers to clarify buyer, problem, message and the next sales test.",
-    kind: "workbook",
+    id: "dwa",
+    name: "Digital Wealth Academy 4.0",
+    summary:
+      "Broad digital marketing training for building your own digital products and affiliate income. Self-paced, with a community and lifetime access.",
+    kind: "training",
+    status: "active",
+    statusSource: "owner-confirmed",
+    scopeSource: "owner-supplied-research",
+    shortlist: true,
+    price: priced(497, "price matches public corroboration", "Independent syllabus detail not verified."),
+    destination: {
+      kind: "owner-provided",
+      url: DWA_URL,
+      verification: "verified",
+      checkedAt: "2026-11-01",
+      note: "Owner confirmed this is the correct current link (owner confirmation, not an automated check).",
+    },
+    retiredUrls: [cahResource("dwa")],
+    matchable: true,
+    fits: { paths: ["digital_products", "affiliate"], gaps: [], roles: ["start", "pivot", "expand"] },
+    ownedVia: ["res_dwa"],
+  },
+  {
+    id: "cfw",
+    name: "Create Faceless Wealth",
+    summary:
+      "Beginner, phone-friendly training covering faceless income paths: digital products, affiliate marketing and quote pages.",
+    kind: "training",
     status: "active",
     statusSource: "owner-listed",
+    scopeSource: "owner-supplied-research",
     shortlist: true,
-    price: { state: "unverified" },
-    destination: cah("the-offer-fix"),
+    price: priced(487, "regular price", "A lower discounted price was seen; discounts aren't relied on."),
+    destination: cah("cfw"),
     matchable: true,
-    fits: { paths: ["digital_products"], gaps: ["message", "conversion"], roles: ["improve"] },
-    requires: { digitalOffer: true },
-    requirementNote: "For people who already have a digital product.",
-    ownedVia: ["res_offer_fix"],
+    fits: { paths: ["digital_products", "affiliate", "quotes"], gaps: [], roles: ["start", "pivot", "expand"] },
+    requires: { faceless: true },
+    ownedVia: ["res_cfw"],
+  },
+  {
+    id: "aica",
+    name: "AI Creator Academy® 2.0",
+    summary: "Training on creating realistic AI avatars or digital twins, photos and videos, with brand content strategy.",
+    kind: "training",
+    status: "active",
+    statusSource: "owner-listed",
+    scopeSource: "owner-supplied-research",
+    shortlist: true,
+    price: priced(247, "regular price", "A temporary discounted price was seen; discounts aren't relied on."),
+    destination: cah("aica"),
+    matchable: true,
+    scopeNote: "Device requirements not documented.",
+    fits: { paths: ["ai_avatar"], gaps: [], roles: ["start", "pivot", "expand"] },
+    requires: { avatar: true },
+    ownedVia: ["res_aica"],
+  },
+  {
+    id: "aifluencer-studio",
+    name: "AIFluencer Studio",
+    summary:
+      "Beginner-friendly, self-paced program for realistic AI influencers or digital twins: photos, videos, product shots, animated and talking videos, and consistent visual branding.",
+    kind: "training",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: priced(97, "public Stan seller listing (no URL supplied)"),
+    destination: cah("aifluencer-studio"),
+    matchable: true,
+    fits: { paths: ["ai_avatar"], gaps: ["content"], roles: ALL_ROLES },
+    requires: { avatar: true },
+    ownedVia: ["res_aifluencer_studio"],
+  },
+  {
+    id: "ai-to-sales",
+    name: "AI to Sales",
+    summary:
+      "Using an AI avatar's storytelling, content and brand personality to support sales. Not an avatar-creation course.",
+    kind: "training",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: priced(37, "public Stan bundle listing", "Module format not documented."),
+    destination: cah("ai-to-sales"),
+    matchable: true,
+    fits: { paths: ["ai_avatar"], gaps: ["conversion", "message", "content"], roles: ["improve", "expand"] },
+    requires: { existingAvatar: true },
+    requirementNote: "For people who already have an AI avatar.",
+    ownedVia: ["res_ai_to_sales"],
+  },
+  {
+    id: "faceless-launch",
+    name: "Faceless Launch Formula",
+    summary: "Messaging, positioning and a launch plan for a digital product, built around a 30-day plan. Timelines and results vary.",
+    kind: "training",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: priced(77, "public seller listing"),
+    destination: cah("faceless-launch"),
+    matchable: true,
+    fits: { paths: ["digital_products"], gaps: ["launch", "message"], roles: ["improve", "start"] },
+    requires: { offer: true },
+    requirementNote: "For people who already have a product or offer to launch.",
+    ownedVia: ["res_faceless_launch_formula"],
+  },
+  {
+    id: "0-first-sale-challenge",
+    name: "$0 - First Sale Challenge",
+    summary: "A beginner, step-by-step challenge aimed at making a first online sale. The name isn't a price, and results vary.",
+    kind: "training",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: priced(15, "public listings"),
+    destination: cah("0-first-sale-challenge"),
+    matchable: true,
+    fits: { paths: ["digital_products", "affiliate"], gaps: ["launch", "conversion"], roles: ["start", "pivot", "improve"] },
+    requires: { noSalesYet: true },
+    requirementNote: "For people who haven't made a sale yet.",
+    ownedVia: ["res_first_sale_challenge"],
+  },
+  {
+    id: "selling-made-simple",
+    name: "Selling Made Simple",
+    summary: "A guide to content, DM and posting strategies for low-ticket digital sales, for beginners or existing sellers.",
+    kind: "training",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: priced(37, "dedicated Beacons listing"),
+    destination: cah("selling-made-simple"),
+    matchable: true,
+    fits: { paths: ["digital_products", "affiliate"], gaps: ["message", "conversion"], roles: ALL_ROLES },
+    requires: { messages: true },
+    ownedVia: ["res_selling_made_simple"],
+  },
+  {
+    id: "daily-sales-rhythm",
+    name: "Daily Sales Rhythm",
+    summary:
+      "Video and written lessons plus a low-ticket guide for a sustainable sales routine around real life, with activities for 15 minutes, an hour or several hours.",
+    kind: "training",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: priced(27, "dedicated Beacons listing"),
+    destination: cah("daily-sales-rhythm"),
+    matchable: true,
+    fits: { paths: ["digital_products", "affiliate", "business"], gaps: ["routine"], roles: ALL_ROLES },
+    ownedVia: ["res_daily_sales_rhythm"],
+  },
+  {
+    id: "100k-threads-challenge",
+    name: "100K Threads Challenge",
+    summary: "A 5-day Threads growth and content-consistency challenge with 150+ posts and a community. Views aren't guaranteed.",
+    kind: "training",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: priced(27, "dedicated Beacons listing"),
+    destination: cah("100k-threads-challenge"),
+    matchable: true,
+    fits: { paths: ["social"], gaps: ["reach", "content"], roles: ALL_ROLES },
+    requires: { socialPlatforms: { ids: ["plat_threads"], mode: "required" } },
+    requirementNote: "For Threads.",
+    ownedVia: ["res_100k_threads"],
   },
   {
     id: "tss",
     name: "The Secret Sauce",
-    summary: "A sales psychology framework.",
-    kind: "framework",
+    summary: "Trust-building and soft selling through Instagram Stories: handling buyer objections and turning content into sales.",
+    kind: "training",
     status: "active",
     statusSource: "owner-listed",
+    scopeSource: "owner-supplied-research",
     shortlist: true,
     price: { state: "unverified" },
     destination: cah("tss"),
     matchable: true,
     scopeNote: "May include Prompt to Sales; bundle contents and any promotion not verified here.",
-    fits: { paths: ["digital_products", "business", "quotes", "ai_avatar"], gaps: ["conversion", "message"], roles: ["improve"] },
-    requires: { somethingToSell: true },
+    fits: { paths: ["digital_products", "business", "quotes", "ai_avatar", "affiliate"], gaps: ["conversion", "message"], roles: ["improve"] },
+    requires: { somethingToSell: true, socialPlatforms: { ids: ["plat_instagram"], mode: "avoid-mismatch" } },
+    requirementNote: "Built around Instagram Stories.",
     ownedVia: ["res_secret_sauce"],
-  },
-  {
-    id: "dwa",
-    name: "Digital Wealth Academy 4.0",
-    summary: "Review the checkout page for current details before deciding.",
-    kind: "training",
-    status: "active",
-    statusSource: "owner-confirmed",
-    shortlist: true,
-    price: { state: "unverified" },
-    destination: {
-      kind: "owner-provided",
-      url: DWA_URL,
-      verification: "pending",
-      checkedAt: "2026-10-22",
-      note: "Owner-approved current link. Redirects to a commas.com checkout with the affiliate kept; owner confirmation of the exact page pending.",
-    },
-    retiredUrls: [cahResource("dwa")],
-    matchable: true,
-    scopeNote: "Path mapping is provisional pending owner confirmation of scope.",
-    fits: { paths: ["digital_products"], gaps: [], roles: ["start", "pivot", "expand"] },
-    ownedVia: ["res_dwa"],
-  },
-  {
-    id: "aica",
-    name: "AI Creator Academy® 2.0",
-    summary: "AI creator training.",
-    kind: "training",
-    status: "active",
-    statusSource: "owner-listed",
-    shortlist: true,
-    price: { state: "unverified" },
-    destination: cah("aica"),
-    matchable: true,
-    scopeNote: "Device requirements not documented.",
-    fits: { paths: ["ai_avatar"], gaps: [], roles: ["start", "pivot", "expand"] },
-    ownedVia: ["res_aica"],
   },
   {
     id: "paid-with-ai",
@@ -248,21 +393,6 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     ownedVia: ["res_powerhorse"],
   },
   {
-    id: "cfw",
-    name: "Create Faceless Wealth",
-    summary: "A faceless income masterclass.",
-    kind: "training",
-    status: "active",
-    statusSource: "owner-listed",
-    shortlist: true,
-    price: { state: "unverified" },
-    destination: cah("cfw"),
-    matchable: true,
-    fits: { paths: ["quotes", "digital_products"], gaps: [], roles: ["start", "pivot", "expand"] },
-    requires: { faceless: true },
-    ownedVia: ["res_cfw"],
-  },
-  {
     id: "faceless-amazon-kdp-blueprint",
     name: "Faceless Amazon KDP Blueprint",
     summary: "A beginner walkthrough for publishing with Canva and AI.",
@@ -277,37 +407,134 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     fits: { paths: ["publishing"], gaps: [], roles: ["start", "pivot", "expand"] },
     ownedVia: ["res_kdp_blueprint"],
   },
-
-  // --- Known, but not recommendable (scope, status or link not established) ---
   {
-    id: "aifluencer-studio",
-    name: "AIfluencer Studio",
-    summary: "An AI creator course. Detailed scope not verified.",
-    kind: "training",
-    status: "active",
-    statusSource: "owner-listed",
+    id: "ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot",
+    name: "AI-Podcast Kit 10 Min Workflow",
+    summary:
+      "A kit for short faceless AI podcast-style videos: image-prompt chatbots, a workflow, 100 quotes and Telegram support. Timing and earnings vary.",
+    kind: "tool",
+    ...CAH_ACTIVE,
     shortlist: true,
-    price: { state: "unverified" },
-    destination: cah("aifluencer-studio"),
-    matchable: false,
-    fits: NOT_MATCHED,
-    ownedVia: ["res_aifluencer_studio"],
+    price: priced(29, "public listings"),
+    destination: cah("ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot"),
+    matchable: true,
+    fits: { paths: ["ai_avatar"], gaps: ["content", "systems"], roles: ["improve", "expand"] },
+    requires: { faceless: true },
+    ownedVia: ["res_ai_podcast_kit"],
   },
+  {
+    id: "the-molly-x-rosie-archive",
+    name: "Molly X Rosie Archive",
+    summary: "An aesthetic, realistic AI prompt bank for visual content. A tool, not a business model.",
+    kind: "tool",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: priced(25, "public listings"),
+    destination: cah("the-molly-x-rosie-archive"),
+    matchable: true,
+    fits: { paths: ["ai_avatar"], gaps: ["content", "systems"], roles: ALL_ROLES },
+    ownedVia: ["res_molly_rosie_archive"],
+  },
+  {
+    id: "prompt-to-sales",
+    name: "Prompt to Sales",
+    summary: "A realistic AI avatar and content prompt library (1,500+ prompts per the seller). Not sales training.",
+    kind: "tool",
+    ...CAH_ACTIVE,
+    shortlist: true,
+    price: { state: "unverified", note: "Public $37 conflicts with $27 in the backend; unresolved." },
+    destination: cah("prompt-to-sales"),
+    matchable: true,
+    fits: { paths: ["ai_avatar"], gaps: ["content", "systems"], roles: ALL_ROLES },
+    ownedVia: ["res_prompt_to_sales"],
+    includedIn: ["res_secret_sauce"],
+  },
+
+  // --- Known scope, but not routable yet (missing or retired destination) ---
   {
     id: "passive-by-design",
     name: "Passive by Design",
-    summary: "",
+    summary:
+      "Claude skills plus a classroom of 11 courses and 200+ lessons for tutorials, content systems, digital products and affiliate workflows.",
     kind: "training",
-    status: "unconfirmed",
-    statusSource: "unconfirmed",
+    status: "active",
+    statusSource: "owner-listed",
+    scopeSource: "owner-supplied-research",
+    shortlist: true,
+    price: priced(297, "baseline price the owner says is current"),
+    destination: null,
+    matchable: true,
+    scopeNote: "No CAH row in the 2026-11-01 read; not routable until a destination exists.",
+    fits: { paths: ["digital_products", "affiliate"], gaps: ["systems"], roles: ALL_ROLES },
+    requires: { paidClaude: true },
+    requirementNote: "Needs a paid Claude plan.",
+    ownedVia: ["res_passive_by_design"],
+  },
+  {
+    id: "pin-prompt-profit",
+    name: "Pin Prompt & Profit",
+    summary:
+      "Beginner training on Pinterest plus AI for evergreen search traffic to affiliate links, digital products, lists or communities. 14 modules, 60 lessons and PinnyBot; no followers needed.",
+    kind: "training",
+    status: "active",
+    statusSource: "owner-listed",
+    scopeSource: "owner-supplied-research",
+    shortlist: true,
+    price: { state: "unverified", note: "$47 vs $87 unresolved." },
+    destination: null,
+    matchable: true,
+    scopeNote: "No CAH row in the 2026-11-01 read; not routable until a destination exists.",
+    fits: { paths: ["affiliate", "digital_products", "social"], gaps: ["reach"], roles: ALL_ROLES },
+    ownedVia: ["res_pin_prompt_profit"],
+  },
+  {
+    id: "ata",
+    name: "After the Avatar",
+    summary: "Turning an existing AI avatar into a content strategy that supports sales.",
+    kind: "training",
+    status: "active",
+    statusSource: "owner-listed",
+    scopeSource: "owner-supplied-research",
+    shortlist: true,
+    price: priced(117, "public listing match"),
+    destination: null,
+    retiredUrls: [cahResource("ata")],
+    matchable: true,
+    scopeNote: "CAH 'ata' row only has an obsolete archived link. Not discontinued; not routable until a current destination exists.",
+    fits: { paths: ["ai_avatar"], gaps: ["content", "conversion"], roles: ["improve", "expand"] },
+    requires: { existingAvatar: true },
+    ownedVia: ["res_after_the_avatar"],
+  },
+  {
+    id: "quote-society",
+    name: "Quote Society",
+    summary: "Quote page growth and monetization training (format not confirmed).",
+    kind: "training",
+    status: "pending",
+    statusSource: "owner-listed",
+    scopeSource: "owner-supplied-research",
     shortlist: true,
     price: { state: "unverified" },
     destination: null,
     matchable: false,
-    scopeNote: "Scope and destination not established. Requires a paid Claude plan.",
+    scopeNote: "Pending in CAH, no link. Excluded.",
     fits: NOT_MATCHED,
-    requires: { paidClaude: true },
-    ownedVia: ["res_passive_by_design"],
+    ownedVia: ["res_quote_society"],
+  },
+  {
+    id: "the-offer-fix",
+    name: "The Offer Fix™",
+    summary: "",
+    kind: "workbook",
+    status: "active",
+    statusSource: "owner-listed",
+    shortlist: true,
+    price: { state: "unverified" },
+    destination: cah("the-offer-fix"),
+    matchable: false,
+    scopeNote: "The official description is the title only. Scope not established until the owner confirms it.",
+    fits: NOT_MATCHED,
+    ownedVia: ["res_offer_fix"],
   },
   {
     id: "insta-expand",
@@ -323,22 +550,6 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     scopeNote: "Owner: pending. Must not be recommended.",
     fits: NOT_MATCHED,
     ownedVia: ["res_insta_expand"],
-  },
-  {
-    id: "prompt-to-sales",
-    name: "Prompt to Sales",
-    summary: "",
-    kind: "tool",
-    status: "unconfirmed",
-    statusSource: "unconfirmed",
-    shortlist: true,
-    price: { state: "unverified" },
-    destination: null,
-    matchable: false,
-    scopeNote: "May be included in Secret Sauce; never recommend standalone to Secret Sauce owners.",
-    fits: NOT_MATCHED,
-    ownedVia: ["res_prompt_to_sales"],
-    includedIn: ["res_secret_sauce"],
   },
   {
     id: "the-decision-point",
