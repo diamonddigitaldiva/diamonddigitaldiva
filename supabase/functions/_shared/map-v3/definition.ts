@@ -532,6 +532,12 @@ export function validateV3(input: unknown): V3Validation {
       if (q.sideText && raw[q.sideText.key] !== undefined) pruned.push(q.sideText.key);
       continue;
     }
+    if (q.kind === "text") {
+      const t = cleanText(v, q.maxLength ?? 1000);
+      if (t === "invalid") invalid.push(q.id);
+      else if (t !== null) clean[q.id] = t;
+      continue;
+    }
     const empty = v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0);
     if (empty) {
       if (q.required) missing.push(q.id);
