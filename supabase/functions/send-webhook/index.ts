@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { handleSubmission } from "./submission.ts";
+import { handleSubmission, WEBHOOK_TIMEOUT_MS } from "./submission.ts";
 
 // CORS headers - allow all origins for public quiz
 const corsHeaders = {
@@ -131,11 +131,25 @@ serve(async (req) => {
       markSent: async (id) => {
         const { error } = await supabase
           .from('quiz_submissions')
-          .update({ webhook_sent: true, webhook_sent_at: new Date().toISOString() })
+          .update({ webhook_sent: true, webhook_sent_at: new Date().toISOString(), webhook_inflight_until: null })
           .eq('id', id);
         if (error) console.error("Failed to update webhook status:", error.message);
       },
-      post: (url, json) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: json }),
+      release: async (id) => {
+        const { error } = await supabase
+          .from('quiz_submissions')
+          .update({ webhook_inflight_until: null })
+          .eq('id', id)
+          .eq('webhook_sent', false);
+        if (error) console.error("Failed to release delivery lock:", error.message);
+      },
+      post: (url, json) =>
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: json,
+          signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+        }),
       log: (m) => console.log(m),
     });
 

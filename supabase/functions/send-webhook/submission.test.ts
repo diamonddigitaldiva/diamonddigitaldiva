@@ -30,7 +30,7 @@ const legacy = () => ({
 });
 
 function fakes(opts: { webhookUrl?: string; saveId?: string | null; postOk?: boolean; postThrows?: boolean } = {}) {
-  const calls = { save: [] as Record<string, unknown>[], post: [] as string[], markSent: [] as string[] };
+  const calls = { save: [] as Record<string, unknown>[], post: [] as string[], markSent: [] as string[], release: [] as string[] };
   const deps: SubmissionDeps = {
     webhookUrl: "webhookUrl" in opts ? opts.webhookUrl : "https://crm.fake/hook",
     save: (row) => {
@@ -41,6 +41,11 @@ function fakes(opts: { webhookUrl?: string; saveId?: string | null; postOk?: boo
       calls.markSent.push(id);
       return Promise.resolve();
     },
+    release: (id) => {
+      calls.release.push(id);
+      return Promise.resolve();
+    },
+    now: () => Date.parse("2026-01-01T00:00:00.000Z"),
     post: (_url, body) => {
       calls.post.push(body);
       if (opts.postThrows) return Promise.reject(new Error("network"));
@@ -82,6 +87,7 @@ Deno.test("webhook fails after save: queued for the retry job, success stays fal
     assertEquals(r.body.delivered, false);
     assertEquals(r.body.queued, true);
     assertEquals(calls.markSent.length, 0);
+    assertEquals(calls.release, ["row-1"]);
   }
 });
 
@@ -157,4 +163,12 @@ Deno.test("invalid legacy fields are rejected before any write", async () => {
   const r = await handleSubmission({ ...legacy(), email: "nope" }, deps);
   assertEquals(r.status, 400);
   assertEquals(calls.save.length, 0);
+});
+
+Deno.test("initial send claims the row with a 2-minute lock, shorter than the 5-minute retry wait", async () => {
+  const { deps, calls } = fakes();
+  await handleSubmission(legacy(), deps);
+  assertEquals(calls.save[0].webhook_inflight_until, "2026-01-01T00:02:00.000Z");
+  assertEquals(calls.release.length, 0); // delivered: markSent clears the lock
+  assertEquals(calls.markSent, ["row-1"]);
 });

@@ -248,6 +248,7 @@ export type Database = {
           secondary_stage: string | null
           secondary_stage_url: string | null
           source: string | null
+          webhook_inflight_until: string | null
           webhook_sent: boolean
           webhook_sent_at: string | null
         }
@@ -265,6 +266,7 @@ export type Database = {
           secondary_stage?: string | null
           secondary_stage_url?: string | null
           source?: string | null
+          webhook_inflight_until?: string | null
           webhook_sent?: boolean
           webhook_sent_at?: string | null
         }
@@ -282,6 +284,7 @@ export type Database = {
           secondary_stage?: string | null
           secondary_stage_url?: string | null
           source?: string | null
+          webhook_inflight_until?: string | null
           webhook_sent?: boolean
           webhook_sent_at?: string | null
         }
@@ -340,6 +343,38 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_quiz_submission_for_retry: {
+        Args: {
+          _exclude?: string[]
+          _lock_seconds?: number
+          _max_attempts?: number
+          _older_than_minutes?: number
+        }
+        Returns: {
+          answers: Json | null
+          assessment_version: string | null
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          primary_stage: string
+          primary_stage_url: string | null
+          result: Json | null
+          retry_count: number
+          secondary_stage: string | null
+          secondary_stage_url: string | null
+          source: string | null
+          webhook_inflight_until: string | null
+          webhook_sent: boolean
+          webhook_sent_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "quiz_submissions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       consume_handoff_session: {
         Args: { _session_id: string }
         Returns: boolean
@@ -357,6 +392,10 @@ export type Database = {
           _secondary_stage_url?: string
         }
         Returns: string
+      }
+      finish_quiz_submission_retry: {
+        Args: { _delivered: boolean; _id: string }
+        Returns: undefined
       }
       get_handoff_session: {
         Args: { _session_id: string }
