@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sanitizeV2 } from "./v2.ts";
+import { isV3Version, sanitizeV3 } from "./v3.ts";
 
 // CORS headers - allow all origins for public quiz
 const corsHeaders = {
@@ -253,10 +254,26 @@ serve(async (req) => {
       );
     }
 
-    const payload = validation.data;
-    // Additive, versioned v2 data. Dropped entirely if malformed; legacy
-    // fields above are unchanged so existing CRM automations keep working.
-    const v2 = sanitizeV2(rawPayload as Record<string, unknown>);
+    // Additive, versioned data. Legacy field names/types are unchanged so
+    // existing CRM automations keep working. v3 results are re-derived here
+    // from validated answers (the client's result is ignored); v2 blocks are
+    // sanitized as before; unknown versions and malformed blocks are dropped.
+    const raw = rawPayload as Record<string, unknown>;
+    let payload = validation.data;
+    let v2: { assessmentVersion: string; answers: unknown; result: unknown } | null = null;
+    if (isV3Version(raw.assessmentVersion)) {
+      const v3 = sanitizeV3(raw);
+      if (v3) {
+        v2 = v3.fields;
+        payload = { ...payload, ...v3.legacy };
+      } else {
+        console.log("v3 data dropped: invalid or incomplete answers");
+      }
+    } else if (raw.assessmentVersion === undefined || /^map-v2\./.test(String(raw.assessmentVersion))) {
+      v2 = sanitizeV2(raw);
+    } else {
+      console.log("Versioned data dropped: unknown assessment version");
+    }
     const outbound = v2 ? { ...payload, ...v2 } : payload;
     
     // Log only that a submission was received (no PII)
