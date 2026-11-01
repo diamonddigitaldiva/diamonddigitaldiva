@@ -1,9 +1,25 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { V3_CATALOG, AFFILIATE_DISCLOSURE, MARKETING_CONSENT_TEXT } from "@/lib/assessment/v3";
+import engineSrc from "../../../supabase/functions/_shared/map-v3/engine.ts?raw";
+import definitionSrc from "../../../supabase/functions/_shared/map-v3/definition.ts?raw";
+import catalogSrc from "../../../supabase/functions/_shared/map-v3/catalog.ts?raw";
+import introSrc from "@/components/quiz/IntroScreen.tsx?raw";
+import leadSrc from "@/components/quiz/LeadScreen.tsx?raw";
+import resultSrc from "@/components/quiz/ResultScreen.tsx?raw";
 
-const read = (p: string) => readFileSync(resolve(__dirname, "../../..", p), "utf8");
+const SOURCES: Record<string, string> = {
+  "supabase/functions/_shared/map-v3/engine.ts": engineSrc,
+  "supabase/functions/_shared/map-v3/definition.ts": definitionSrc,
+  "supabase/functions/_shared/map-v3/catalog.ts": catalogSrc,
+  "src/components/quiz/IntroScreen.tsx": introSrc,
+  "src/components/quiz/LeadScreen.tsx": leadSrc,
+  "src/components/quiz/ResultScreen.tsx": resultSrc,
+};
+const read = (p: string) => {
+  const src = SOURCES[p];
+  if (!src || src.length < 200) throw new Error(`source not loaded: ${p}`);
+  return src;
+};
 
 // Authored copy that people see: results engine, questions, catalog, intro, lead and result screens.
 const AUTHORED = [
