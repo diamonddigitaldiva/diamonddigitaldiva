@@ -119,7 +119,7 @@ Deno.test("a failed row is attempted only once per run even though its lock is r
 });
 
 Deno.test("versioned stored data is resent unchanged; legacy rows stay legacy", async () => {
-  const v3 = row("a", { assessment_version: "map-v3.0", answers: { m3_where: "where_new" }, result: { version: "map-v3.0" } });
+  const v3 = row("a", { assessment_version: "map-v3.0", marketing_consent: true, answers: { m3_where: "where_new" }, result: { version: "map-v3.0" } });
   const legacy = row("b");
   const s = store([v3, legacy]);
   await retryQuizSubmissions(deps(s, () => Promise.resolve({ ok: true, status: 200 })));
