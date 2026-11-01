@@ -3,9 +3,11 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // --- mocks: no network, no real webhook, no real HQ events ---------------
-const sendWebhook = vi.fn().mockResolvedValue(true);
+const SAVED = { saved: true, delivered: true, queued: false };
+const sendWebhook = vi.fn().mockResolvedValue(SAVED);
 const forwardToHQ = vi.fn();
-const handoffSingle = vi.fn();
+const handoffRpc = vi.fn();
+const fromTables: string[] = [];
 
 vi.mock("@/lib/webhook", () => ({ sendQuizResultsToWebhook: (p: unknown) => sendWebhook(p) }));
 vi.mock("@/lib/hqTracking", () => ({ forwardToHQ: (e: unknown) => forwardToHQ(e) }));
@@ -13,10 +15,14 @@ vi.mock("@/integrations/supabase/client", () => {
   const thenable = { then: (cb: (r: { error: null }) => void) => { cb({ error: null }); return Promise.resolve(); } };
   return {
     supabase: {
-      from: (table: string) => ({
-        select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }),
-        insert: () => (table === "handoff_sessions" ? { select: () => ({ single: handoffSingle }) } : thenable),
-      }),
+      from: (table: string) => {
+        fromTables.push(table);
+        return {
+          select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }),
+          insert: () => thenable,
+        };
+      },
+      rpc: (...a: unknown[]) => handoffRpc(...a),
       functions: { invoke: vi.fn().mockResolvedValue({ data: { success: true }, error: null }) },
     },
   };
@@ -69,9 +75,11 @@ async function submitLead(user: User, consent: boolean) {
 
 describe("The MAP v3 flow", () => {
   beforeEach(() => {
-    sendWebhook.mockClear();
+    sendWebhook.mockReset();
+    sendWebhook.mockResolvedValue(SAVED);
     forwardToHQ.mockClear();
-    handoffSingle.mockReset();
+    handoffRpc.mockReset();
+    fromTables.length = 0;
     sessionStorage.clear();
     localStorage.clear();
   });
@@ -96,7 +104,7 @@ describe("The MAP v3 flow", () => {
     expect(screen.getByTestId("next-step").textContent!.length).toBeGreaterThan(40);
     const browse = screen.getByRole("link", { name: /browse the creator access hub/i });
     expect(browse).toHaveAttribute("href", "https://creatoraccesshub.diamonddigitaldiva.com");
-    expect(handoffSingle).not.toHaveBeenCalled();
+    expect(handoffRpc).not.toHaveBeenCalled();
 
     for (const a of screen.getAllByRole("link")) {
       const href = a.getAttribute("href") ?? "";
@@ -124,7 +132,10 @@ describe("The MAP v3 flow", () => {
     const hq = forwardToHQ.mock.calls.find(([e]) => e.type === "quiz_completed")![0];
     expect(hq).toMatchObject({ primary_stage: "publishing", assessment_version: "map-v3.0" });
     expect(JSON.stringify(hq)).not.toContain("jane");
-    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(payload).not.toHaveProperty("marketingConsent");
+    expect(Object.keys(payload).some((k) => /marketing|consent|optin|subscribe/i.test(k))).toBe(false);
+    expect(await screen.findByText("Your result has been saved.")).toBeInTheDocument();
+    await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).toBeNull());
   });
 
   it("an existing creator sees the extra questions; going back and changing stage removes them", async () => {
@@ -180,7 +191,7 @@ describe("The MAP v3 flow", () => {
   });
 
   it("with consent: hands off via an opaque session", async () => {
-    handoffSingle.mockResolvedValue({ data: { id: "abc-123" }, error: null });
+    handoffRpc.mockResolvedValue({ data: "11111111-2222-3333-4444-555555555555", error: null });
     const fakeWin = { opener: {}, closed: false, location: { href: "" } };
     const open = vi.spyOn(window, "open").mockReturnValue(fakeWin as unknown as Window);
     const user = userEvent.setup();
@@ -189,14 +200,16 @@ describe("The MAP v3 flow", () => {
     await answerBeginner(user);
     await submitLead(user, true);
     await user.click(await screen.findByRole("button", { name: /continue to the creator access hub with my results/i }));
-    await waitFor(() => expect(fakeWin.location.href).toBe("https://creatoraccesshub.diamonddigitaldiva.com/?session=abc-123"));
+    await waitFor(() => expect(fakeWin.location.href).toBe("https://creatoraccesshub.diamonddigitaldiva.com/?session=11111111-2222-3333-4444-555555555555"));
     expect(fakeWin.opener).toBeNull();
+    expect(handoffRpc.mock.calls[0][0]).toBe("create_handoff_session");
+    expect(fromTables).not.toContain("handoff_sessions");
     expect(await screen.findByText(/with your results attached/i)).toBeInTheDocument();
     open.mockRestore();
   });
 
   it("with consent but session failure: says results were not attached", async () => {
-    handoffSingle.mockResolvedValue({ data: null, error: { message: "nope" } });
+    handoffRpc.mockResolvedValue({ data: null, error: { message: "nope" } });
     vi.spyOn(console, "error").mockImplementation(() => {});
     const fakeWin = { opener: {}, closed: false, location: { href: "" } };
     const open = vi.spyOn(window, "open").mockReturnValue(fakeWin as unknown as Window);
@@ -220,5 +233,76 @@ describe("The MAP v3 flow", () => {
     expect(await screen.findByTestId("resources-note")).toHaveTextContent(/free resources and what you already own/);
     const section = screen.getByRole("heading", { name: /optional resources/i }).closest("section")!;
     for (const a of within(section).queryAllByRole("link")) expect(a).toHaveTextContent(/Free community/);
+  });
+
+  it("lead form uses service-only wording with no marketing-enrollment claim", async () => {
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user);
+    expect(screen.getByText(/we use your details to save your map result/i)).toBeInTheDocument();
+    expect(screen.queryByText(/marketing/i)).toBeNull();
+  });
+
+  it("shows a saving status while the submission is pending", async () => {
+    sendWebhook.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user);
+    await submitLead(user, false);
+    expect(await screen.findByTestId("primary-label")).toBeInTheDocument();
+    expect(screen.getByTestId("save-status")).toHaveTextContent(/saving your result/i);
+    expect(screen.getByTestId("save-status")).not.toHaveTextContent(/saved\.|email/i);
+  });
+
+  it("failed save: keeps the result and draft, warns, and only resends on an explicit retry", async () => {
+    sendWebhook.mockResolvedValue({ saved: false, delivered: false, queued: false });
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user);
+    await submitLead(user, false);
+    expect(await screen.findByText(/couldn't save your result/i)).toBeInTheDocument();
+    expect(screen.getByTestId("primary-label")).toBeInTheDocument();
+    expect(screen.queryByText(/has been saved/i)).toBeNull();
+    expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sendWebhook).toHaveBeenCalledTimes(1); // no automatic resend
+
+    sendWebhook.mockResolvedValueOnce(SAVED);
+    await user.click(screen.getByRole("button", { name: /try saving again/i }));
+    expect(await screen.findByText("Your result has been saved.")).toBeInTheDocument();
+    expect(sendWebhook).toHaveBeenCalledTimes(2);
+    expect(sendWebhook.mock.calls[1][0]).toEqual(sendWebhook.mock.calls[0][0]);
+    expect(screen.queryByRole("button", { name: /try saving again/i })).toBeNull();
+    await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).toBeNull());
+  });
+
+  it("retry is limited and ignores presses while a retry is in flight", async () => {
+    sendWebhook.mockResolvedValue({ saved: false, delivered: false, queued: false });
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user);
+    await submitLead(user, false);
+    for (let i = 0; i < 3; i++) {
+      await user.click(await screen.findByRole("button", { name: /try saving again/i }));
+      await screen.findByText(/couldn't save your result/i);
+    }
+    expect(sendWebhook).toHaveBeenCalledTimes(4);
+    expect(screen.queryByRole("button", { name: /try saving again/i })).toBeNull();
+    expect(screen.getByText(/save or screenshot this page/i)).toBeInTheDocument();
+  });
+
+  it("saved but not yet delivered says so, without a retry button", async () => {
+    sendWebhook.mockResolvedValue({ saved: true, delivered: false, queued: true });
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user);
+    await submitLead(user, false);
+    expect(await screen.findByText(/saved\. passing it on to our team is delayed/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /try saving again/i })).toBeNull();
   });
 });
