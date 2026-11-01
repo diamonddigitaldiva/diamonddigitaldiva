@@ -262,14 +262,19 @@ describe("results", () => {
   });
 
   it("an audience alone is never treated as owning an offer", () => {
-    const r = ok({ ...seller, m3_bring: ["bring_content"], m3_where: "where_building", m3_working: ["works_engage"], m3_obstacle: "obst_convert" });
-    expect(ids(r)).not.toContain("the-offer-fix");
-    expect(ids(r)).not.toContain("tss");
-    expect(r.excluded.some((x) => x.id === "the-offer-fix" && x.reason === "no-digital-offer")).toBe(true);
+    const base = { ...seller, m3_bring: ["bring_content"], m3_where: "where_building", m3_working: ["works_engage"] };
+    const conv = ok({ ...base, m3_obstacle: "obst_convert" });
+    expect(ids(conv)).not.toContain("tss");
+    expect(conv.excluded.some((x) => x.id === "tss" && x.reason === "nothing-to-sell")).toBe(true);
+    const launch = ok({ ...base, m3_obstacle: "obst_launch" });
+    expect(ids(launch)).not.toContain("faceless-launch");
+    expect(launch.excluded.some((x) => x.id === "faceless-launch" && x.reason === "no-offer")).toBe(true);
   });
 
-  it("existing digital-product sellers with a message gap can see The Offer Fix", () => {
-    expect(ids(ok(seller))[0]).toBe("the-offer-fix");
+  it("existing digital-product sellers with a message gap get an evidenced fit, never The Offer Fix (title-only scope)", () => {
+    const r = ok(seller);
+    expect(ids(r)[0]).toBe("faceless-launch");
+    expect(ids(r)).not.toContain("the-offer-fix");
   });
 });
 
@@ -334,15 +339,15 @@ describe("device and plan prerequisites", () => {
 
 describe("ownership, budget and catalog safety", () => {
   it("never recommends something they already own, and points to it instead", () => {
-    const r = ok({ ...seller, m3_owned: ["res_offer_fix"] });
-    expect(ids(r)).not.toContain("the-offer-fix");
-    expect(r.ownedFits).toContain("The Offer Fix™");
+    const r = ok({ ...seller, m3_owned: ["res_faceless_launch_formula"] });
+    expect(ids(r)).not.toContain("faceless-launch");
+    expect(r.ownedFits).toContain("Faceless Launch Formula");
     expect(r.considerations.some((c) => c.includes("already own"))).toBe(true);
   });
 
   it("typed names only match exactly ('Monetize It' is not 'Monetize What You Know')", () => {
-    const exact = ok({ ...seller, m3_owned_other: "the offer fix" });
-    expect(ids(exact)).not.toContain("the-offer-fix");
+    const exact = ok({ ...seller, m3_owned_other: "faceless launch formula" });
+    expect(ids(exact)).not.toContain("faceless-launch");
     const fuzzy = ok({ ...beginner, m3_interests: ["int_discover"], m3_owned_other: "Monetize It, offer fixing course" });
     expect(ids(fuzzy)).toContain("monetize-what-you-know");
     expect(fuzzy.considerations.some((c) => c.includes("exact names"))).toBe(true);
@@ -354,23 +359,68 @@ describe("ownership, budget and catalog safety", () => {
     expect(r.resourcesNote).toMatch(/free resources and what you already own/);
   });
 
-  it("unverified prices are never presented as within a budget", () => {
+  it("a capped budget only takes free items or verified prices within the cap", () => {
     const r = ok({ ...seller, m3_budget: "budget_50" });
-    expect(r.resources.length).toBeGreaterThan(0);
-    for (const x of r.resources) expect(x.priceNote).toMatch(/not confirmed/);
-    expect(r.resourcesNote).toMatch(/can't say whether these fit your range/);
-    expect(JSON.stringify(r.resources)).not.toMatch(/\$\d/);
+    expect(ids(r)).toContain("selling-made-simple"); // verified $37
+    expect(ids(r)).not.toContain("faceless-launch"); // verified $77
+    expect(r.excluded.some((x) => x.id === "faceless-launch" && x.reason === "over-budget")).toBe(true);
+    expect(r.excluded.some((x) => x.id === "tss" && x.reason === "price-unverified")).toBe(true);
+    for (const x of r.resources) expect(x.priceNote).toMatch(/^(Free|About \$\d+ )/);
+    expect(r.considerations.some((c) => c.includes("couldn't confirm their current price"))).toBe(true);
+  });
+
+  describe("budget $50 with DWA price states", () => {
+    const start = { ...beginner, m3_interests: ["int_digital_products"], m3_bring: ["bring_knowledge"], m3_budget: "budget_50" };
+    const withDwa = (price: unknown) => V3_CATALOG.map((e) => (e.id === "dwa" ? { ...e, price } : e));
+    it("unverified DWA is excluded (price-unverified), with a clear note", () => {
+      const r = buildResultV3(start, withDwa({ state: "unverified" })).result!;
+      expect(ids(r)).not.toContain("dwa");
+      expect(r.excluded).toContainEqual({ id: "dwa", reason: "price-unverified" });
+      expect(r.resourcesNote).toMatch(/couldn't confirm their current prices/);
+    });
+    it("verified $497 is excluded", () => {
+      const r = ok(start);
+      expect(ids(r)).not.toContain("dwa");
+      expect(r.excluded).toContainEqual({ id: "dwa", reason: "over-budget" });
+    });
+    it("verified $37 is included", () => {
+      const r = buildResultV3(start, withDwa({ state: "verified", usd: 37, checkedAt: "2026-11-01", source: "test" })).result!;
+      expect(ids(r)).toContain("dwa");
+    });
+    it("free items are included", () => {
+      const r = buildResultV3(start, withDwa({ state: "free-owner-stated" })).result!;
+      expect(ids(r)).toContain("dwa");
+      expect(ok({ ...start, m3_interests: ["int_discover"] }).resources.map((x) => x.id)).toContain("monetize-what-you-know");
+    });
   });
 
   it("'unsure' budget shows options without assuming they're ready to buy", () => {
-    expect(ok({ ...seller, m3_budget: "budget_unsure" }).resourcesNote).toMatch(/comparison only/);
+    const r = ok({ ...seller, m3_budget: "budget_unsure" });
+    expect(r.resourcesNote).toMatch(/comparison only/);
+    expect(r.resources.some((x) => x.priceNote.startsWith("Price not confirmed")) || ids(r).length > 0).toBe(true);
   });
 
   it("pending, unscoped, being-updated or unlinked products are never recommendable", () => {
-    for (const id of ["insta-expand", "passive-by-design", "prompt-to-sales", "the-decision-point", "aifluencer-studio"]) {
+    const reason = (id: string) => {
+      const r = v3Recommendability(V3_CATALOG.find((x) => x.id === id)!);
+      return r.ok ? "ok" : r.reason;
+    };
+    expect(reason("insta-expand")).toBe("status-not-active");
+    expect(reason("quote-society")).toBe("status-not-active");
+    expect(reason("the-decision-point")).toBe("status-not-active");
+    // Known scope, missing destination only:
+    expect(reason("passive-by-design")).toBe("no-destination");
+    expect(reason("pin-prompt-profit")).toBe("no-destination");
+    expect(reason("ata")).toBe("no-destination");
+    expect(reason("the-offer-fix")).toBe("scope-not-established");
+    for (const id of ["aifluencer-studio", "faceless-launch", "daily-sales-rhythm", "100k-threads-challenge", "0-first-sale-challenge", "ai-to-sales", "selling-made-simple", "the-molly-x-rosie-archive", "prompt-to-sales", "ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot"]) {
       const e = V3_CATALOG.find((x) => x.id === id)!;
-      expect(v3Recommendability(e).ok).toBe(false);
+      expect(reason(id)).toBe("ok");
+      expect(e.destination!.url).toBe(`${CAH_BASE}/resources/${id}`);
     }
+    const ata = V3_CATALOG.find((x) => x.id === "ata")!;
+    expect(ata.status).toBe("active");
+    expect(ata.retiredUrls).toContain(`${CAH_BASE}/resources/ata`);
   });
 
   it("DWA stays an active candidate via its owner link, never the retired CAH page", () => {
@@ -378,7 +428,8 @@ describe("ownership, budget and catalog safety", () => {
     expect(dwa.status).toBe("active");
     expect(v3Recommendability(dwa).ok).toBe(true);
     expect(dwa.destination!.url).toBe(DWA_URL);
-    const r = ok({ ...beginner, m3_interests: ["int_digital_products"], m3_bring: ["bring_knowledge"] });
+    expect(dwa.fits.paths).toEqual(["digital_products", "affiliate"]);
+    const r = ok({ ...beginner, m3_interests: ["int_digital_products"], m3_bring: ["bring_knowledge"], m3_budget: "budget_300p" });
     expect(r.resources.find((x) => x.id === "dwa")?.url).toBe(DWA_URL);
   });
 
@@ -443,7 +494,10 @@ describe("exhaustive safety over core answer combinations", () => {
                   expect(isCah || V3_OWNER_LINKS.has(x.url)).toBe(true);
                   if (budget === "budget_free") expect(x.priceNote.startsWith("Free")).toBe(true);
                   if (dev !== "dev_mac") expect(["paid-with-ai", "powerhorse-academy"]).not.toContain(x.id);
-                  expect(x.kind).not.toBe("tool");
+                  if (budget === "budget_50") expect(x.priceNote).toMatch(/^(Free|About \$(\d|[1-4]\d|50) )/);
+                }
+                if (r.resources[0]?.kind === "tool") {
+                  expect(r.primary.kind === "gap" && ["content", "systems"].includes(r.primary.id)).toBe(true);
                 }
                 const snap = JSON.stringify(resultSnapshotV3(r));
                 expect(snap.length).toBeLessThan(6000);
@@ -452,6 +506,58 @@ describe("exhaustive safety over core answer combinations", () => {
               }
     expect(n).toBeGreaterThan(1000);
   }, 60_000);
+});
+
+describe("owner-supplied profiles: platform, avatar and bundle rules", () => {
+  const social = { ...beginner, m3_interests: ["int_social"], m3_budget: "budget_50" };
+  it("100K Threads Challenge only for people who chose Threads", () => {
+    expect(ids(ok({ ...social, m3_platforms: ["plat_threads"] }))).toContain("100k-threads-challenge");
+    const ig = ok({ ...social, m3_platforms: ["plat_instagram"] });
+    expect(ids(ig)).not.toContain("100k-threads-challenge");
+    expect(ig.excluded).toContainEqual({ id: "100k-threads-challenge", reason: "platform-mismatch" });
+  });
+
+  it("Secret Sauce (Instagram Stories) isn't suggested to a Threads-only respondent", () => {
+    const r = ok({ ...seller, m3_interests: ["int_social", "int_digital_products"], m3_platforms: ["plat_threads"], m3_obstacle: "obst_convert" });
+    expect(ids(r)).not.toContain("tss");
+    expect(r.excluded).toContainEqual({ id: "tss", reason: "platform-mismatch" });
+  });
+
+  it("AI to Sales needs an existing avatar; Prompt to Sales is never suggested to Secret Sauce owners", () => {
+    const avatarSeller = { ...seller, m3_interests: ["int_ai_avatar"], m3_working_on: ["work_ai"], m3_obstacle: "obst_content" };
+    expect(ids(ok({ ...avatarSeller, m3_obstacle: "obst_convert" }))).toContain("ai-to-sales");
+    const noAvatar = ok({ ...avatarSeller, m3_working_on: ["work_products"], m3_interests: ["int_ai_avatar", "int_digital_products"], m3_obstacle: "obst_convert" });
+    expect(ids(noAvatar)).not.toContain("ai-to-sales");
+    const owner = ok({ ...avatarSeller, m3_owned: ["res_secret_sauce"] });
+    expect(owner.excluded).toContainEqual({ id: "prompt-to-sales", reason: "included-in-owned" });
+  });
+
+  it("a prompt bank is never the first suggestion unless the need is tools, systems or content", () => {
+    const avatarStart = { ...beginner, m3_interests: ["int_ai_avatar"], m3_budget: "budget_50" };
+    expect(ok(avatarStart).resources[0]?.kind).not.toBe("tool");
+    expect(ids(ok({ ...avatarStart, m3_support: ["sup_tools"] }))[0]).toBe("the-molly-x-rosie-archive");
+  });
+
+  it("avoiding AI avatars excludes avatar-creation programs", () => {
+    const r = ok({ ...beginner, m3_interests: ["int_ai_avatar"], m3_budget: "budget_300p", m3_comfort: { ...comfortAll("cmf_open"), cw_avatar: "cmf_avoid" } });
+    expect(ids(r)).not.toContain("aica");
+    expect(ids(r)).not.toContain("aifluencer-studio");
+  });
+
+  it("discounts aren't relied on: AICA and CFW use their regular prices for budget checks", () => {
+    const aica = V3_CATALOG.find((e) => e.id === "aica")!;
+    const cfw = V3_CATALOG.find((e) => e.id === "cfw")!;
+    expect(aica.price).toMatchObject({ state: "verified", usd: 247 });
+    expect(cfw.price).toMatchObject({ state: "verified", usd: 487 });
+    expect(ids(ok({ ...beginner, m3_interests: ["int_ai_avatar"], m3_budget: "budget_200" }))).not.toContain("aica");
+  });
+
+  it("$0 First Sale is not treated as free and is only for people without sales", () => {
+    const e = V3_CATALOG.find((x) => x.id === "0-first-sale-challenge")!;
+    expect(e.price).toMatchObject({ state: "verified", usd: 15 });
+    const free = ok({ ...beginner, m3_interests: ["int_affiliate"], m3_budget: "budget_free" });
+    expect(ids(free)).not.toContain("0-first-sale-challenge");
+  });
 });
 
 describe("admin wording overrides for v3", () => {
