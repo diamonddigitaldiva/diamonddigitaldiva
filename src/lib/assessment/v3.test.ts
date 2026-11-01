@@ -239,7 +239,7 @@ describe("results", () => {
   });
 
   it("a pivot gets a new direction, not the one they're leaving", () => {
-    const r = ok({ ...seller, m3_where: "where_redirect", m3_interests: ["int_digital_products", "int_services"], m3_working_on: ["work_products"] });
+    const r = ok({ ...seller, m3_where: "where_redirect", m3_interests: ["int_digital_products", "int_services"], m3_working_on: ["work_products"], m3_claude: "claude_no" });
     expect(r.primary).toMatchObject({ kind: "path", id: "services", role: "pivot" });
   });
 
@@ -281,7 +281,7 @@ describe("social vs non-social", () => {
   });
 
   it("no-social favours publishing and services over nothing else", () => {
-    const r = ok({ ...beginner, m3_interests: ["int_affiliate", "int_publishing", "int_no_social"], m3_bring: [] as string[] });
+    const r = ok({ ...beginner, m3_interests: ["int_affiliate", "int_publishing", "int_no_social"], m3_bring: ["bring_purchased"] });
     expect(r.primary.id).toBe("publishing");
   });
 

@@ -575,7 +575,8 @@ function validateValue(q: V3Question, v: unknown): V3AnswerValue | null {
       if (arr.length > 1 && arr.some((x) => excl.includes(x))) return null;
       if (q.maxSelections && arr.length > q.maxSelections) return null;
       if (q.kind === "owned" && !arr.every((x) => OWNED_IDS.has(x) || OWNED_STATUS_OPTIONS.some((o) => o.id === x))) return null;
-      return [...arr];
+      // Canonical order (question order) so stored answers and results are order-independent.
+      return q.options.map((o) => o.id).filter((id) => arr.includes(id));
     }
     case "matrix": {
       if (!v || typeof v !== "object" || Array.isArray(v)) return null;
