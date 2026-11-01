@@ -135,11 +135,17 @@ Deno.test("v2 submission keeps working; a malformed v2 block is dropped, not rej
   const ok = fakes();
   const v2 = {
     assessmentVersion: "map-v2.0",
-    answers: { q_stage: "stage_new" },
-    result: { primary: { id: "validation", label: "Validate" }, secondary: null, resources: [] },
+    answers: { q_stage: "stage_launched", q_avenue: "avenue_digital_products" },
+    result: {
+      version: "map-v2.0", priority: "conversion", priorityLabel: "Turning interest into sales", secondaryPriority: null,
+      tiedWith: [], avenue: "digital_products", avenueLabel: "Digital products and services", stage: "launched",
+      stageLabel: "Launched", spend: "open_to_paid", immediateAction: "Pick your one main offer.",
+      planHorizon: "Over the next 2 weeks", planSteps: ["One"], resources: [], creatorPath: null,
+    },
   };
   const r1 = await handleSubmission({ ...legacy(), ...v2 }, ok.deps);
   assertEquals(r1.status, 200);
+  assertEquals(ok.calls.save[0].assessment_version, "map-v2.0");
   const bad = fakes();
   const r2 = await handleSubmission({ ...legacy(), assessmentVersion: "map-v2.0", answers: "x" }, bad.deps);
   assertEquals(r2.status, 200);

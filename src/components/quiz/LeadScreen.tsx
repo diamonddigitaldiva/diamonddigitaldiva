@@ -94,11 +94,10 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
       </label>
 
       <p className="text-[11px] leading-relaxed text-charcoal/60 text-center mb-6">
-        By continuing you agree to our{" "}
+        We use your details to save your MAP result. See{" "}
         <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-amethyst">Terms</a>{" "}
         and{" "}
-        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-amethyst">Privacy Policy</a>,
-        and to receive resources and occasional marketing emails (unsubscribe anytime).
+        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-amethyst">Privacy Policy</a>.
       </p>
 
       <div className="flex justify-between gap-3">
