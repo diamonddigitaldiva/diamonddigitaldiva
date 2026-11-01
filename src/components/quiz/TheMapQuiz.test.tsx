@@ -174,7 +174,7 @@ describe("The MAP v3 flow", () => {
     await check(user, "m3_help", "help_realistic");
     unmount();
     render(<TheMapQuiz />);
-    expect(await screen.findByText(/restored your progress/i)).toBeInTheDocument();
+    expect(await screen.findByText(/restored your choices/i)).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: L("m3_help", "help_realistic") })).toHaveAttribute("aria-checked", "true");
     expect(localStorage.getItem(DRAFT_KEY)).not.toMatch(/@|firstName|email/);
   });

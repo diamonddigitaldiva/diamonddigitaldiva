@@ -69,11 +69,11 @@ export const OWNED_RESOURCES: OwnedResource[] = [
   { id: "res_paid_with_ai", name: "Paid with AI", group: "main", catalogId: "paid-with-ai" },
   { id: "res_powerhorse", name: "Powerhorse Academy", group: "main", catalogId: "powerhorse-academy", aliases: ["The Powerhorse Academy"] },
   { id: "res_cfw", name: "CFW", group: "main", catalogId: "cfw", aliases: ["Create Faceless Wealth"] },
-  { id: "res_faceless_launch_formula", name: "Faceless Launch Formula", group: "middle" },
+  { id: "res_faceless_launch_formula", name: "Faceless Launch Formula", group: "middle", catalogId: "faceless-launch", aliases: ["Faceless Launch"] },
   { id: "res_aifluencer_studio", name: "AIFluencer Studio", group: "middle", catalogId: "aifluencer-studio" },
-  { id: "res_quote_society", name: "Quote Society", group: "middle" },
-  { id: "res_pin_prompt_profit", name: "Pin Prompt & Profit", group: "middle" },
-  { id: "res_after_the_avatar", name: "After the Avatar", group: "middle" },
+  { id: "res_quote_society", name: "Quote Society", group: "middle", catalogId: "quote-society" },
+  { id: "res_pin_prompt_profit", name: "Pin Prompt & Profit", group: "middle", catalogId: "pin-prompt-profit", aliases: ["Pin Prompt and Profit"] },
+  { id: "res_after_the_avatar", name: "After the Avatar", group: "middle", catalogId: "ata" },
   { id: "res_insta_expand", name: "Insta Expand", group: "middle", catalogId: "insta-expand" },
   { id: "res_list_to_pinterest", name: "List to Pinterest", group: "low" },
   { id: "res_4_fig_days", name: "4 Fig Days", group: "low" },
@@ -85,14 +85,14 @@ export const OWNED_RESOURCES: OwnedResource[] = [
   { id: "res_stack_method", name: "Stack Method", group: "low" },
   { id: "res_colorbot_studio", name: "ColorBot Studio", group: "low" },
   { id: "res_low_ticket_secrets", name: "Low-Ticket Secrets", group: "low" },
-  { id: "res_daily_sales_rhythm", name: "Daily Sales Rhythm", group: "low" },
-  { id: "res_100k_threads", name: "100K Threads Challenge", group: "low" },
-  { id: "res_first_sale_challenge", name: "$0 - First Sale Challenge", group: "low" },
+  { id: "res_daily_sales_rhythm", name: "Daily Sales Rhythm", group: "low", catalogId: "daily-sales-rhythm" },
+  { id: "res_100k_threads", name: "100K Threads Challenge", group: "low", catalogId: "100k-threads-challenge" },
+  { id: "res_first_sale_challenge", name: "$0 - First Sale Challenge", group: "low", catalogId: "0-first-sale-challenge" },
   { id: "res_kdp_blueprint", name: "Faceless Amazon KDP Blueprint", group: "low", catalogId: "faceless-amazon-kdp-blueprint" },
-  { id: "res_ai_podcast_kit", name: "AI-Podcast Kit 10 Min Workflow", group: "low" },
-  { id: "res_selling_made_simple", name: "Selling Made Simple", group: "low" },
-  { id: "res_ai_to_sales", name: "AI to Sales", group: "low" },
-  { id: "res_molly_rosie_archive", name: "Molly X Rosie Archive", group: "low" },
+  { id: "res_ai_podcast_kit", name: "AI-Podcast Kit 10 Min Workflow", group: "low", catalogId: "ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot" },
+  { id: "res_selling_made_simple", name: "Selling Made Simple", group: "low", catalogId: "selling-made-simple" },
+  { id: "res_ai_to_sales", name: "AI to Sales", group: "low", catalogId: "ai-to-sales" },
+  { id: "res_molly_rosie_archive", name: "Molly X Rosie Archive", group: "low", catalogId: "the-molly-x-rosie-archive" },
   { id: "res_vantage_system", name: "Vantage System", group: "low" },
   { id: "res_monetize_it", name: "Monetize It", group: "low" },
   { id: "res_prompt_to_sales", name: "Prompt to Sales", group: "low", catalogId: "prompt-to-sales" },
@@ -433,6 +433,11 @@ export const V3_QUESTIONS: V3Question[] = [
 
 export const V3_QUESTION_IDS = V3_QUESTIONS.map((q) => q.id);
 export const V3_SIDE_TEXT_KEYS = V3_QUESTIONS.flatMap((q) => (q.sideText ? [q.sideText.key] : []));
+/** Every free-text answer key. These may contain personal details, so they're never saved in drafts. */
+export const V3_FREE_TEXT_KEYS: readonly string[] = [
+  ...V3_QUESTIONS.filter((q) => q.kind === "text").map((q) => q.id),
+  ...V3_SIDE_TEXT_KEYS,
+];
 
 export function getV3Question(id: string): V3Question | undefined {
   return V3_QUESTIONS.find((q) => q.id === id);

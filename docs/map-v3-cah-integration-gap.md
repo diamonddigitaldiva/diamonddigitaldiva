@@ -1,34 +1,31 @@
 # MAP v3 ↔ Creator Access Hub: integration gap report
 
-Read-only review from The MAP project only, on 2026-11-01. Nothing in CAH, its products, prices, statuses or external accounts was changed.
+Read-only review from The MAP project only (updated 2026-11-01 with owner-supplied research). Nothing in CAH, its products, prices, statuses or external accounts was changed.
 
 ## What exists today
-- **Catalog:** The MAP uses a hand-curated catalog (`supabase/functions/_shared/map-v3/catalog.ts`, last reviewed 2026-11-01). **There is no live sync with CAH.**
-- **Links:** CAH `/resources/{id}` pages for listed entries (read-only checks returned 200 for tss, aica, paid-with-ai, powerhorse-academy, cfw, the-offer-fix, faceless-amazon-kdp-blueprint). Two exact owner links: DWA (fanbasis checkout, verification pending) and Monetize What You Know (Skool; the host blocked the automated check with 403, so it's marked pending).
-- **Handoff:** With consent, The MAP writes a 2-hour `handoff_sessions` row in this project's backend. CAH reads it via `get_handoff_session` / `consume_handoff_session` using an opaque session ID in the URL. This flow goes MAP → CAH only.
-- **Secrets in this project:** `HQ_INGEST_TOKEN`, `LEADCONNECTOR_WEBHOOK_URL`, `LOVABLE_API_KEY`. There are **no** CAH credentials or catalog endpoint configured, and none should be added to the browser.
+- **Catalog:** a hand-curated catalog (`supabase/functions/_shared/map-v3/catalog.ts`, last reviewed 2026-11-01). **There is no live sync with CAH.** Scope summaries come from owner-supplied research (Nov 1); prices count as verified only when the owner supplied a matching, publicly corroborated price.
+- **CAH links (read-only HTTP check, 2026-11-01, 200 OK; unknown IDs return 404):** tss, aica, cfw, paid-with-ai, powerhorse-academy, faceless-amazon-kdp-blueprint, the-offer-fix, aifluencer-studio, faceless-launch, daily-sales-rhythm, 100k-threads-challenge, 0-first-sale-challenge, ai-to-sales, selling-made-simple, the-molly-x-rosie-archive, prompt-to-sales, ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot. The owner's CAH read confirmed the last ten as ACTIVE.
+- **Owner links:** DWA (Fanbasis checkout, the owner confirmed it's the correct current link) and Monetize What You Know (Skool; the owner-provided link blocks automated checks).
+- **Handoff:** with consent, The MAP writes a 2-hour `handoff_sessions` row; CAH reads it through `get_handoff_session` / `consume_handoff_session` using an opaque ID. This flow goes MAP → CAH only.
+- **Secrets in this project:** HQ ingest token, CRM webhook URL and the managed AI key. There are **no** CAH credentials or catalog endpoint, and none should be added to the browser.
 
-## What's missing for an approved read-only CAH → MAP catalog
-1. **A public, read-only catalog feed owned by CAH** (for example a CAH backend function or a public database view) that returns only MAP-eligible offers. It must need no privileged key. Never use a service-role key in the browser, and never scrape CAH pages as the source of truth.
-2. **Per-offer MAP fields in CAH** (CAH-side work, after the current CAH update finishes):
-   - `map_eligible` (boolean, owner-controlled) and `map_reviewed_at`
-   - product `status` kept separate from the CAH listing state and from link verification
-   - canonical destination: a CAH `/resources/{id}` page or an exact owner-approved external/Beacons link
-   - `paths` (digital_products, affiliate, quotes, ai_avatar, publishing, social, ai_services, services, asmr, business) and `gaps` (focus, launch, reach, message, conversion, content, routine, systems, expansion, diagnose)
-   - `roles` (start, improve, expand, pivot) and stage limits
-   - `prerequisites`: devices (windows/mac/chromebook/phone), paid Claude plan, outreach, faceless, existing digital offer, something to sell
-   - `price` with source and checked date. Leave it empty when not verified; The MAP will keep showing "Price not confirmed"
-   - `free` only when the owner states it
-   - `included_in` bundle IDs (for example Prompt to Sales inside Secret Sauce)
-   - `owned_aliases` for exact owned-resource matching
-3. **An adapter in The MAP** that reads that feed on the server (or at build time), checks it against the same rules (`validateV3Catalog`, `v3Recommendability`), keeps the curated list as a fallback, and records the feed's review date. **Not built yet**, because there's no feed to read.
-4. **CAH reading v3 handoff fields:** `primary_stage` now holds a v3 focus ID (for example `message`, `publishing`, `discover`), and `primary_stage_name` holds its label. CAH needs to accept these. This is CAH-side work.
-5. **The Decision Point waitlist:** no verified waitlist link exists, so the result mentions it as text only, with no link.
+## Known products that can't be suggested yet
+- **Missing destination only (scope known):** Passive by Design (needs a paid Claude plan; $297), Pin Prompt & Profit (price unresolved, $47 vs $87). Neither had a CAH row in the Nov 1 read.
+- **After the Avatar:** scope known ($117); the CAH `ata` row only has an obsolete archived link, which stays retired. Not discontinued.
+- **Pending:** Quote Society (no link), Insta Expand.
+- **Scope not established:** The Offer Fix (the official description is the title only).
+- **Not on the catalog:** Vantage System. It isn't confirmed to be the same product as "aria-vantage", so the two aren't treated as one.
+- **The Decision Point:** waitlist only, with no verified waitlist link. It's mentioned as text only.
+- **Prices still unverified:** Secret Sauce, Paid with AI, Powerhorse Academy, Faceless Amazon KDP Blueprint, Prompt to Sales ($37 public vs $27 in the backend), Pin Prompt & Profit, Quote Society. With a set spending range these are left out; with "unsure" or "more than $300" they show as "Price not confirmed".
 
-## Owner decisions still needed
-- Scope and prerequisites for shortlist items without evidenced scope: Passive by Design, Faceless Launch Formula, AIFluencer Studio, Quote Society, Pin Prompt & Profit, After the Avatar, List to Pinterest, 4 Fig Days, 4 Fig Clients, Post to Profit, 39K Celebration Bundle, Grace & Grit, Stack Method, ColorBot Studio, Low-Ticket Secrets, Daily Sales Rhythm, 100K Threads Challenge, $0 - First Sale Challenge, AI-Podcast Kit 10 Min Workflow, Selling Made Simple, AI to Sales, Molly X Rosie Archive, Vantage System, Monetize It, Prompt to Sales. These are selectable as owned, but never recommended.
-- Insta Expand stays pending and is never recommended.
-- Whether a Chromebook counts for Paid with AI ("laptop/PC with Chrome"). For now it's treated as not qualifying.
-- Device needs for AICA and the Faceless Amazon KDP Blueprint (not documented, so they're not excluded for phone users).
-- DWA scope mapping (provisional) and confirmation of the destination page.
-- Current verified prices for any item. None are shown until then.
+## What's missing for a read-only CAH → MAP catalog feed
+1. **A public, read-only feed owned by CAH** (for example a CAH backend function or a public database view) that returns only MAP-eligible offers. It must need no privileged key: no service-role key in the browser, and no scraping CAH pages as the source of truth.
+2. **Per-offer MAP fields in CAH** (after the current CAH update finishes): `map_eligible`, `map_reviewed_at`; product status kept separate from the listing state and from link verification; a canonical destination (CAH `/resources/{id}` or an exact owner-approved Beacons/external link); `paths`, `gaps`, `roles`; prerequisites (devices, paid Claude, outreach, messages, faceless, avatar comfort, existing avatar, existing offer, no sales yet, social platforms); `price` with source and checked date (empty when not verified, regular price rather than a temporary discount); owner-stated `free`; `included_in` bundles (for example Prompt to Sales inside Secret Sauce); `owned_aliases`.
+3. **A MAP adapter** that reads the feed on the server or at build time, applies `validateV3Catalog` and `v3Recommendability`, keeps the curated list as a fallback, and records the feed's review date. **Not built**, because no feed exists yet.
+4. **CAH reading v3 handoff fields:** `primary_stage` holds a v3 focus ID (for example `message`, `publishing`, `discover`) and `primary_stage_name` holds its label.
+5. **When Passive by Design gets a destination:** the paid-Claude question currently only appears for the AI services and client services interests, so it would also need to appear for digital products and affiliate respondents. Until then, the engine safely leaves it out.
+
+## Unresolved before publish
+- **Marketing consent:** the lead form says continuing means agreeing to "receive resources and occasional marketing emails". That ties marketing consent to seeing a result. It's unchanged and unresolved; no consent behaviour was invented and nothing subscribes anyone. It needs a review before publishing.
+- Chromebook eligibility for Paid with AI ("laptop/PC with Chrome") is treated as not qualifying.
+- Device needs for AICA and the Faceless Amazon KDP Blueprint aren't documented, so phone users aren't excluded from them.
