@@ -765,8 +765,10 @@ export function buildResultV3(input: unknown, catalog: unknown = V3_CATALOG): V3
         cands.push({ e, score, order, consider: chk.claudeConsider });
       });
       cands.sort((x, y) => y.score - x.score || x.order - y.order);
-      // A tool never leads unless the focus is systems.
-      const pick = cands.find((x) => x.e.kind !== "tool" || (f.kind === "gap" && f.id === "systems"));
+      // A tool is never the first suggestion unless the need is tools, systems or content.
+      const toolNeed = (f.kind === "gap" && (f.id === "systems" || f.id === "content")) || c.support.includes("sup_tools");
+      const first = resources.length === 0;
+      const pick = cands.find((x) => x.e.kind !== "tool" || !first || toolNeed);
       return pick ? toResource(pick.e, slot, pick.consider) : null;
     };
     const taken = new Set<string>();
@@ -807,6 +809,7 @@ export function buildResultV3(input: unknown, catalog: unknown = V3_CATALOG): V3
   if (reasonsSeen.has("device-unknown")) considerations.push("Some options need a specific computer, and we didn't assume you have one, so we left those out.");
   if (reasonsSeen.has("needs-paid-claude")) considerations.push("Some AI service options need a paid Claude plan, so we left those out.");
   if (reasonsSeen.has("outreach-avoided")) considerations.push("You'd prefer not to reach out to businesses or clients, so we left out options built around outreach.");
+  if (reasonsSeen.has("platform-mismatch")) considerations.push("Some options are built for a social platform you didn't choose, so we left those out.");
   if (reasonsSeen.has("faceless-avoided")) considerations.push("You'd prefer not to make faceless content, so we left out options built around it.");
   if (ownedFits.length) considerations.push(`You already own ${ownedFits.join(" and ")}, which fits this. Start there before buying anything new.`);
   if (list(a.m3_owned).includes("own_need_help"))
@@ -815,18 +818,27 @@ export function buildResultV3(input: unknown, catalog: unknown = V3_CATALOG): V3
     considerations.push("You typed in other resources. We only match exact names, so check that any suggestion isn't something you already own.");
 
   const hasPaid = resources.some((r) => !r.priceNote.startsWith("Free"));
+  const hasUnverified = resources.some((r) => r.priceNote.startsWith("Price not confirmed"));
+  const priceBlocked = reasonsSeen.has("price-unverified");
+  if (priceBlocked && resources.length > 0)
+    considerations.push("Some other options that fit aren't shown because we couldn't confirm their current price for your spending range.");
   let resourcesNote: string;
   if (catalogFallback) resourcesNote = "We couldn't load resource suggestions right now. Your result above doesn't depend on them.";
   else if (c.budget.spend === "free_only")
     resourcesNote = resources.length
       ? "You chose free resources and what you already own, so only free options are shown."
       : "You chose free resources and what you already own, so nothing paid is suggested. Every step above works without buying anything.";
+  else if (resources.length === 0 && priceBlocked)
+    resourcesNote =
+      "Some options fit your answers, but we couldn't confirm their current prices, so none are shown for your spending range. Choose \"I'm unsure\" for spending to see them with prices marked unconfirmed, or browse the Creator Access Hub.";
   else if (resources.length === 0)
     resourcesNote = "Nothing in the current catalog is a confirmed fit for these answers, so we're not guessing. You can browse the Creator Access Hub instead.";
   else if (c.budget.spend === "unsure")
-    resourcesNote = "Shown for comparison only. You don't need to buy anything to use this result, and prices aren't confirmed here.";
+    resourcesNote = `Shown for comparison only. You don't need to buy anything to use this result.${hasUnverified ? " Some prices aren't confirmed." : ""}`;
   else if (hasPaid && c.budget.spend === "capped")
-    resourcesNote = "Optional. Prices aren't confirmed here, so we can't say whether these fit your range. Check the current price before deciding.";
+    resourcesNote = "Optional. These were within your range when prices were checked. Prices can change, so check before buying.";
+  else if (hasUnverified)
+    resourcesNote = "Optional. You can take every step above without buying anything. Some prices aren't confirmed, so check before deciding.";
   else resourcesNote = "Optional. You can take every step above without buying anything.";
 
   const decisionNeeded =
