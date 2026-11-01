@@ -328,6 +328,7 @@ interface Ctx {
   madeSales: boolean;
   hasOwnOffer: boolean;
   hasDigitalOffer: boolean;
+  workIds: string[];
   attention: boolean;
   noSocial: boolean;
   discover: boolean;
@@ -369,6 +370,7 @@ function buildCtx(a: V3Answers): Ctx {
     madeSales,
     hasOwnOffer: bring.includes("bring_offer"),
     hasDigitalOffer: workIds.includes("work_products") && (bring.includes("bring_offer") || madeSales),
+    workIds,
     attention: works.some((w) => w === "works_engage" || w === "works_interest" || w === "works_clicks"),
     noSocial: ints.includes("int_no_social"),
     discover: ints.includes("int_discover"),
@@ -539,7 +541,14 @@ type Exclusion =
   | "faceless-avoided"
   | "no-digital-offer"
   | "nothing-to-sell"
+  | "avatar-avoided"
+  | "messages-avoided"
+  | "no-existing-avatar"
+  | "no-offer"
+  | "already-made-sales"
+  | "platform-mismatch"
   | "free-only"
+  | "price-unverified"
   | "over-budget";
 
 // Optional mirror fields keep narrowing working without strictNullChecks.
@@ -562,10 +571,25 @@ function checkEntry(
     else if (cl !== "claude_yes") return { ok: false, reason: "needs-paid-claude" };
   }
   if (r.outreach && avoids(c, "cw_outreach")) return { ok: false, reason: "outreach-avoided" };
+  if (r.messages && avoids(c, "cw_messages")) return { ok: false, reason: "messages-avoided" };
   if (r.faceless && avoids(c, "cw_faceless")) return { ok: false, reason: "faceless-avoided" };
+  if (r.avatar && avoids(c, "cw_avatar")) return { ok: false, reason: "avatar-avoided" };
+  if (r.existingAvatar && !c.workIds.includes("work_ai")) return { ok: false, reason: "no-existing-avatar" };
+  if (r.offer && !(c.hasOwnOffer || c.hasDigitalOffer)) return { ok: false, reason: "no-offer" };
+  if (r.noSalesYet && c.madeSales) return { ok: false, reason: "already-made-sales" };
+  if (r.socialPlatforms) {
+    const picked = list(c.a.m3_platforms).filter((x) => x !== "plat_unsure");
+    const hit = picked.some((x) => r.socialPlatforms!.ids.includes(x));
+    if (r.socialPlatforms.mode === "required" && !hit) return { ok: false, reason: "platform-mismatch" };
+    if (r.socialPlatforms.mode === "avoid-mismatch" && picked.length > 0 && !hit) return { ok: false, reason: "platform-mismatch" };
+  }
   if (r.digitalOffer && !c.hasDigitalOffer) return { ok: false, reason: "no-digital-offer" };
   if (r.somethingToSell && !(c.hasOwnOffer || c.madeSales)) return { ok: false, reason: "nothing-to-sell" };
+  // Budget: free-only takes owner-stated free items only. A capped range takes
+  // free items or verified prices within the cap, never unverified prices.
+  // "Unsure" and "more than $300" may show unverified prices, labelled as such.
   if (c.budget.spend === "free_only" && e.price.state !== "free-owner-stated") return { ok: false, reason: "free-only" };
+  if (c.budget.spend === "capped" && e.price.state === "unverified") return { ok: false, reason: "price-unverified" };
   if (e.price.state === "verified" && e.price.usd > c.budget.max) return { ok: false, reason: "over-budget" };
   return { ok: true, claudeConsider };
 }
@@ -586,7 +610,7 @@ function toResource(e: V3CatalogEntry, forFocus: "primary" | "alternate", claude
     e.price.state === "free-owner-stated"
       ? "Free community (owner-listed)."
       : e.price.state === "verified"
-        ? `Listed at $${e.price.usd} when checked on ${e.price.checkedAt}.`
+        ? `About $${e.price.usd} when checked on ${e.price.checkedAt}. Prices can change, so check before buying.`
         : "Price not confirmed here. Check the current price before deciding.";
   let requirementNote = e.requirementNote ?? null;
   if (claudeConsider) requirementNote = `${requirementNote ?? ""} You said you'd consider a paid Claude plan, so check that cost first.`.trim();
