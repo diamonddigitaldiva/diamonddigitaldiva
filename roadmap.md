@@ -10,12 +10,15 @@
 - [x] Admin wording overrides + catalog table for v3
 - [x] Tests (app + edge) and CAH integration gap report
 
+## Corrections after owner audit (done)
+- [x] Capped budget excludes unverified prices; owner-supplied profiles added; DWA/AICA/CFW/Secret Sauce updated; Offer Fix scope unestablished; drafts never save free text
+
 ## Earlier (done)
 - [x] MAP v2 refresh, DWA owner correction, pop-up blocker note
 
 ## Blocked on owner
-- [ ] Confirm DWA owner link destination (Commas DWA English 4.0) and DWA scope mapping
 - [ ] Sender name/address for result email
 - [ ] CAH per-offer MAP eligibility metadata + read-only catalog feed (CAH-side)
 - [ ] Decision Point waitlist link (no verified destination yet)
-- [ ] Lead form line "agree ... to receive occasional marketing emails" bundles marketing consent; owner decision
+- [ ] UNRESOLVED before publish: lead form line "agree ... to receive occasional marketing emails" bundles marketing consent; needs review
+- [ ] Destinations for Passive by Design, Pin Prompt & Profit, After the Avatar (CAH); Quote Society / Insta Expand pending; Offer Fix scope
