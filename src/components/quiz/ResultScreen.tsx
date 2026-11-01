@@ -5,13 +5,20 @@ import { ExternalLink, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { forwardToHQ } from "@/lib/hqTracking";
 import { createCreatorAccessHubHandoff, CREATOR_ACCESS_HUB_URL } from "@/lib/handoff";
-import type { V3Focus, V3Result } from "@/lib/assessment/v3";
+import { AFFILIATE_DISCLOSURE, type V3Focus, type V3Result } from "@/lib/assessment/v3";
 
 /**
  * What actually happened to the submission. Never claims an email was sent:
  * whether the CRM sends one is not verified from this app.
  */
-export type SaveStatus = "pending" | "saved" | "saved_queued" | "saved_undelivered" | "received" | "failed";
+export type SaveStatus =
+  | "pending"
+  | "saved"
+  | "saved_private"
+  | "saved_queued"
+  | "saved_undelivered"
+  | "received"
+  | "failed";
 
 interface ResultScreenProps {
   result: V3Result;
@@ -26,6 +33,7 @@ interface ResultScreenProps {
 const SAVE_MESSAGE: Record<Exclude<SaveStatus, "failed">, string> = {
   pending: "Saving your result…",
   saved: "Your result has been saved.",
+  saved_private: "Your result has been saved, and your email preference has been recorded.",
   saved_queued: "Your result has been saved. Passing it on to our team is delayed and will be retried automatically.",
   saved_undelivered: "Your result has been saved. It hasn't been passed on to our team yet.",
   received: "Your result has been received.",
@@ -350,13 +358,18 @@ export function ResultScreen({
           {result.resourcesNote}
         </p>
         {result.resources.length > 0 && (
+          <p className="text-[13px] text-charcoal/85 leading-relaxed mb-4" data-testid="affiliate-disclosure">
+            {AFFILIATE_DISCLOSURE}
+          </p>
+        )}
+        {result.resources.length > 0 && (
           <div className="space-y-3">
             {result.resources.map((res) => (
               <a
                 key={res.id}
                 href={res.url}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel={res.affiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
                 onClick={() => trackClick(`resource:${res.id}`, res.url)}
                 data-resource-id={res.id}
                 className="block p-4 rounded-sm border border-border bg-pearl hover:border-amethyst hover:shadow-soft transition-all text-left"
