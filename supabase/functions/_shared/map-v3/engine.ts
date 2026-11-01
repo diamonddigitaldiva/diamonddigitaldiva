@@ -69,6 +69,8 @@ export interface V3Resource {
   priceNote: string;
   requirementNote: string | null;
   forFocus: "primary" | "alternate";
+  /** Evidenced affiliate link (catalog flag only). Rendered with rel="sponsored". */
+  affiliate: boolean;
 }
 
 export type V3Spend = "free_only" | "capped" | "over_300" | "unsure";
@@ -625,6 +627,7 @@ function toResource(e: V3CatalogEntry, forFocus: "primary" | "alternate", claude
     priceNote,
     requirementNote,
     forFocus,
+    affiliate: e.affiliate === true,
   };
 }
 
