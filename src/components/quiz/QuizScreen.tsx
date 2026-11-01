@@ -98,7 +98,10 @@ export function QuizScreen({
     <div className="animate-fade-in">
       {restored && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border bg-pearl px-4 py-3 text-[13px] text-charcoal/80">
-          <span>We restored your progress from this device.</span>
+          <span>
+            We restored your choices from this device. Anything typed in the optional text boxes isn't saved, so please
+            re-enter it if you want it included.
+          </span>
           {onStartOver && (
             <button type="button" onClick={onStartOver} className={cn("underline text-amethyst", focusRing)}>
               Start over
