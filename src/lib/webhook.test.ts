@@ -17,7 +17,9 @@ const payload: QuizResultPayload = {
 };
 
 describe("sendQuizResultsToWebhook outcome", () => {
-  beforeEach(() => invoke.mockReset());
+  beforeEach(() => {
+    invoke.mockReset();
+  });
 
   it("delivered and saved", async () => {
     invoke.mockResolvedValue({ data: { success: true, saved: true, delivered: true, queued: false }, error: null });
