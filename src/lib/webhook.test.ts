@@ -38,7 +38,7 @@ describe("sendQuizResultsToWebhook outcome", () => {
   });
 
   it("network failure is a failed save", async () => {
-    invoke.mockRejectedValue(new Error("offline"));
+    invoke.mockImplementation(() => Promise.reject(new Error("offline")));
     expect(await sendQuizResultsToWebhook(payload)).toEqual({ saved: false, delivered: false, queued: false });
   });
 });
