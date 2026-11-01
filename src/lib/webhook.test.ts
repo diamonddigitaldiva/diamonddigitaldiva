@@ -38,9 +38,10 @@ describe("sendQuizResultsToWebhook outcome", () => {
   });
 
   it("network failure is a failed save", async () => {
-    invoke.mockImplementation(() => Promise.reject(new Error("offline")));
-    let out; try { out = await sendQuizResultsToWebhook(payload); } catch (e) { console.log("THREW", e); }
-    console.log("OUT", out);
-    expect(out).toEqual({ saved: false, delivered: false, queued: false });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    invoke.mockImplementation(() => {
+      throw new TypeError("Failed to fetch");
+    });
+    expect(await sendQuizResultsToWebhook(payload)).toEqual({ saved: false, delivered: false, queued: false });
   });
 });
