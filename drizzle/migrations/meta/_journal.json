@@ -15,6 +15,13 @@
       "when": 1793560153844,
       "tag": "0001_create_handoff_session_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793560913024,
+      "tag": "0002_quiz_retry_claims",
+      "breakpoints": true
     }
   ]
 }
