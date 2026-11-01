@@ -136,14 +136,14 @@ describe("The MAP v3 flow", () => {
     await check(user, "m3_interests", "int_publishing"); await next(user);
     await check(user, "m3_bring", "bring_skill"); await next(user);
     expect(screen.getByText(getV3Question("m3_working_on")!.text)).toBeInTheDocument();
-    expect(screen.getByText(/Question 5 of 14/)).toBeInTheDocument();
+    expect(screen.getByText("Question 5 of 14")).toBeInTheDocument();
     await check(user, "m3_working_on", "work_books");
 
     for (let i = 0; i < 4; i++) await user.click(screen.getByRole("button", { name: /^back$/i }));
     await radio(user, "m3_where", "where_new");
     for (let i = 0; i < 4; i++) await next(user);
     expect(screen.getByText(getV3Question("m3_comfort")!.text)).toBeInTheDocument();
-    expect(screen.getByText(/Question 5 of 11/)).toBeInTheDocument();
+    expect(screen.getByText("Question 5 of 11")).toBeInTheDocument();
     const draft = JSON.parse(localStorage.getItem(DRAFT_KEY)!);
     expect(draft.answers.m3_working_on).toBeUndefined();
   });
