@@ -1,0 +1,31 @@
+/**
+ * Server-side v3 handling. The client's v3 `result` is never trusted: answers
+ * are validated with the shared definition and the result is re-derived with
+ * the shared engine. If answers are malformed or incomplete, all v3 data is
+ * dropped (the lead itself is never blocked).
+ */
+import {
+  MAP_V3_VERSION,
+  buildResultV3,
+  legacyFieldsV3,
+  resultSnapshotV3,
+  type V3Answers,
+} from "../_shared/map-v3/index.ts";
+
+export interface V3Sanitized {
+  fields: { assessmentVersion: string; answers: V3Answers; result: Record<string, unknown> };
+  legacy: { primaryStage: string; secondaryStage: string | null; primaryStageUrl: string; secondaryStageUrl: string | null };
+}
+
+export const isV3Version = (v: unknown) => typeof v === "string" && v.startsWith("map-v3");
+
+export function sanitizeV3(raw: Record<string, unknown>): V3Sanitized | null {
+  if (raw.assessmentVersion !== MAP_V3_VERSION) return null;
+  const built = buildResultV3(raw.answers);
+  if (!built.ok || !built.result) return null;
+  const r = built.result;
+  return {
+    fields: { assessmentVersion: MAP_V3_VERSION, answers: r.answers, result: resultSnapshotV3(r) as Record<string, unknown> },
+    legacy: legacyFieldsV3(r),
+  };
+}
