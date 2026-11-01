@@ -1,12 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CLAIM_LOCK_SECONDS, retryQuizSubmissions, WEBHOOK_TIMEOUT_MS, type QuizRow } from "./quiz.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const MAX_RETRIES_PER_RUN = 50; // Limit retries per execution
+const MAX_RETRIES_PER_RUN = 50; // Limit contact retries per execution
 const RETRY_OLDER_THAN_MINUTES = 5; // Only retry submissions older than 5 minutes
 const MAX_RETRY_ATTEMPTS = 10; // Give up after this many tries to avoid infinite loops
 
@@ -253,98 +254,41 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get failed submissions older than 5 minutes (to avoid racing with initial send)
-    const cutoffTime = new Date(Date.now() - RETRY_OLDER_THAN_MINUTES * 60 * 1000).toISOString();
-    
-    const { data: failedSubmissions, error: fetchError } = await supabase
-      .from('quiz_submissions')
-      .select('*')
-      .eq('webhook_sent', false)
-      .lt('created_at', cutoffTime)
-      .order('created_at', { ascending: true })
-      .limit(MAX_RETRIES_PER_RUN);
-
-    if (fetchError) {
-      console.error('Error fetching failed submissions:', fetchError.message);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Database query failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const submissionsToRetry = failedSubmissions ?? [];
-    if (submissionsToRetry.length === 0) {
-      console.log('No failed quiz submissions to retry — checking contacts.');
-    } else {
-      console.log(`Found ${submissionsToRetry.length} failed quiz submissions to retry`);
-    }
-
-    let succeeded = 0;
-    let failed = 0;
-
-    for (const submission of submissionsToRetry) {
-      try {
-        // Reconstruct the payload
-        const payload = {
-          firstName: submission.first_name,
-          email: submission.email,
-          primaryStage: submission.primary_stage,
-          secondaryStage: submission.secondary_stage,
-          primaryStageUrl: submission.primary_stage_url,
-          secondaryStageUrl: submission.secondary_stage_url,
-          timestamp: submission.created_at,
-          source: submission.source,
-          // v2+ rows resend their stored versioned data; legacy rows stay as-is.
-          ...(submission.assessment_version
-            ? {
-                assessmentVersion: submission.assessment_version,
-                answers: submission.answers,
-                result: submission.result,
-              }
-            : {}),
-        };
-
-        console.log(`Retrying submission ${submission.id}...`);
-
-        const response = await fetch(webhookUrl, {
+    // Quiz rows: claimed one at a time with a DB lock (see quiz.ts), capped at
+    // MAX_RETRY_ATTEMPTS, each post bounded by a timeout.
+    const quiz = await retryQuizSubmissions({
+      claimNext: async (exclude) => {
+        const { data, error } = await supabase.rpc('claim_quiz_submission_for_retry', {
+          _exclude: exclude,
+          _older_than_minutes: RETRY_OLDER_THAN_MINUTES,
+          _max_attempts: MAX_RETRY_ATTEMPTS,
+          _lock_seconds: CLAIM_LOCK_SECONDS,
+        });
+        if (error) {
+          console.error('Error claiming quiz submission:', error.message);
+          return null;
+        }
+        return ((data as QuizRow[] | null) ?? [])[0] ?? null;
+      },
+      finish: async (id, delivered) => {
+        const { error } = await supabase.rpc('finish_quiz_submission_retry', { _id: id, _delivered: delivered });
+        if (error) throw new Error(error.message);
+      },
+      post: (body) =>
+        fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (response.ok) {
-          // Mark as sent and increment retry count
-          const { error: updateError } = await supabase
-            .from('quiz_submissions')
-            .update({ 
-              webhook_sent: true, 
-              webhook_sent_at: new Date().toISOString(),
-              retry_count: (submission.retry_count || 0) + 1
-            })
-            .eq('id', submission.id);
-
-          if (updateError) {
-            console.error(`Failed to update submission ${submission.id}:`, updateError.message);
-          } else {
-            console.log(`Successfully retried submission ${submission.id} (attempt ${(submission.retry_count || 0) + 1})`);
-            succeeded++;
-          }
-        } else {
-          console.error(`Webhook failed for ${submission.id} - Status: ${response.status}`);
-          // Increment retry count on failure too
-          await supabase
-            .from('quiz_submissions')
-            .update({ retry_count: (submission.retry_count || 0) + 1 })
-            .eq('id', submission.id);
-          failed++;
-        }
-      } catch (err) {
-        console.error(`Error retrying submission ${submission.id}:`, err);
-        failed++;
-      }
-    }
+          body,
+          signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+        }),
+      log: (m) => console.log(m),
+    });
+    const succeeded = quiz.succeeded;
+    const failed = quiz.failed;
 
     console.log(`Quiz retry complete: ${succeeded} succeeded, ${failed} failed`);
+
+    const cutoffTime = new Date(Date.now() - RETRY_OLDER_THAN_MINUTES * 60 * 1000).toISOString();
 
     // ---- Retry contact form submissions to HQ ----
     const nowIso = new Date().toISOString();
@@ -429,7 +373,7 @@ serve(async (req) => {
         success: true,
         message: 'Retry complete',
         quiz: {
-          retried: submissionsToRetry.length,
+          retried: quiz.retried,
           succeeded,
           failed,
         },

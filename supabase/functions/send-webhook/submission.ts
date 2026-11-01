@@ -93,10 +93,19 @@ export interface SubmissionDeps {
   webhookUrl: string | undefined;
   /** Inserts the row; returns its id, or null if the insert failed. */
   save: (row: Record<string, unknown>) => Promise<string | null>;
+  /** Marks delivered and releases the delivery lock. */
   markSent: (id: string) => Promise<void>;
+  /** Releases the delivery lock after a failed attempt so the retry job can claim it. */
+  release: (id: string) => Promise<void>;
+  /** Clock for the delivery lock (tests pass a fixed one). */
+  now?: () => number;
   post: (url: string, body: string) => Promise<{ ok: boolean; status: number }>;
   log?: (msg: string) => void;
 }
+
+/** Bounded CRM post; the row lock outlasts it, and retries wait 5 minutes. */
+export const WEBHOOK_TIMEOUT_MS = 20_000;
+export const DELIVERY_LOCK_MS = 120_000;
 
 export interface SubmissionResponse {
   status: number;
@@ -132,6 +141,8 @@ export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps
       secondary_stage_url: payload.secondaryStageUrl,
       source: payload.source,
       webhook_sent: false,
+      // Claimed by this initial send so the retry job can't post it concurrently.
+      webhook_inflight_until: new Date((deps.now ?? Date.now)() + DELIVERY_LOCK_MS).toISOString(),
       assessment_version: versioned?.assessmentVersion ?? null,
       answers: versioned?.answers ?? null,
       result: versioned?.result ?? null,
@@ -145,6 +156,13 @@ export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps
   // 2) Deliver to the CRM if configured.
   if (!deps.webhookUrl) {
     log("CRM webhook not configured; delivery unavailable");
+    if (id) {
+      try {
+        await deps.release(id);
+      } catch {
+        /* lock expires on its own */
+      }
+    }
     return saved
       ? { status: 202, body: { success: false, saved: true, delivered: false, queued: false, message: "Saved; delivery unavailable" } }
       : { status: 500, body: { success: false, saved: false, delivered: false, queued: false, error: "Service configuration error" } };
@@ -170,6 +188,14 @@ export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps
       }
     }
     return { status: 200, body: { success: true, saved, delivered: true, queued: false, message: "Submission received" } };
+  }
+
+  if (id) {
+    try {
+      await deps.release(id);
+    } catch {
+      log("Failed to release delivery lock (it expires on its own)");
+    }
   }
 
   // Unsent saved rows are picked up by the scheduled retry-webhooks job.
