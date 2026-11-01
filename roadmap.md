@@ -1,14 +1,14 @@
 # Roadmap
 
 ## MAP v3 (map-v3.0) — preview only, do not publish
-- [ ] Shared v3 definition (questions, conditions, validation) usable by app and server
-- [ ] v3 deterministic engine: start / improve / expand / pivot, ties reported, max one alternate
-- [ ] v3 catalog: owner shortlist for owned-resource selector, conservative eligibility (devices, Claude plan, outreach, owned, budget, pending)
-- [ ] Quiz UI: single, multi (exclusive, max two), comfort rows, owned search + custom text, optional note; pruning; progress; draft save
-- [ ] Result screen v3 + intro copy; handoff, browse link and pop-up note kept
-- [ ] Server: send-webhook rederives v3 results; v2 still accepted; legacy fields kept
-- [ ] Admin wording overrides + catalog table for v3
-- [ ] Tests (app + edge) and CAH integration gap report
+- [x] Shared v3 definition (questions, conditions, validation) usable by app and server
+- [x] v3 deterministic engine: start / improve / expand / pivot, ties reported, max one alternate
+- [x] v3 catalog: owner shortlist for owned-resource selector, conservative eligibility (devices, Claude plan, outreach, owned, budget, pending)
+- [x] Quiz UI: single, multi (exclusive, max two), comfort rows, owned search + custom text, optional note; pruning; progress; draft save
+- [x] Result screen v3 + intro copy; handoff, browse link and pop-up note kept
+- [x] Server: send-webhook rederives v3 results; v2 still accepted; legacy fields kept
+- [x] Admin wording overrides + catalog table for v3
+- [x] Tests (app + edge) and CAH integration gap report
 
 ## Earlier (done)
 - [x] MAP v2 refresh, DWA owner correction, pop-up blocker note
