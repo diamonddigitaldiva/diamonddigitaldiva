@@ -376,7 +376,10 @@ describe("ownership, budget and catalog safety", () => {
       const r = buildResultV3(start, withDwa({ state: "unverified" })).result!;
       expect(ids(r)).not.toContain("dwa");
       expect(r.excluded).toContainEqual({ id: "dwa", reason: "price-unverified" });
-      expect(r.resourcesNote).toMatch(/couldn't confirm their current prices/);
+      expect(r.considerations.some((c) => c.includes("couldn't confirm their current price"))).toBe(true);
+      const only = buildResultV3(start, withDwa({ state: "unverified" }).filter((e) => e.id === "dwa")).result!;
+      expect(only.resources).toEqual([]);
+      expect(only.resourcesNote).toMatch(/couldn't confirm their current prices/);
     });
     it("verified $497 is excluded", () => {
       const r = ok(start);
