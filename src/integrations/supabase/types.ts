@@ -344,6 +344,20 @@ export type Database = {
         Args: { _session_id: string }
         Returns: boolean
       }
+      create_handoff_session: {
+        Args: {
+          _assessment_version?: string
+          _email: string
+          _first_name: string
+          _primary_stage: string
+          _primary_stage_name?: string
+          _primary_stage_url?: string
+          _secondary_stage?: string
+          _secondary_stage_name?: string
+          _secondary_stage_url?: string
+        }
+        Returns: string
+      }
       get_handoff_session: {
         Args: { _session_id: string }
         Returns: {
