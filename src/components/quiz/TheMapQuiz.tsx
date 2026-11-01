@@ -49,7 +49,9 @@ export function TheMapQuiz() {
     const outcome = await sendQuizResultsToWebhook(payload);
     inFlight.current = false;
     if (outcome.saved) {
-      setSaveStatus(outcome.delivered ? "saved" : outcome.queued ? "saved_queued" : "saved_undelivered");
+      setSaveStatus(
+        outcome.keptPrivate ? "saved_private" : outcome.delivered ? "saved" : outcome.queued ? "saved_queued" : "saved_undelivered"
+      );
     } else if (outcome.delivered) {
       setSaveStatus("received");
     } else {
@@ -128,7 +130,7 @@ export function TheMapQuiz() {
     setCurrentId(visible[visible.length - 1].id);
   };
 
-  const handleLeadSubmit = (firstName: string, email: string, hubConsent: boolean) => {
+  const handleLeadSubmit = (firstName: string, email: string, hubConsent: boolean, marketingConsent = false) => {
     // Ignore repeat presses while a submission is already being sent.
     if (inFlight.current || payloadRef.current) return;
     const built = buildResultV3(answers);
@@ -161,6 +163,8 @@ export function TheMapQuiz() {
       assessmentVersion: version,
       answers: r.answers,
       result: resultSnapshotV3(r),
+      // Explicit boolean; the server records time/source/version itself.
+      marketingConsent: marketingConsent === true,
     };
     setRetriesLeft(MAX_SAVE_RETRIES);
     void submitResult();

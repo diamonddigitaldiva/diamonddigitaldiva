@@ -270,6 +270,9 @@ serve(async (req) => {
         }
         return ((data as QuizRow[] | null) ?? [])[0] ?? null;
       },
+      release: async (id) => {
+        await supabase.from('quiz_submissions').update({ webhook_inflight_until: null }).eq('id', id);
+      },
       finish: async (id, delivered) => {
         const { error } = await supabase.rpc('finish_quiz_submission_retry', { _id: id, _delivered: delivered });
         if (error) throw new Error(error.message);

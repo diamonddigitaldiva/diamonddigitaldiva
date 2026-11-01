@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Legacy-compatible CRM payload. The first eight fields keep their original
  * names and types so existing automations keep working. Versioned data is
- * additive (`assessmentVersion`, `answers`, `result`). No marketing-consent
- * field is sent.
+ * additive (`assessmentVersion`, `answers`, `result`). `marketingConsent` is
+ * always an explicit boolean from the lead form; the server sets its time,
+ * source and wording version, and new leads without consent are saved but
+ * never forwarded to the external CRM.
  */
 export interface QuizResultPayload {
   firstName: string;
@@ -18,6 +20,7 @@ export interface QuizResultPayload {
   assessmentVersion?: string;
   answers?: Record<string, unknown>;
   result?: Record<string, unknown>;
+  marketingConsent?: boolean;
 }
 
 /**
@@ -30,15 +33,22 @@ export interface SubmissionOutcome {
   saved: boolean;
   delivered: boolean;
   queued: boolean;
+  /** Saved locally only, on purpose: no marketing consent, so not sent to the CRM. */
+  keptPrivate: boolean;
 }
 
-const FAILED: SubmissionOutcome = { saved: false, delivered: false, queued: false };
+const FAILED: SubmissionOutcome = { saved: false, delivered: false, queued: false, keptPrivate: false };
 
 function readOutcome(body: unknown): SubmissionOutcome {
   if (!body || typeof body !== "object") return FAILED;
   const b = body as Record<string, unknown>;
   const delivered = b.delivered === true || (b.delivered === undefined && b.success === true);
-  return { saved: b.saved === true, delivered, queued: b.queued === true };
+  return {
+    saved: b.saved === true,
+    delivered,
+    queued: b.queued === true,
+    keptPrivate: b.forwarded === false && b.reason === "no_marketing_consent",
+  };
 }
 
 export async function sendQuizResultsToWebhook(payload: QuizResultPayload): Promise<SubmissionOutcome> {

@@ -2,16 +2,19 @@ import { useState } from "react";
 import { QuizButton } from "@/components/ui/quiz-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { MARKETING_CONSENT_TEXT } from "@/lib/assessment/v3";
 
 interface LeadScreenProps {
   onBack: () => void;
-  onSubmit: (firstName: string, email: string, hubConsent: boolean) => void;
+  onSubmit: (firstName: string, email: string, hubConsent: boolean, marketingConsent: boolean) => void;
 }
 
 export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [hubConsent, setHubConsent] = useState(false);
+  // Optional and unchecked by default; never required to see the result.
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = () => {
@@ -34,7 +37,7 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
       return;
     }
 
-    onSubmit(firstName.trim(), email.trim(), hubConsent);
+    onSubmit(firstName.trim(), email.trim(), hubConsent, marketingConsent);
   };
 
   const inputClass =
@@ -90,6 +93,21 @@ export function LeadScreen({ onBack, onSubmit }: LeadScreenProps) {
           results</strong> to the <strong>Creator Access Hub</strong> so Ava can give me
           tailored recommendations and so my activity can be linked to my results for
           reporting. I can withdraw consent at any time by contacting support.
+        </span>
+      </label>
+
+      <label
+        htmlFor="marketing-consent"
+        className="flex items-start gap-3 p-4 mb-8 -mt-4 rounded-sm border border-border bg-pearl/60 cursor-pointer hover:border-amethyst/50 transition-colors"
+      >
+        <Checkbox
+          id="marketing-consent"
+          checked={marketingConsent}
+          onCheckedChange={(v) => setMarketingConsent(v === true)}
+          className="mt-0.5"
+        />
+        <span className="text-[13px] leading-relaxed text-charcoal/80">
+          {MARKETING_CONSENT_TEXT} <span className="text-charcoal/60">(Optional)</span>
         </span>
       </label>
 

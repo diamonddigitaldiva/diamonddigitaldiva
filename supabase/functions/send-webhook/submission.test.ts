@@ -57,7 +57,7 @@ function fakes(opts: { webhookUrl?: string; saveId?: string | null; postOk?: boo
 
 Deno.test("delivered: success contract unchanged and row marked sent", async () => {
   const { deps, calls } = fakes();
-  const r = await handleSubmission({ ...legacy(), assessmentVersion: "map-v3.0", answers: v3Answers() }, deps);
+  const r = await handleSubmission({ ...legacy(), assessmentVersion: "map-v3.0", answers: v3Answers(), marketingConsent: true }, deps);
   assertEquals(r.status, 200);
   assertEquals(r.body.success, true);
   assertEquals(r.body.saved, true);
@@ -70,7 +70,7 @@ Deno.test("delivered: success contract unchanged and row marked sent", async () 
 
 Deno.test("webhook URL missing: result is still saved, delivery reported unavailable, nothing sent", async () => {
   const { deps, calls } = fakes({ webhookUrl: undefined });
-  const r = await handleSubmission({ ...legacy(), assessmentVersion: "map-v3.0", answers: v3Answers() }, deps);
+  const r = await handleSubmission({ ...legacy(), assessmentVersion: "map-v3.0", answers: v3Answers(), marketingConsent: true }, deps);
   assertEquals(calls.save.length, 1);
   assertEquals(calls.post.length, 0);
   assertEquals(r.status, 202);
@@ -171,4 +171,71 @@ Deno.test("initial send claims the row with a 2-minute lock, shorter than the 5-
   assertEquals(calls.save[0].webhook_inflight_until, "2026-01-01T00:02:00.000Z");
   assertEquals(calls.release.length, 0); // delivered: markSent clears the lock
   assertEquals(calls.markSent, ["row-1"]);
+});
+
+const v3 = (extra: Record<string, unknown> = {}) => ({ ...legacy(), assessmentVersion: "map-v3.0", answers: v3Answers(), ...extra });
+
+Deno.test("v3 with explicit consent: stored with server timestamp/source/version and forwarded with the flag", async () => {
+  const { deps, calls } = fakes();
+  const r = await handleSubmission(v3({ marketingConsent: true, marketingConsentAt: "1999-01-01T00:00:00Z" }), deps);
+  assertEquals(r.status, 200);
+  assertEquals(r.body.success, true);
+  const row = calls.save[0];
+  assertEquals(row.marketing_consent, true);
+  assertEquals(row.marketing_consent_at, "2026-01-01T00:00:00.000Z"); // server clock, not the client's
+  assertEquals(row.marketing_consent_source, "map-lead-form");
+  assertEquals(row.marketing_consent_version, "map-marketing-consent-v1");
+  assertEquals(row.crm_forwarding_status, null);
+  const sent = JSON.parse(calls.post[0]);
+  assertEquals(sent.marketingConsent, true);
+  assertEquals(sent.marketingConsentAt, "2026-01-01T00:00:00.000Z");
+  assertEquals(sent.marketingConsentVersion, "map-marketing-consent-v1");
+});
+
+Deno.test("v3 with consent false or absent: saved locally, never posted, not locked or queued", async () => {
+  for (const extra of [{ marketingConsent: false }, {}]) {
+    const { deps, calls } = fakes();
+    const r = await handleSubmission(v3(extra), deps);
+    assertEquals(r.status, 200);
+    assertEquals(r.body.saved, true);
+    assertEquals(r.body.queued, false);
+    assertEquals(r.body.forwarded, false);
+    assertEquals(r.body.reason, "no_marketing_consent");
+    assertEquals(calls.post.length, 0);
+    assertEquals(calls.markSent.length, 0);
+    const row = calls.save[0];
+    assertEquals(row.crm_forwarding_status, "suppressed_no_consent");
+    assertEquals(row.webhook_inflight_until, null);
+    assertEquals(row.marketing_consent, "marketingConsent" in extra ? false : null);
+    assertEquals(row.marketing_consent_at, "marketingConsent" in extra ? "2026-01-01T00:00:00.000Z" : null);
+  }
+});
+
+Deno.test("v3 without consent is not forwarded even when the CRM URL is missing or the save fails", async () => {
+  const a = fakes({ webhookUrl: undefined });
+  assertEquals((await handleSubmission(v3({ marketingConsent: false }), a.deps)).body.reason, "no_marketing_consent");
+  const b = fakes({ saveId: null });
+  const r = await handleSubmission(v3({ marketingConsent: false }), b.deps);
+  assertEquals(r.status, 500);
+  assertEquals(r.body.saved, false);
+  assertEquals(b.calls.post.length, 0);
+});
+
+Deno.test("marketingConsent must be strictly boolean; anything else is rejected before any write", async () => {
+  for (const v of ["true", 1, null, "yes", {}]) {
+    const { deps, calls } = fakes();
+    const r = await handleSubmission(v3({ marketingConsent: v }), deps);
+    assertEquals(r.status, 400);
+    assertEquals(calls.save.length + calls.post.length, 0);
+  }
+});
+
+Deno.test("legacy and v2 forwarding is unchanged by consent: still posted, no consent flag added", async () => {
+  const { deps, calls } = fakes();
+  const r = await handleSubmission(legacy(), deps);
+  assertEquals(r.status, 200);
+  assertEquals(calls.post.length, 1);
+  assertEquals(calls.save[0].marketing_consent, null);
+  assertEquals(calls.save[0].crm_forwarding_status, null);
+  assertEquals("marketingConsent" in JSON.parse(calls.post[0]), false);
 });

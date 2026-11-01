@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { MAX_RETRY_ATTEMPTS, retryQuizSubmissions, type QuizRetryDeps, type QuizRow } from "./quiz.ts";
+import { MAX_RETRY_ATTEMPTS, mayForward, retryQuizSubmissions, type QuizRetryDeps, type QuizRow } from "./quiz.ts";
 
 // In-memory fake of the claim/finish database functions. No database, no CRM.
 
@@ -45,13 +45,20 @@ function store(rows: Stored[]) {
     r.locked = false;
     if (delivered) r.webhook_sent = true;
   };
-  return { posts, claim, finish };
+  const released: string[] = [];
+  const release = async (id: string) => {
+    await Promise.resolve();
+    released.push(id);
+    rows.find((x) => x.id === id)!.locked = false;
+  };
+  return { posts, claim, finish, release, released };
 }
 
 function deps(s: ReturnType<typeof store>, post: QuizRetryDeps["post"]): QuizRetryDeps {
   return {
     claimNext: s.claim,
     finish: s.finish,
+    release: s.release,
     post: async (body) => {
       s.posts.push(body);
       await new Promise((r) => setTimeout(r, 1));
@@ -112,7 +119,7 @@ Deno.test("a failed row is attempted only once per run even though its lock is r
 });
 
 Deno.test("versioned stored data is resent unchanged; legacy rows stay legacy", async () => {
-  const v3 = row("a", { assessment_version: "map-v3.0", answers: { m3_where: "where_new" }, result: { version: "map-v3.0" } });
+  const v3 = row("a", { assessment_version: "map-v3.0", marketing_consent: true, answers: { m3_where: "where_new" }, result: { version: "map-v3.0" } });
   const legacy = row("b");
   const s = store([v3, legacy]);
   await retryQuizSubmissions(deps(s, () => Promise.resolve({ ok: true, status: 200 })));
@@ -121,4 +128,40 @@ Deno.test("versioned stored data is resent unchanged; legacy rows stay legacy", 
   assertEquals(p1.answers, { m3_where: "where_new" });
   assertEquals("assessmentVersion" in p2, false);
   assertEquals(Object.keys(p2).sort(), ["email", "firstName", "primaryStage", "primaryStageUrl", "secondaryStage", "secondaryStageUrl", "source", "timestamp"]);
+});
+
+Deno.test("retry never posts v3 rows without explicit consent or suppressed rows", async () => {
+  const rows = [
+    row("v3false", { assessment_version: "map-v3.0", marketing_consent: false, crm_forwarding_status: "suppressed_no_consent" }),
+    row("v3null", { assessment_version: "map-v3.0", marketing_consent: null }),
+    row("v3true", {
+      assessment_version: "map-v3.0",
+      marketing_consent: true,
+      marketing_consent_at: "2026-11-01T19:00:00.000Z",
+      marketing_consent_source: "map-lead-form",
+      marketing_consent_version: "map-marketing-consent-v1",
+      email: "yes@example.invalid",
+    }),
+    row("legacy", { email: "legacy@example.invalid" }),
+  ];
+  // Even if a buggy claim handed them out, the loop must not post them.
+  const s = store(rows);
+  const out = await retryQuizSubmissions(deps(s, () => Promise.resolve({ ok: true, status: 200 })));
+  assertEquals(out.retried, 2);
+  const sent = s.posts.map((b) => JSON.parse(b));
+  assertEquals(sent.map((p) => p.email).sort(), ["legacy@example.invalid", "yes@example.invalid"]);
+  const yes = sent.find((p) => p.email === "yes@example.invalid");
+  assertEquals(yes.marketingConsent, true);
+  assertEquals(yes.marketingConsentAt, "2026-11-01T19:00:00.000Z"); // stored consent preserved
+  assertEquals("marketingConsent" in sent.find((p) => p.email === "legacy@example.invalid"), false);
+  assertEquals(s.released.sort(), ["v3false", "v3null"]);
+  assertEquals(rows.find((r) => r.id === "v3null")!.retry_count, 0); // not counted as an attempt
+});
+
+Deno.test("mayForward: legacy and v2 unchanged, v3 needs explicit true", () => {
+  assertEquals(mayForward(row("a")), true);
+  assertEquals(mayForward(row("b", { assessment_version: "map-v2.0" })), true);
+  assertEquals(mayForward(row("c", { assessment_version: "map-v3.0" })), false);
+  assertEquals(mayForward(row("d", { assessment_version: "map-v3.0", marketing_consent: true })), true);
+  assertEquals(mayForward(row("e", { crm_forwarding_status: "suppressed_no_consent" })), false);
 });

@@ -10,6 +10,7 @@
  */
 import { sanitizeV2 } from "./v2.ts";
 import { isV3Version, sanitizeV3 } from "./v3.ts";
+import { MARKETING_CONSENT_SOURCE, MARKETING_CONSENT_VERSION } from "../_shared/map-v3/consent.ts";
 
 export interface QuizPayload {
   firstName: string;
@@ -114,9 +115,24 @@ export interface SubmissionResponse {
     saved?: boolean;
     delivered?: boolean;
     queued?: boolean;
+    /** false when the result was deliberately kept out of the external CRM. */
+    forwarded?: boolean;
+    /** Why it wasn't forwarded (only "no_marketing_consent" today). */
+    reason?: string;
     message?: string;
     error?: string;
   };
+}
+
+/**
+ * Marketing consent: strictly boolean when present (otherwise 400); absent is
+ * unknown, never opt-in. Timestamp, source and wording version are set here.
+ */
+export function readConsent(raw: Record<string, unknown>): { ok: true; consent: boolean | null } | { ok: false } {
+  const v = raw.marketingConsent;
+  if (v === undefined) return { ok: true, consent: null };
+  if (typeof v !== "boolean") return { ok: false };
+  return { ok: true, consent: v };
 }
 
 export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps): Promise<SubmissionResponse> {
@@ -128,6 +144,23 @@ export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps
   const resolved = resolveVersion(raw, validation.data);
   if (!resolved.ok) return { status: 400, body: { success: false, error: resolved.error } };
   const { payload, versioned } = resolved;
+
+  const consentRead = readConsent(raw);
+  if (!consentRead.ok) return { status: 400, body: { success: false, error: "Invalid marketingConsent" } };
+  const consent = consentRead.consent;
+  const nowMs = (deps.now ?? Date.now)();
+  const consentAt = consent === null ? null : new Date(nowMs).toISOString();
+  const consentFields = {
+    marketing_consent: consent,
+    marketing_consent_at: consentAt,
+    marketing_consent_source: consent === null ? null : MARKETING_CONSENT_SOURCE,
+    marketing_consent_version: consent === null ? null : MARKETING_CONSENT_VERSION,
+  };
+  // New (v3) leads go to the external CRM only with explicit consent, because
+  // CRM-side marketing enrollment can't be controlled or verified from here.
+  // Legacy/v2 forwarding is unchanged.
+  const isV3 = versioned !== null && isV3Version(versioned.assessmentVersion);
+  const suppress = isV3 && consent !== true;
 
   // 1) Save first, so a result is never lost when the CRM is unavailable.
   let id: string | null = null;
@@ -142,7 +175,10 @@ export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps
       source: payload.source,
       webhook_sent: false,
       // Claimed by this initial send so the retry job can't post it concurrently.
-      webhook_inflight_until: new Date((deps.now ?? Date.now)() + DELIVERY_LOCK_MS).toISOString(),
+      // Suppressed rows are never sent, so they take no lock.
+      webhook_inflight_until: suppress ? null : new Date(nowMs + DELIVERY_LOCK_MS).toISOString(),
+      crm_forwarding_status: suppress ? "suppressed_no_consent" : null,
+      ...consentFields,
       assessment_version: versioned?.assessmentVersion ?? null,
       answers: versioned?.answers ?? null,
       result: versioned?.result ?? null,
@@ -152,6 +188,13 @@ export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps
   }
   const saved = id !== null;
   log(saved ? "Submission saved to database" : "Database insert failed");
+
+  if (suppress) {
+    log("Saved locally only: no explicit marketing consent (not forwarded, not queued)");
+    return saved
+      ? { status: 200, body: { success: false, saved: true, delivered: false, queued: false, forwarded: false, reason: "no_marketing_consent", message: "Saved" } }
+      : { status: 500, body: { success: false, saved: false, delivered: false, queued: false, forwarded: false, error: "Failed to save submission. Please try again." } };
+  }
 
   // 2) Deliver to the CRM if configured.
   if (!deps.webhookUrl) {
@@ -168,7 +211,20 @@ export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps
       : { status: 500, body: { success: false, saved: false, delivered: false, queued: false, error: "Service configuration error" } };
   }
 
-  const outbound = versioned ? { ...payload, ...versioned } : payload;
+  const outbound = versioned
+    ? {
+        ...payload,
+        ...versioned,
+        ...(isV3
+          ? {
+              marketingConsent: true,
+              marketingConsentAt: consentAt,
+              marketingConsentSource: MARKETING_CONSENT_SOURCE,
+              marketingConsentVersion: MARKETING_CONSENT_VERSION,
+            }
+          : {}),
+      }
+    : payload;
   let delivered = false;
   try {
     const res = await deps.post(deps.webhookUrl, JSON.stringify(outbound));

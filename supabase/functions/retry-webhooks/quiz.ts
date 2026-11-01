@@ -36,11 +36,25 @@ export interface QuizRow {
   answers: unknown;
   result: unknown;
   retry_count: number | null;
+  marketing_consent?: boolean | null;
+  marketing_consent_at?: string | null;
+  marketing_consent_source?: string | null;
+  marketing_consent_version?: string | null;
+  crm_forwarding_status?: string | null;
+}
+
+/** v3+ rows need explicit stored consent; suppressed rows are never sent. */
+export function mayForward(s: QuizRow): boolean {
+  if (s.crm_forwarding_status === "suppressed_no_consent") return false;
+  if (s.assessment_version && s.assessment_version.startsWith("map-v3")) return s.marketing_consent === true;
+  return true;
 }
 
 export interface QuizRetryDeps {
   /** Atomically claims one eligible row not in `exclude`, or null when none are left. */
   claimNext: (exclude: string[]) => Promise<QuizRow | null>;
+  /** Releases the lock without counting an attempt (row not eligible to send). */
+  release: (id: string) => Promise<void>;
   /** Counts the attempt and releases the lock. */
   finish: (id: string, delivered: boolean) => Promise<void>;
   /** One bounded POST; may throw on network error or timeout. */
@@ -63,6 +77,15 @@ export function buildRetryPayload(s: QuizRow) {
     ...(s.assessment_version
       ? { assessmentVersion: s.assessment_version, answers: s.answers, result: s.result }
       : {}),
+    // Stored consent is resent as recorded (v3+ only; legacy payloads unchanged).
+    ...(s.assessment_version?.startsWith("map-v3") && s.marketing_consent === true
+      ? {
+          marketingConsent: true,
+          marketingConsentAt: s.marketing_consent_at ?? null,
+          marketingConsentSource: s.marketing_consent_source ?? null,
+          marketingConsentVersion: s.marketing_consent_version ?? null,
+        }
+      : {}),
   };
 }
 
@@ -75,11 +98,22 @@ export async function retryQuizSubmissions(deps: QuizRetryDeps) {
   let failed = 0;
   const attempted: string[] = [];
 
-  while (claimed < MAX_RETRIES_PER_RUN && now() - started < RUN_BUDGET_MS) {
+  while (attempted.length < MAX_RETRIES_PER_RUN && now() - started < RUN_BUDGET_MS) {
     // A released (failed) row is never re-claimed within the same run.
     const row = await deps.claimNext(attempted);
     if (!row) break;
     attempted.push(row.id);
+
+    // Defence in depth: the claim already excludes these. Never post them.
+    if (!mayForward(row)) {
+      log(`Skipping ${row.id}: not allowed to forward (no explicit consent)`);
+      try {
+        await deps.release(row.id);
+      } catch {
+        /* lock expires on its own */
+      }
+      continue;
+    }
     claimed++;
 
     let delivered = false;

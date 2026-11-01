@@ -124,6 +124,11 @@ export interface V3CatalogEntry {
   ownedVia: string[];
   /** Owned bundles that include this item; never recommend it standalone then. */
   includedIn?: string[];
+  /**
+   * true only when the outbound link itself is an evidenced affiliate link
+   * (owner-provided affiliate URL). Never inferred; own/free links stay unset.
+   */
+  affiliate?: true;
 }
 
 export const MWYK_URL = "https://www.skool.com/she-knows-more-than-she-thinks-8347/about";
@@ -164,7 +169,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
   {
     id: "monetize-what-you-know",
     name: "Monetize What You Know",
-    summary: "A free community for figuring out how to turn what you know into income.",
+    summary: "A free community for exploring how to build offers around what you already know.",
     kind: "community",
     status: "active",
     statusSource: "owner-confirmed",
@@ -185,7 +190,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     id: "dwa",
     name: "Digital Wealth Academy 4.0",
     summary:
-      "Broad digital marketing training for building your own digital products and affiliate income. Self-paced, with a community and lifetime access.",
+      "Broad digital marketing training covering your own digital products and affiliate marketing. Self-paced, with a community and lifetime access.",
     kind: "training",
     status: "active",
     statusSource: "owner-confirmed",
@@ -200,6 +205,8 @@ export const V3_CATALOG: V3CatalogEntry[] = [
       note: "Owner confirmed this is the correct current link (owner confirmation, not an automated check).",
     },
     retiredUrls: [cahResource("dwa")],
+    // Owner-provided link carries the owner's affiliate ID.
+    affiliate: true,
     matchable: true,
     fits: { paths: ["digital_products", "affiliate"], gaps: [], roles: ["start", "pivot", "expand"] },
     ownedVia: ["res_dwa"],
@@ -208,7 +215,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     id: "cfw",
     name: "Create Faceless Wealth",
     summary:
-      "Beginner, phone-friendly training covering faceless income paths: digital products, affiliate marketing and quote pages.",
+      "Beginner, phone-friendly training covering faceless business paths: digital products, affiliate marketing and quote pages.",
     kind: "training",
     status: "active",
     statusSource: "owner-listed",
@@ -257,7 +264,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     id: "ai-to-sales",
     name: "AI to Sales",
     summary:
-      "Using an AI avatar's storytelling, content and brand personality to support sales. Not an avatar-creation course.",
+      "Training on using an AI avatar's storytelling, content and brand personality in your sales content. Not an avatar-creation course.",
     kind: "training",
     ...CAH_ACTIVE,
     shortlist: true,
@@ -272,7 +279,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
   {
     id: "faceless-launch",
     name: "Faceless Launch Formula",
-    summary: "Messaging, positioning and a launch plan for a digital product, built around a 30-day plan. Timelines and results vary.",
+    summary: "Training on messaging, positioning and planning a launch for a digital product, organised as a 30-day plan.",
     kind: "training",
     ...CAH_ACTIVE,
     shortlist: true,
@@ -287,7 +294,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
   {
     id: "0-first-sale-challenge",
     name: "$0 - First Sale Challenge",
-    summary: "A beginner, step-by-step challenge aimed at making a first online sale. The name isn't a price, and results vary.",
+    summary: "A beginner, step-by-step challenge on the steps toward a first online sale. The name is the product title, not a price or a promised result.",
     kind: "training",
     ...CAH_ACTIVE,
     shortlist: true,
@@ -330,7 +337,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
   {
     id: "100k-threads-challenge",
     name: "100K Threads Challenge",
-    summary: "A 5-day Threads growth and content-consistency challenge with 150+ posts and a community. Views aren't guaranteed.",
+    summary: "A 5-day Threads content-consistency challenge with 150+ post ideas and a community. \"100K\" is part of the product title, not a promised result.",
     kind: "training",
     ...CAH_ACTIVE,
     shortlist: true,
@@ -345,7 +352,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
   {
     id: "tss",
     name: "The Secret Sauce",
-    summary: "Trust-building and soft selling through Instagram Stories: handling buyer objections and turning content into sales.",
+    summary: "Training on trust-building and soft selling through Instagram Stories, including how to handle buyer objections.",
     kind: "training",
     status: "active",
     statusSource: "owner-listed",
@@ -411,7 +418,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     id: "ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot",
     name: "AI-Podcast Kit 10 Min Workflow",
     summary:
-      "A kit for short faceless AI podcast-style videos: image-prompt chatbots, a workflow, 100 quotes and Telegram support. Timing and earnings vary.",
+      "A kit for making short faceless AI podcast-style videos: image-prompt chatbots, a workflow, 100 quotes and Telegram support. \"10 Min\" is part of the product title.",
     kind: "tool",
     ...CAH_ACTIVE,
     shortlist: true,
@@ -474,7 +481,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
     id: "pin-prompt-profit",
     name: "Pin Prompt & Profit",
     summary:
-      "Beginner training on Pinterest plus AI for evergreen search traffic to affiliate links, digital products, lists or communities. 14 modules, 60 lessons and PinnyBot; no followers needed.",
+      "Beginner training on using Pinterest and AI to share affiliate links, digital products, lists or communities through search. 14 modules, 60 lessons and PinnyBot; doesn't require an existing following.",
     kind: "training",
     status: "active",
     statusSource: "owner-listed",
@@ -490,7 +497,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
   {
     id: "ata",
     name: "After the Avatar",
-    summary: "Turning an existing AI avatar into a content strategy that supports sales.",
+    summary: "Training on building a content strategy around an existing AI avatar.",
     kind: "training",
     status: "active",
     statusSource: "owner-listed",
@@ -508,7 +515,7 @@ export const V3_CATALOG: V3CatalogEntry[] = [
   {
     id: "quote-society",
     name: "Quote Society",
-    summary: "Quote page growth and monetization training (format not confirmed).",
+    summary: "Training on growing and monetizing a quote page (format not confirmed).",
     kind: "training",
     status: "pending",
     statusSource: "owner-listed",

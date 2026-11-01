@@ -66,10 +66,14 @@ async function answerBeginner(user: User, budget = "budget_100") {
   await next(user); // notes (optional) -> Finish
 }
 
-async function submitLead(user: User, consent: boolean) {
+const hubBox = () => screen.getByRole("checkbox", { name: /i authorize diamond digital diva/i });
+const marketingBox = () => screen.getByRole("checkbox", { name: /yes, you may email me/i });
+
+async function submitLead(user: User, consent: boolean, marketing = false) {
   await user.type(screen.getByPlaceholderText("Your first name"), "Jane");
   await user.type(screen.getByPlaceholderText("your@email.com"), "jane@example.com");
-  if (consent) await user.click(screen.getByRole("checkbox"));
+  if (consent) await user.click(hubBox());
+  if (marketing) await user.click(marketingBox());
   await user.click(screen.getByRole("button", { name: /see my result/i }));
 }
 
@@ -132,8 +136,9 @@ describe("The MAP v3 flow", () => {
     const hq = forwardToHQ.mock.calls.find(([e]) => e.type === "quiz_completed")![0];
     expect(hq).toMatchObject({ primary_stage: "publishing", assessment_version: "map-v3.0" });
     expect(JSON.stringify(hq)).not.toContain("jane");
-    expect(payload).not.toHaveProperty("marketingConsent");
-    expect(Object.keys(payload).some((k) => /marketing|consent|optin|subscribe/i.test(k))).toBe(false);
+    // Unchecked by default => explicit false, and the server is never told a time/source.
+    expect(payload.marketingConsent).toBe(false);
+    expect(Object.keys(payload).filter((k) => /marketing|consent|optin|subscribe/i.test(k))).toEqual(["marketingConsent"]);
     expect(await screen.findByText("Your result has been saved.")).toBeInTheDocument();
     await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).toBeNull());
   });
@@ -241,7 +246,72 @@ describe("The MAP v3 flow", () => {
     await begin(user);
     await answerBeginner(user);
     expect(screen.getByText(/we use your details to save your map result/i)).toBeInTheDocument();
-    expect(screen.queryByText(/marketing/i)).toBeNull();
+    expect(screen.queryByText(/occasional marketing|by continuing you agree/i)).toBeNull();
+  });
+
+  it("marketing consent is optional, unchecked by default, separate from Hub sharing, and sent as true when ticked", async () => {
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user);
+    const box = marketingBox();
+    expect(box).toHaveAttribute("id", "marketing-consent");
+    expect(box).toHaveAttribute("aria-checked", "false");
+    expect(hubBox()).toHaveAttribute("aria-checked", "false");
+    expect(
+      screen.getByText(
+        /Yes, you may email me helpful resources, product updates and offers from Diamond Digital Diva\. I can unsubscribe at any time\./
+      )
+    ).toBeInTheDocument();
+    await submitLead(user, false, true);
+    expect(await screen.findByTestId("primary-label")).toBeInTheDocument();
+    const payload = sendWebhook.mock.calls[0][0];
+    expect(payload.marketingConsent).toBe(true);
+    expect(payload).not.toHaveProperty("marketingConsentAt");
+    // Hub sharing stays off: only the plain browse link is offered.
+    expect(screen.getByRole("link", { name: /browse the creator access hub/i })).toBeInTheDocument();
+  });
+
+  it("hub consent alone does not opt in to marketing", async () => {
+    handoffRpc.mockResolvedValue({ data: null, error: { message: "x" } });
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user);
+    await submitLead(user, true, false);
+    await screen.findByTestId("primary-label");
+    expect(sendWebhook.mock.calls[0][0].marketingConsent).toBe(false);
+  });
+
+  it("no marketing consent: result shows and saved status says the preference was recorded, not a delay", async () => {
+    sendWebhook.mockResolvedValue({ saved: true, delivered: false, queued: false, keptPrivate: true });
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user);
+    await submitLead(user, false, false);
+    expect(await screen.findByText(/your result has been saved, and your email preference has been recorded/i)).toBeInTheDocument();
+    expect(screen.getByTestId("primary-label")).toBeInTheDocument();
+    expect(screen.getByTestId("save-status")).not.toHaveTextContent(/delay|retry|couldn't|opt in|email you/i);
+    expect(screen.queryByRole("button", { name: /try saving again/i })).toBeNull();
+  });
+
+  it("affiliate disclosure appears immediately before the resource links; result has no income promise", async () => {
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user, "budget_300p");
+    await submitLead(user, false);
+    const section = (await screen.findByRole("heading", { name: /optional resources/i })).closest("section")!;
+    const links = within(section).getAllByRole("link");
+    expect(links.length).toBeGreaterThan(0);
+    const disclosure = within(section).getByTestId("affiliate-disclosure");
+    expect(disclosure).toHaveTextContent(
+      "Some links below are affiliate links. If you purchase through them, I may earn a commission at no additional cost to you."
+    );
+    expect(disclosure.compareDocumentPosition(links[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(/Results are guidance, not a promise of income\./)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/guarantee(d)? (results|income|sales|views)|you will (earn|make)/i);
   });
 
   it("shows a saving status while the submission is pending", async () => {
