@@ -345,6 +345,7 @@ export type Database = {
     Functions: {
       claim_quiz_submission_for_retry: {
         Args: {
+          _exclude?: string[]
           _lock_seconds?: number
           _max_attempts?: number
           _older_than_minutes?: number
