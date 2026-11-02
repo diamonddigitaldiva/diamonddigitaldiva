@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   MAP_V3_VERSION,
   V3_QUESTIONS,
-  V3_CATALOG,
+  V3_LOCAL_ENTRIES,
+  adaptCahFeed,
   V3_RETIRED_URLS,
   V3_OWNER_LINKS,
   OWNED_RESOURCES,
@@ -23,6 +24,12 @@ import {
 } from "@/lib/assessment/v3";
 import { ASSESSMENT_QUESTIONS, RETIRED_URLS, buildResult as buildV2 } from "@/lib/assessment";
 import { applyV3TextOverrides } from "@/lib/assessment/v3";
+import { CAH_FEED_SNAPSHOT_2026_11_02 } from "../../../supabase/functions/_shared/map-v3/testdata/cahFeedSnapshot.ts";
+
+// Recommendations come from the CAH feed; tests use a verbatim snapshot of it.
+const LIVE = adaptCahFeed(CAH_FEED_SNAPSHOT_2026_11_02);
+if (LIVE.status !== "live") throw new Error("feed snapshot did not validate");
+const V3_CATALOG = [...V3_LOCAL_ENTRIES, ...LIVE.entries];
 
 const comfortAll = (v: string) => ({
   cw_camera: v,
@@ -61,7 +68,7 @@ const seller: V3Answers = {
 };
 
 function ok(a: V3Answers): V3Result {
-  const r = buildResultV3(a);
+  const r = buildResultV3(a, LIVE);
   if (!r.ok) throw new Error(`expected ok, missing=${r.missing} invalid=${r.invalid}`);
   return r.result;
 }
