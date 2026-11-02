@@ -235,49 +235,137 @@ const PATH_STEP: Record<PathId, string> = {
     "List three repetitive tasks a small business might pay to have done faster, and pick one you could demonstrate with AI.",
   services:
     "Write one sentence describing a service you could deliver now, who it is for and the result, then share it with three people who might need it or know someone who does.",
-  asmr:
-    "Choose one sound or visual style you enjoy making, record one short sample, and note what you would need to make it consistently.",
+  asmr: "Choose one sound or visual style you enjoy making, record one short sample, and note what you would need to make it consistently.",
   business:
     "Write down where your current customers come from and what they buy most, then choose one way to reach more of the same people this week.",
 };
 
 const PATH_PLAN: Record<PathId, string[]> = {
-  digital_products: ["Pick one problem and one person you want to help.", "Make a small, simple first version and show it to a few people.", "Use their questions to improve it before adding more products."],
-  affiliate: ["Choose one or two products you genuinely use.", "Share honest, useful content about what they helped you do.", "Track which pieces get clicks and make more of those."],
-  quotes: ["Settle on one theme and a consistent visual style.", "Post on a steady schedule you can keep.", "Watch which posts get saved or shared and build around them."],
-  ai_avatar: ["Choose one use for AI visuals that solves a real need.", "Create a few samples in one consistent style.", "Share them and ask what people would use them for."],
-  publishing: ["Choose one format and one audience.", "Create a small first version and check the details carefully.", "Publish it, then learn from the response before making the next one."],
-  social: ["Pick one platform and one topic.", "Post consistently in a recognizable style.", "Every two weeks, review what gets engagement and do more of it."],
-  ai_services: ["Pick one task for one type of business.", "Build a simple demonstration of how AI helps with it.", "Offer it to a few businesses and learn what they would pay for."],
-  services: ["Define one service, who it is for and the result.", "Tell people you already know and ask for introductions.", "Deliver it well for your first clients and ask for feedback."],
-  asmr: ["Choose one style and a simple setup.", "Publish a few samples on a schedule you can keep.", "Notice which pieces people return to and make more like them."],
-  business: ["Find where your best customers come from.", "Put more effort into that one channel.", "Ask recent customers what almost stopped them and use their words."],
+  digital_products: [
+    "Pick one problem and one person you want to help.",
+    "Make a small, simple first version and show it to a few people.",
+    "Use their questions to improve it before adding more products.",
+  ],
+  affiliate: [
+    "Choose one or two products you genuinely use.",
+    "Share honest, useful content about what they helped you do.",
+    "Track which pieces get clicks and make more of those.",
+  ],
+  quotes: [
+    "Settle on one theme and a consistent visual style.",
+    "Post on a steady schedule you can keep.",
+    "Watch which posts get saved or shared and build around them.",
+  ],
+  ai_avatar: [
+    "Choose one use for AI visuals that solves a real need.",
+    "Create a few samples in one consistent style.",
+    "Share them and ask what people would use them for.",
+  ],
+  publishing: [
+    "Choose one format and one audience.",
+    "Create a small first version and check the details carefully.",
+    "Publish it, then learn from the response before making the next one.",
+  ],
+  social: [
+    "Pick one platform and one topic.",
+    "Post consistently in a recognizable style.",
+    "Every two weeks, review what gets engagement and do more of it.",
+  ],
+  ai_services: [
+    "Pick one task for one type of business.",
+    "Build a simple demonstration of how AI helps with it.",
+    "Offer it to a few businesses and learn what they would pay for.",
+  ],
+  services: [
+    "Define one service, who it is for and the result.",
+    "Tell people you already know and ask for introductions.",
+    "Deliver it well for your first clients and ask for feedback.",
+  ],
+  asmr: [
+    "Choose one style and a simple setup.",
+    "Publish a few samples on a schedule you can keep.",
+    "Notice which pieces people return to and make more like them.",
+  ],
+  business: [
+    "Find where your best customers come from.",
+    "Put more effort into that one channel.",
+    "Ask recent customers what almost stopped them and use their words.",
+  ],
 };
 
 const GAP_STEP: Record<GapId, string> = {
-  focus: "List every idea you're juggling, cross off anything you couldn't start this week, and choose one to focus on for the next 30 days.",
-  launch: "Write down the smallest version you could release, set a date within two weeks, and list only the tasks needed to get there.",
-  reach: "Describe the exact person you want to reach and list three places they already spend time. Show up in one of them this week.",
-  message: "Rewrite your offer in one sentence: who it is for, the problem it solves and the result. Ask three people to repeat it back to you.",
-  conversion: "Invite a few people who already engage or ask questions directly to your next step, and ask anyone who says no what stopped them.",
+  focus:
+    "List every idea you're juggling, cross off anything you couldn't start this week, and choose one to focus on for the next 30 days.",
+  launch:
+    "Write down the smallest version you could release, set a date within two weeks, and list only the tasks needed to get there.",
+  reach:
+    "Describe the exact person you want to reach and list three places they already spend time. Show up in one of them this week.",
+  message:
+    "Rewrite your offer in one sentence: who it is for, the problem it solves and the result. Ask three people to repeat it back to you.",
+  conversion:
+    "Invite a few people who already engage or ask questions directly to your next step, and ask anyone who says no what stopped them.",
   content: "Choose three content themes and one consistent look, and plan your next week of content using only those.",
-  routine: "Pick two fixed time blocks each week that you can actually protect, and decide in advance what you'll do in each one.",
-  systems: "Find the task that takes you the most time each week and turn it into a simple checklist or template before adding any new tool.",
-  expansion: "List two income ideas that reuse what you already have, and choose the one that needs the least new setup to test.",
-  diagnose: "For one week, write down what you work on and what response you get. Look for the step where people stop responding.",
+  routine:
+    "Pick two fixed time blocks each week that you can actually protect, and decide in advance what you'll do in each one.",
+  systems:
+    "Find the task that takes you the most time each week and turn it into a simple checklist or template before adding any new tool.",
+  expansion:
+    "List two income ideas that reuse what you already have, and choose the one that needs the least new setup to test.",
+  diagnose:
+    "For one week, write down what you work on and what response you get. Look for the step where people stop responding.",
 };
 
 const GAP_PLAN: Record<GapId, string[]> = {
-  focus: ["Choose one focus and write down why it fits your time and what you have.", "Pause the other ideas on purpose, without deleting them.", "Review after 30 days: keep going, or switch once, on purpose."],
-  launch: ["Define the smallest version that is useful.", "Set a release date and work only on what it needs.", "Release it, then improve it from real feedback."],
-  reach: ["Describe one specific person you want to reach.", "Show up consistently where they already are.", "Track which places bring the most responses and focus there."],
-  message: ["Describe your buyer, their problem and the result in plain words.", "Test the wording with real people.", "Use the version they repeat back to you everywhere."],
-  conversion: ["Make one clear next step for interested people.", "Invite people who already engage, directly and personally.", "Ask what stops people and fix the biggest objection."],
-  content: ["Choose a small set of themes and one look.", "Batch create a week of content in that style.", "Keep what people respond to and drop the rest."],
-  routine: ["Choose a weekly schedule you can keep even in a busy week.", "Protect those blocks for the work that matters most.", "Review weekly and adjust the plan, not the commitment."],
-  systems: ["Write down the steps of your most repeated task.", "Turn it into a template, checklist or batch session.", "Add a tool only if it clearly saves time on that task."],
-  expansion: ["List what you already have that a new stream could reuse.", "Pick one idea and test it in a small way.", "Keep it only if it fits your time without hurting what works."],
-  diagnose: ["Track your work and the response for one week.", "Find the step where people stop responding.", "Spend the next two weeks fixing that one step."],
+  focus: [
+    "Choose one focus and write down why it fits your time and what you have.",
+    "Pause the other ideas on purpose, without deleting them.",
+    "Review after 30 days: keep going, or switch once, on purpose.",
+  ],
+  launch: [
+    "Define the smallest version that is useful.",
+    "Set a release date and work only on what it needs.",
+    "Release it, then improve it from real feedback.",
+  ],
+  reach: [
+    "Describe one specific person you want to reach.",
+    "Show up consistently where they already are.",
+    "Track which places bring the most responses and focus there.",
+  ],
+  message: [
+    "Describe your buyer, their problem and the result in plain words.",
+    "Test the wording with real people.",
+    "Use the version they repeat back to you everywhere.",
+  ],
+  conversion: [
+    "Make one clear next step for interested people.",
+    "Invite people who already engage, directly and personally.",
+    "Ask what stops people and fix the biggest objection.",
+  ],
+  content: [
+    "Choose a small set of themes and one look.",
+    "Batch create a week of content in that style.",
+    "Keep what people respond to and drop the rest.",
+  ],
+  routine: [
+    "Choose a weekly schedule you can keep even in a busy week.",
+    "Protect those blocks for the work that matters most.",
+    "Review weekly and adjust the plan, not the commitment.",
+  ],
+  systems: [
+    "Write down the steps of your most repeated task.",
+    "Turn it into a template, checklist or batch session.",
+    "Add a tool only if it clearly saves time on that task.",
+  ],
+  expansion: [
+    "List what you already have that a new stream could reuse.",
+    "Pick one idea and test it in a small way.",
+    "Keep it only if it fits your time without hurting what works.",
+  ],
+  diagnose: [
+    "Track your work and the response for one week.",
+    "Find the step where people stop responding.",
+    "Spend the next two weeks fixing that one step.",
+  ],
 };
 
 const DISCOVER_STEP =
@@ -307,7 +395,7 @@ const BUDGET: Record<string, { spend: V3Spend; max: number }> = {
 };
 
 export const DECISION_POINT_NOTE =
-  "The Decision Point, a deeper tool for choosing between options, is on a waitlist while we finish it. You don't need it to act on this result.";
+  "The Decision Point can help you compare your options and create an editable plan. Your completed MAP recommendation qualifies you for $17 now; the full price is $27. It is optional: you can act on this result without buying anything.";
 
 // ---------------------------------------------------------------------------
 
@@ -354,7 +442,10 @@ function buildCtx(a: V3Answers): Ctx {
   const owned = new Set(list(a.m3_owned).filter((x) => x.startsWith("res_")));
   let customOwnedUnmatched = false;
   const custom = typeof a.m3_owned_other === "string" ? a.m3_owned_other : "";
-  for (const part of custom.split(/[,;\n]+/).map((x) => x.trim()).filter(Boolean)) {
+  for (const part of custom
+    .split(/[,;\n]+/)
+    .map((x) => x.trim())
+    .filter(Boolean)) {
     const n = normName(part);
     const hit = OWNED_RESOURCES.find((r) => [r.name, ...(r.aliases ?? [])].some((x) => normName(x) === n));
     if (hit) owned.add(hit.id);
@@ -402,10 +493,14 @@ function pathAdjust(c: Ctx, p: PathId): { delta: number; reason?: string } {
       return allContentAvoided ? { delta: -3 } : { delta: 0 };
     case "quotes":
       if (avoids(c, "cw_faceless")) return { delta: -2 };
-      return welcomes(c, "cw_faceless") ? { delta: 1, reason: "It works without showing your face or using your voice." } : { delta: 0 };
+      return welcomes(c, "cw_faceless")
+        ? { delta: 1, reason: "It works without showing your face or using your voice." }
+        : { delta: 0 };
     case "ai_avatar":
       if (avoids(c, "cw_avatar")) return { delta: -2 };
-      return welcomes(c, "cw_avatar") ? { delta: 1, reason: "You're comfortable or open to creating with an AI avatar." } : { delta: 0 };
+      return welcomes(c, "cw_avatar")
+        ? { delta: 1, reason: "You're comfortable or open to creating with an AI avatar." }
+        : { delta: 0 };
     case "asmr":
       return avoids(c, "cw_voice") && avoids(c, "cw_faceless") ? { delta: -2 } : { delta: 0 };
     case "services":
@@ -416,7 +511,11 @@ function pathAdjust(c: Ctx, p: PathId): { delta: number; reason?: string } {
       const ns = c.noSocial ? 1 : 0;
       return {
         delta: bonus + ns,
-        reason: bonus ? "You're comfortable reaching out to businesses or clients." : ns ? "It doesn't depend on social media." : undefined,
+        reason: bonus
+          ? "You're comfortable reaching out to businesses or clients."
+          : ns
+            ? "It doesn't depend on social media."
+            : undefined,
       };
     }
     case "publishing":
@@ -490,7 +589,16 @@ function discoverFocus(c: Ctx, role: FocusRole): V3Focus {
   if (c.interestPaths.length === 0) reasons.push("You haven't picked a possibility yet, and that's fine.");
   if (c.bring.includes("bring_unsure")) reasons.push("You're not sure yet how your experience could translate.");
   if (role === "pivot") reasons.push("You want a different direction from what you've done so far.");
-  return { kind: "discover", id: "discover", label: DISCOVER_LABEL, role, reasons, nextStep: DISCOVER_STEP, plan: DISCOVER_PLAN, creatorPath: null };
+  return {
+    kind: "discover",
+    id: "discover",
+    label: DISCOVER_LABEL,
+    role,
+    reasons,
+    nextStep: DISCOVER_STEP,
+    plan: DISCOVER_PLAN,
+    creatorPath: null,
+  };
 }
 
 /** The improvement gap for started creators, with an optional secondary gap. */
@@ -504,7 +612,9 @@ function gapFor(c: Ctx, notes: string[]): { id: GapId; reasons: string[]; second
   } else {
     if (c.works.includes("works_early")) {
       id = "launch";
-      reasons.push("You're not sure what the problem is and it's too early to tell, so getting something finished and out comes first.");
+      reasons.push(
+        "You're not sure what the problem is and it's too early to tell, so getting something finished and out comes first.",
+      );
     } else if (c.works.includes("works_little")) {
       id = "reach";
       reasons.push("You're putting in effort but seeing little response.");
@@ -523,7 +633,7 @@ function gapFor(c: Ctx, notes: string[]): { id: GapId; reasons: string[]; second
   if (id === "conversion" && !c.attention) {
     secondary = "reach";
     notes.push(
-      "You named turning attention into sales, but haven't marked engagement or interest as working yet. Reaching the right people may need attention too, so it's included as an alternate."
+      "You named turning attention into sales, but haven't marked engagement or interest as working yet. Reaching the right people may need attention too, so it's included as an alternate.",
     );
   }
   if (c.madeSales) reasons.push("You've already made sales, so this builds on real evidence.");
@@ -558,8 +668,10 @@ type Exclusion =
 // Optional mirror fields keep narrowing working without strictNullChecks.
 function checkEntry(
   c: Ctx,
-  e: V3CatalogEntry
-): { ok: true; claudeConsider: boolean; reason?: undefined } | { ok: false; reason: Exclusion; claudeConsider?: undefined } {
+  e: V3CatalogEntry,
+):
+  | { ok: true; claudeConsider: boolean; reason?: undefined }
+  | { ok: false; reason: Exclusion; claudeConsider?: undefined } {
   if (e.ownedVia.some((id) => c.owned.has(id))) return { ok: false, reason: "already-owned" };
   if ((e.includedIn ?? []).some((id) => c.owned.has(id))) return { ok: false, reason: "included-in-owned" };
   const r = e.requires ?? {};
@@ -585,14 +697,16 @@ function checkEntry(
     const picked = list(c.a.m3_platforms).filter((x) => x !== "plat_unsure");
     const hit = picked.some((x) => r.socialPlatforms!.ids.includes(x));
     if (r.socialPlatforms.mode === "required" && !hit) return { ok: false, reason: "platform-mismatch" };
-    if (r.socialPlatforms.mode === "avoid-mismatch" && picked.length > 0 && !hit) return { ok: false, reason: "platform-mismatch" };
+    if (r.socialPlatforms.mode === "avoid-mismatch" && picked.length > 0 && !hit)
+      return { ok: false, reason: "platform-mismatch" };
   }
   if (r.digitalOffer && !c.hasDigitalOffer) return { ok: false, reason: "no-digital-offer" };
   if (r.somethingToSell && !(c.hasOwnOffer || c.madeSales)) return { ok: false, reason: "nothing-to-sell" };
   // Budget: free-only takes owner-stated free items only. A capped range takes
   // free items or verified prices within the cap, never unverified prices.
   // "Unsure" and "more than $300" may show unverified prices, labelled as such.
-  if (c.budget.spend === "free_only" && e.price.state !== "free-owner-stated") return { ok: false, reason: "free-only" };
+  if (c.budget.spend === "free_only" && e.price.state !== "free-owner-stated")
+    return { ok: false, reason: "free-only" };
   if (c.budget.spend === "capped" && e.price.state === "unverified") return { ok: false, reason: "price-unverified" };
   if (e.price.state === "verified" && e.price.usd > c.budget.max) return { ok: false, reason: "over-budget" };
   return { ok: true, claudeConsider };
@@ -617,7 +731,9 @@ function toResource(e: V3CatalogEntry, forFocus: "primary" | "alternate", claude
         ? `About $${e.price.usd} when checked on ${e.price.checkedAt}. Prices can change, so check before buying.`
         : "Price not confirmed here. Check the current price before deciding.";
   let requirementNote = e.requirementNote ?? null;
-  if (claudeConsider) requirementNote = `${requirementNote ?? ""} You said you'd consider a paid Claude plan, so check that cost first.`.trim();
+  if (claudeConsider)
+    requirementNote =
+      `${requirementNote ?? ""} You said you'd consider a paid Claude plan, so check that cost first.`.trim();
   return {
     id: e.id,
     name: e.name,
@@ -625,7 +741,11 @@ function toResource(e: V3CatalogEntry, forFocus: "primary" | "alternate", claude
     kind: e.kind,
     url: d.url,
     destinationLabel:
-      d.kind === "cah-resource" ? "Creator Access Hub page" : e.kind === "community" ? "Free community on Skool" : "External checkout page",
+      d.kind === "cah-resource"
+        ? "Creator Access Hub page"
+        : e.kind === "community"
+          ? "Free community on Skool"
+          : "External checkout page",
     priceNote,
     requirementNote,
     forFocus,
@@ -640,7 +760,10 @@ function toResource(e: V3CatalogEntry, forFocus: "primary" | "alternate", claude
  * accepted for tests. Without a live feed no paid product is suggested; the
  * MAP-local free community may still be.
  */
-export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3CatalogEntry[] | unknown = CATALOG_NOT_LOADED): V3Build {
+export function buildResultV3(
+  input: unknown,
+  catalog: V3CatalogSource | V3CatalogEntry[] | unknown = CATALOG_NOT_LOADED,
+): V3Build {
   const v = validateV3(input);
   if (!v.ok || !v.answers) return { ok: false, missing: v.missing ?? [], invalid: v.invalid ?? [] };
   const a = v.answers;
@@ -656,7 +779,7 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
 
   const tieNote = (x: ScoredPath, y: ScoredPath) =>
     notes.push(
-      `Your answers fit "${PATH_LABELS[x.path]}" and "${PATH_LABELS[y.path]}" equally. "${PATH_LABELS[x.path]}" is listed first only because of a fixed tie order, so treat both as reasonable places to start.`
+      `Your answers fit "${PATH_LABELS[x.path]}" and "${PATH_LABELS[y.path]}" equally. "${PATH_LABELS[x.path]}" is listed first only because of a fixed tie order, so treat both as reasonable places to start.`,
     );
 
   if (!c.started) {
@@ -690,7 +813,8 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
     }
   } else {
     const g = gapFor(c, notes);
-    const wantsExpand = c.help.includes("help_add_stream") || c.help.includes("help_new_direction") || g.id === "expansion";
+    const wantsExpand =
+      c.help.includes("help_add_stream") || c.help.includes("help_new_direction") || g.id === "expansion";
     const wantsImprove = ["help_improve", "help_blocker", "help_activate"].some((h) => c.help.includes(h));
     const fresh = ranked.filter((p) => !c.workPaths.has(p.path));
     const expansion = fresh[0] ? pathFocus(c, fresh[0], "expand") : null;
@@ -711,7 +835,8 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
     } else {
       tracks = wantsExpand ? ["improve", "expand"] : ["improve"];
       primary = gapFocus(c, g.id, "improve", g.reasons);
-      if (wantsExpand) alternate = expansion ?? gapFocus(c, "expansion", "expand", ["You'd like to add another income stream."]);
+      if (wantsExpand)
+        alternate = expansion ?? gapFocus(c, "expansion", "expand", ["You'd like to add another income stream."]);
       else if (g.secondary) alternate = gapFocus(c, g.secondary, "improve", ["Your answers point here too."]);
     }
     if (g.id === "diagnose") {
@@ -726,26 +851,34 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
   }
   const others = ranked.length - 1 - (alternate?.kind === "path" ? 1 : 0);
   if (primary.kind === "path" && others > 0) {
-    notes.push(`You also chose ${others === 1 ? "one other possibility" : `${others} other possibilities`}. ${others === 1 ? "It" : "They"} can wait until this first one is moving.`);
+    notes.push(
+      `You also chose ${others === 1 ? "one other possibility" : `${others} other possibilities`}. ${others === 1 ? "It" : "They"} can wait until this first one is moving.`,
+    );
   }
   if (c.noSocial && c.interestPaths.includes("social")) {
     const plats = list(a.m3_platforms);
     notes.push(
       plats.includes("plat_pinterest") || plats.includes("plat_youtube")
         ? "You're interested in social platforms and also in options that don't rely on social media. Pinterest and YouTube work more like search, so they can fit both."
-        : "You're interested in social platforms and also in options that don't rely on social media. Both stay open; your next step shows which to test first."
+        : "You're interested in social platforms and also in options that don't rely on social media. Both stay open; your next step shows which to test first.",
     );
   }
   if (c.where === "where_consistent" && !c.works.includes("works_sales") && c.started) {
-    notes.push("You said your sales are consistent but didn't mark sales as working, so this plan is based on what you marked.");
+    notes.push(
+      "You said your sales are consistent but didn't mark sales as working, so this plan is based on what you marked.",
+    );
   }
   if ((c.where === "where_new" || c.where === "where_learning") && c.works.includes("works_sales")) {
     notes.push("You've already made sales or booked clients, so this builds on that rather than starting over.");
   }
 
   const t = String(a.m3_time);
-  if (t === "time3_lt3") considerations.push("With under 3 hours a week, keep each step small and do one thing at a time.");
-  if (t === "time3_flex") considerations.push("Since your availability changes, there's no fixed schedule. Do the next step whenever you have a free block.");
+  if (t === "time3_lt3")
+    considerations.push("With under 3 hours a week, keep each step small and do one thing at a time.");
+  if (t === "time3_flex")
+    considerations.push(
+      "Since your availability changes, there's no fixed schedule. Do the next step whenever you have a free block.",
+    );
 
   // ---- Resources ----------------------------------------------------------
   const excluded: { id: string; reason: string }[] = [];
@@ -759,7 +892,12 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
     if (Array.isArray(catalog)) {
       entries = validateV3Catalog(catalog);
       catalogInfo = { source: "supplied", generatedAt: null };
-    } else if (src && typeof src === "object" && src.status === "live" && Array.isArray((src as { entries?: unknown }).entries)) {
+    } else if (
+      src &&
+      typeof src === "object" &&
+      src.status === "live" &&
+      Array.isArray((src as { entries?: unknown }).entries)
+    ) {
       const live = src as Extract<V3CatalogSource, { status: "live" }>;
       entries = [...V3_LOCAL_ENTRIES, ...validateV3Catalog(live.entries)];
       catalogInfo = { source: "cah-feed", generatedAt: typeof live.generatedAt === "string" ? live.generatedAt : null };
@@ -791,7 +929,8 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
       });
       cands.sort((x, y) => y.score - x.score || x.order - y.order);
       // A tool is never the first suggestion unless the need is tools, systems or content.
-      const toolNeed = (f.kind === "gap" && (f.id === "systems" || f.id === "content")) || c.support.includes("sup_tools");
+      const toolNeed =
+        (f.kind === "gap" && (f.id === "systems" || f.id === "content")) || c.support.includes("sup_tools");
       const first = resources.length === 0;
       const pick = cands.find((x) => x.e.kind !== "tool" || !first || toolNeed);
       return pick ? toResource(pick.e, slot, pick.consider) : null;
@@ -806,7 +945,9 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
     }
     // Unsure or asking for community/decision help: the free community is a safe addition.
     const unsureSignals =
-      uncertain || primary.kind === "discover" || c.support.some((s) => ["sup_community", "sup_decide", "sup_unsure"].includes(s));
+      uncertain ||
+      primary.kind === "discover" ||
+      c.support.some((s) => ["sup_community", "sup_decide", "sup_unsure"].includes(s));
     if (resources.length < MAX_V3_RESOURCES && unsureSignals && !taken.has("monetize-what-you-know")) {
       const mwyk = entries.find((e) => e.id === "monetize-what-you-know");
       if (mwyk && v3Recommendability(mwyk).ok) {
@@ -828,25 +969,43 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
         ? "Some options need a Mac or Windows computer, so we left those out because you mainly use a Chromebook."
         : p?.has("phone") && p.size === 1
           ? "Some options need a computer, so we left those out because you mainly use a phone or tablet."
-          : "Some options need a Mac or Windows computer, so we left those out."
+          : "Some options need a Mac or Windows computer, so we left those out.",
     );
   }
-  if (reasonsSeen.has("device-unknown")) considerations.push("Some options need a specific computer, and we didn't assume you have one, so we left those out.");
-  if (reasonsSeen.has("needs-paid-claude")) considerations.push("Some AI service options need a paid Claude plan, so we left those out.");
-  if (reasonsSeen.has("outreach-avoided")) considerations.push("You'd prefer not to reach out to businesses or clients, so we left out options built around outreach.");
-  if (reasonsSeen.has("platform-mismatch")) considerations.push("Some options are built for a social platform you didn't choose, so we left those out.");
-  if (reasonsSeen.has("faceless-avoided")) considerations.push("You'd prefer not to make faceless content, so we left out options built around it.");
-  if (ownedFits.length) considerations.push(`You already own ${ownedFits.join(" and ")}, which fits this. Start there before buying anything new.`);
+  if (reasonsSeen.has("device-unknown"))
+    considerations.push(
+      "Some options need a specific computer, and we didn't assume you have one, so we left those out.",
+    );
+  if (reasonsSeen.has("needs-paid-claude"))
+    considerations.push("Some AI service options need a paid Claude plan, so we left those out.");
+  if (reasonsSeen.has("outreach-avoided"))
+    considerations.push(
+      "You'd prefer not to reach out to businesses or clients, so we left out options built around outreach.",
+    );
+  if (reasonsSeen.has("platform-mismatch"))
+    considerations.push("Some options are built for a social platform you didn't choose, so we left those out.");
+  if (reasonsSeen.has("faceless-avoided"))
+    considerations.push("You'd prefer not to make faceless content, so we left out options built around it.");
+  if (ownedFits.length)
+    considerations.push(
+      `You already own ${ownedFits.join(" and ")}, which fits this. Start there before buying anything new.`,
+    );
   if (list(a.m3_owned).includes("own_need_help"))
-    considerations.push("You'd like help using what you already own. Go through it with the next step above in mind before adding anything new.");
+    considerations.push(
+      "You'd like help using what you already own. Go through it with the next step above in mind before adding anything new.",
+    );
   if (c.customOwnedUnmatched)
-    considerations.push("You typed in other resources. We only match exact names, so check that any suggestion isn't something you already own.");
+    considerations.push(
+      "You typed in other resources. We only match exact names, so check that any suggestion isn't something you already own.",
+    );
 
   const hasPaid = resources.some((r) => !r.priceNote.startsWith("Free"));
   const hasUnverified = resources.some((r) => r.priceNote.startsWith("Price not confirmed"));
   const priceBlocked = reasonsSeen.has("price-unverified");
   if (priceBlocked && resources.length > 0)
-    considerations.push("Some other options that fit aren't shown because we couldn't confirm their current price for your spending range.");
+    considerations.push(
+      "Some other options that fit aren't shown because we couldn't confirm their current price for your spending range.",
+    );
   let resourcesNote: string;
   if (catalogFallback)
     resourcesNote =
@@ -859,13 +1018,16 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
     resourcesNote =
       "Some options fit your answers, but we couldn't confirm their current prices, so none are shown for your spending range. Choose \"I'm unsure\" for spending to see them with prices marked unconfirmed, or browse the Creator Access Hub.";
   else if (resources.length === 0)
-    resourcesNote = "Nothing in the current catalog is a confirmed fit for these answers, so we're not guessing. You can browse the Creator Access Hub instead.";
+    resourcesNote =
+      "Nothing in the current catalog is a confirmed fit for these answers, so we're not guessing. You can browse the Creator Access Hub instead.";
   else if (c.budget.spend === "unsure")
     resourcesNote = `Shown for comparison only. You don't need to buy anything to use this result.${hasUnverified ? " Some prices aren't confirmed." : ""}`;
   else if (hasPaid && c.budget.spend === "capped")
-    resourcesNote = "Optional. These were within your range when prices were checked. Prices can change, so check before buying.";
+    resourcesNote =
+      "Optional. These were within your range when prices were checked. Prices can change, so check before buying.";
   else if (hasUnverified)
-    resourcesNote = "Optional. You can take every step above without buying anything. Some prices aren't confirmed, so check before deciding.";
+    resourcesNote =
+      "Optional. You can take every step above without buying anything. Some prices aren't confirmed, so check before deciding.";
   else resourcesNote = "Optional. You can take every step above without buying anything.";
 
   const decisionNeeded =
@@ -890,7 +1052,7 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
     resourcesNote,
     ownedFits,
     browse: { label: "Browse the Creator Access Hub", url: CAH_BASE },
-    decisionPoint: decisionNeeded ? DECISION_POINT_NOTE : null,
+    decisionPoint: decisionNeeded && c.budget.spend !== "free_only" ? DECISION_POINT_NOTE : null,
     userNoteAcknowledgement:
       typeof a.m3_notes === "string"
         ? "We saved your note with your result. The recommendation above comes only from your selected answers, so read it with your note in mind."
@@ -904,7 +1066,15 @@ export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3Catal
 
 /** Compact, versioned snapshot for storage and webhooks. No personal data. */
 export function resultSnapshotV3(r: V3Result) {
-  const f = (x: V3Focus) => ({ kind: x.kind, id: x.id, label: x.label, role: x.role, nextStep: x.nextStep, plan: x.plan, reasons: x.reasons });
+  const f = (x: V3Focus) => ({
+    kind: x.kind,
+    id: x.id,
+    label: x.label,
+    role: x.role,
+    nextStep: x.nextStep,
+    plan: x.plan,
+    reasons: x.reasons,
+  });
   return {
     version: r.version,
     started: r.started,
