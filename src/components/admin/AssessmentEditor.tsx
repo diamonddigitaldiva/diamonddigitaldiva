@@ -7,24 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RotateCcw, Save } from "lucide-react";
 import { MAX_OVERRIDE_LENGTH, overrideKey } from "@/lib/assessment";
-import {
-  MAP_V3_VERSION as ASSESSMENT_VERSION,
-  V3_QUESTIONS,
-  V3_CATALOG,
-  V3_CATALOG_LAST_REVIEWED,
-  v3Recommendability,
-} from "@/lib/assessment/v3";
+import { MAP_V3_VERSION as ASSESSMENT_VERSION, V3_QUESTIONS } from "@/lib/assessment/v3";
 import { helperKey } from "@/lib/assessment/v3Overrides";
-
-const REASON_LABELS: Record<string, string> = {
-  "status-not-active": "Not confirmed active (or pending)",
-  "scope-not-established": "Scope not established",
-  "no-destination": "No routable link",
-  "destination-retired": "Link is retired",
-  "link-failed": "Link failed verification",
-  "external-link-not-approved": "External link not owner-approved",
-  "not-on-shortlist": "Not on owner's paid shortlist",
-};
+import { CatalogFeedPanel } from "./CatalogFeedPanel";
 
 /**
  * Admin wording editor for the live versioned assessment. Admins can change
@@ -165,72 +150,7 @@ export function AssessmentEditor() {
         </div>
       ))}
 
-      <div className="quiz-card space-y-3">
-        <h2 className="font-heading text-lg">Creator Access Hub catalog</h2>
-        <p className="text-sm text-muted-foreground">
-          Last reviewed {V3_CATALOG_LAST_REVIEWED}. Curated by hand from Hub resource pages and owner confirmations. Automatic sync with the
-          Hub catalog is not implemented, so update the catalog file when Hub offers change.
-        </p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-muted-foreground">
-                <th className="py-1 pr-3">Product</th>
-                <th className="py-1 pr-3">Product status</th>
-                <th className="py-1 pr-3">Price / needs</th>
-                <th className="py-1 pr-3">Link</th>
-                <th className="py-1 pr-3">Recommended</th>
-              </tr>
-            </thead>
-            <tbody>
-              {V3_CATALOG.map((e) => {
-                const r = v3Recommendability(e);
-                return (
-                  <tr key={e.id} className="border-t border-border align-top">
-                    <td className="py-2 pr-3">
-                      <div className="font-medium">{e.name}</div>
-                      <code className="text-xs text-muted-foreground">{e.id}</code>
-                      {e.summary && <div className="text-xs text-muted-foreground">{e.summary}</div>}
-                      {e.scopeNote && <div className="text-xs text-amber-700">{e.scopeNote}</div>}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {e.status.replace(/_/g, " ")}
-                      <div className="text-xs text-muted-foreground">{e.statusSource.replace(/-/g, " ")}</div>
-                      <div className="text-xs text-muted-foreground">{e.shortlist ? "On paid shortlist" : "Not on paid shortlist"}</div>
-                    </td>
-                    <td className="py-2 pr-3 text-xs">
-                      {e.price.state === "free-owner-stated" ? "Free (owner-stated)" : e.price.state === "verified" ? `$${e.price.usd}` : "Price not verified"}
-                      {e.requirementNote && <div className="text-muted-foreground max-w-xs">{e.requirementNote}</div>}
-                    </td>
-                    <td className="py-2 pr-3 max-w-xs">
-                      {e.destination ? (
-                        <>
-                          <a href={e.destination.url} target="_blank" rel="noopener noreferrer" className="underline break-all text-xs">
-                            {e.destination.kind === "cah-resource" ? "CAH resource page" : "Owner-provided link"}
-                          </a>
-                          <div className="text-xs">Verification: {e.destination.verification} ({e.destination.checkedAt})</div>
-                          <div className="text-xs text-muted-foreground">{e.destination.note}</div>
-                        </>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">None</span>
-                      )}
-                      {(e.retiredUrls ?? []).map((u) => (
-                        <div key={u} className="text-xs text-muted-foreground line-through break-all">{u}</div>
-                      ))}
-                    </td>
-                    <td className="py-2 pr-3 text-xs">
-                      {r.ok ? "When answers match" : `No: ${REASON_LABELS[r.reason]}`}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          An archived Hub listing is not treated as proof a product is discontinued. Product status and link status are tracked separately.
-        </p>
-      </div>
+      <CatalogFeedPanel />
     </div>
   );
 }

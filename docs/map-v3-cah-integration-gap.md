@@ -1,32 +1,39 @@
-# MAP v3 ↔ Creator Access Hub: integration gap report
+# MAP v3 ↔ Creator Access Hub integration
 
-Read-only review from The MAP project only (updated 2026-11-01 with owner-supplied research). Nothing in CAH, its products, prices, statuses or external accounts was changed.
+Updated 2026-11-02. Written from The MAP project only. Nothing in CAH (products, prices, statuses, metadata) was changed from here.
 
-## What exists today
-- **Catalog:** a hand-curated catalog (`supabase/functions/_shared/map-v3/catalog.ts`, last reviewed 2026-11-01). **There is no live sync with CAH.** Scope summaries come from owner-supplied research (Nov 1); prices count as verified only when the owner supplied a matching, publicly corroborated price.
-- **CAH links (read-only HTTP check, 2026-11-01, 200 OK; unknown IDs return 404):** tss, aica, cfw, paid-with-ai, powerhorse-academy, faceless-amazon-kdp-blueprint, the-offer-fix, aifluencer-studio, faceless-launch, daily-sales-rhythm, 100k-threads-challenge, 0-first-sale-challenge, ai-to-sales, selling-made-simple, the-molly-x-rosie-archive, prompt-to-sales, ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot. The owner's CAH read confirmed the last ten as ACTIVE.
-- **Owner links:** DWA (Fanbasis checkout, the owner confirmed it's the correct current link) and Monetize What You Know (Skool; the owner-provided link blocks automated checks).
-- **Handoff:** with consent, The MAP calls the validated `create_handoff_session` function, which writes a 2-hour `handoff_sessions` row and returns only its ID (guests have no read access to sessions); CAH reads it through `get_handoff_session` / `consume_handoff_session` using an opaque ID. This flow goes MAP → CAH only.
-- **CRM delivery limit:** quiz results reach the CRM at least once, not exactly once. The initial send and the retry job never post the same row at the same time (row lock, 20-second timeout, 5-minute retry wait, 10 attempts max), but if the CRM accepts a post and its reply is lost, the row is sent again later. The CRM webhook has no verified idempotency-key support, so it cannot deduplicate.
-- **Secrets in this project:** HQ ingest token, CRM webhook URL and the managed AI key. There are **no** CAH credentials or catalog endpoint, and none should be added to the browser.
+## Catalog: CAH → MAP (built)
+- **Source:** the public, read-only CAH feed `GET https://creatoraccesshub.diamonddigitaldiva.com/api/public/map/catalog/v1`, contract `cah-map-catalog/v1`. CAH builds it from owner-reviewed `offer_map_metadata` (only `map_eligible` and reviewed rows that are active, not coming soon, not being updated, not sold out and have a usable link). No key, no cookies, no scraping. The response is `no-store` with `Access-Control-Allow-Origin: *`.
+- **Adapter:** `supabase/functions/_shared/map-v3/feed.ts`. The browser (`src/lib/assessment/cahCatalog.ts`, 5-minute reuse of a good read) and `send-webhook` (60-second reuse) use the same code, so the result someone sees and the result saved on the server follow the same rules. The server never trusts the browser's resource list.
+- **Hard limits:** 6-second timeout, 512 KB maximum, strict envelope check (contract, `generated_at`, `count` equal to the number of items). If anything fails, the feed counts as **unavailable**.
+- **When the feed is unavailable:** no paid product is suggested. The person still gets their full result and free plan, a note that the Hub's list couldn't be loaded, and a plain "Browse the Creator Access Hub" link. A failed read is never cached, and there's no older or hardcoded list to fall back on. The free community (Monetize What You Know) is a MAP-owned free link, so it can still appear for people who are unsure.
+- **Per-item rules (fail closed):**
+  - It must be on the MAP allowlist (`V3_MAP_ALLOWLIST`, the 17 products the owner reviewed). **New CAH products are never eligible automatically.**
+  - `V3_MAP_BLOCKED` always wins: 4 Fig Days (sold out; this is a different product from 4-Figure Clients), The Offer Fix (scope not established), Quote Society and Insta Expand (pending), and The Decision Point (waitlist only).
+  - It must have `map_preferred: true`, `listing.state: active`, `availability.state: available` and must not be coming soon or being updated. Sold out is always dropped.
+  - It must have a summary, recognised paths/gaps/roles and only known prerequisites. An unknown prerequisite drops the item. Summaries with strong promise wording are dropped.
+  - Links: a CAH resource link must be exactly `/resources/{id}`. An external link must be an exact owner-approved link (DWA's Fanbasis link). Retired CAH pages (for example `/resources/dwa` and `/resources/ata`) are never used. Links that failed verification are dropped.
+  - Prices count as verified only when they're verified, in USD and one-time. Recurring, other-currency or unverified prices are "unverified", so a capped budget leaves them out.
+  - Ownership: `owned_aliases` and The MAP's own owned list both suppress items the person already owns. `included_in` (for example Prompt to Sales inside The Secret Sauce) suppresses bundle duplicates. The 4 Fig Days and 4 Fig Clients ownership answers are still recognised.
+  - Affiliate: `rel="sponsored"` comes only from the feed's `affiliate` flag. The disclosure is shown before the cards whenever an affiliate card is shown.
+  - Order is The MAP's editorial allowlist order (ties only, never commission). `kind` (training or tool) is The MAP's classification, so tools are never shown as a business model.
+- **Provenance:** each v3 result and snapshot records `catalog: { source: "cah-feed" | "unavailable" | "supplied", generatedAt }`.
+- **Feed on 2026-11-02 (17 items, all accepted):** dwa, cfw, aica, aifluencer-studio, ai-to-sales, faceless-launch, 0-first-sale-challenge, selling-made-simple, daily-sales-rhythm, 100k-threads-challenge, tss, paid-with-ai, powerhorse-academy, faceless-amazon-kdp-blueprint, ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot, the-molly-x-rosie-archive, prompt-to-sales. The feed marks all of them as affiliate products. CFW and Faceless Launch are now "price unverified" because the feed reports a price conflict, so they don't show for capped budgets. Titles are CAH's exact titles; only decorative emoji are removed (so "$0 → FIRST SALE CHALLENGE").
+- **Tests:** a verbatim snapshot of that feed is in `_shared/map-v3/testdata/cahFeedSnapshot.ts`. Tests never call the network. They cover an empty feed, removal, sold out, coming soon or being updated, timeouts, HTTP and JSON errors, oversized bodies, new or not-preferred products, blocked IDs, retired, mismatched or unapproved links, unknown prerequisites and recurring prices.
 
-## Known products that can't be suggested yet
-- **Missing destination only (scope known):** Passive by Design (needs a paid Claude plan; $297), Pin Prompt & Profit (price unresolved, $47 vs $87). Neither had a CAH row in the Nov 1 read.
-- **After the Avatar:** scope known ($117); the CAH `ata` row only has an obsolete archived link, which stays retired. Not discontinued.
-- **Pending:** Quote Society (no link), Insta Expand.
-- **Scope not established:** The Offer Fix (the official description is the title only).
-- **Not on the catalog:** Vantage System. It isn't confirmed to be the same product as "aria-vantage", so the two aren't treated as one.
-- **The Decision Point:** waitlist only, with no verified waitlist link. It's mentioned as text only.
-- **Prices still unverified:** Secret Sauce, Paid with AI, Powerhorse Academy, Faceless Amazon KDP Blueprint, Prompt to Sales ($37 public vs $27 in the backend), Pin Prompt & Profit, Quote Society. With a set spending range these are left out; with "unsure" or "more than $300" they show as "Price not confirmed".
+## Handoff: MAP → CAH (verified for compatibility)
+- With Hub-sharing consent, The MAP calls the validated `create_handoff_session` function. It writes a 2-hour `handoff_sessions` row and returns only its ID. The Hub URL is `/?session=<uuid>`, with no name, email or other parameters. Without consent, the plain Hub URL has no query at all.
+- CAH (`src/lib/map/handoffV3.ts`, `handoff.functions.ts`) reads the session on its server through `get_handoff_session`, using The MAP's publishable key (`MAP_HANDOFF_URL` / `MAP_HANDOFF_PUBLISHABLE_KEY`). It accepts only known v3 focus IDs, keeps only those, removes the session from the address bar and shows nothing for invalid, unknown or expired sessions. Old v1/v2 codes map to nothing.
+- **Checks (2026-11-02):**
+  - A verbatim copy of CAH's receiver rules (`src/lib/__fixtures__/cahHandoffV3.snapshot.ts`) confirms that all 21 v3 focus IDs, their labels and their creator paths match.
+  - A synthetic database check that was rolled back created a session, read it (`message`/`publishing`), consumed it, expired it (no row, consume returns false) and had an invalid stage rejected. No rows remain.
+  - A read-only call to `get_handoff_session`, the same call CAH makes, with an unknown ID returned `[]` (CAH shows nothing). An invalid ID returned 400, and CAH validates IDs before calling.
+- **Remaining privacy note:** `get_handoff_session` still returns first name and email to anyone who holds a live session ID (2-hour window, unguessable UUID). CAH discards them. Narrowing that function to focus fields only is a recommended follow-up, timed with CAH, because CAH calls it.
 
-## What's missing for a read-only CAH → MAP catalog feed
-1. **A public, read-only feed owned by CAH** (for example a CAH backend function or a public database view) that returns only MAP-eligible offers. It must need no privileged key: no service-role key in the browser, and no scraping CAH pages as the source of truth.
-2. **Per-offer MAP fields in CAH** (after the current CAH update finishes): `map_eligible`, `map_reviewed_at`; product status kept separate from the listing state and from link verification; a canonical destination (CAH `/resources/{id}` or an exact owner-approved Beacons/external link); `paths`, `gaps`, `roles`; prerequisites (devices, paid Claude, outreach, messages, faceless, avatar comfort, existing avatar, existing offer, no sales yet, social platforms); `price` with source and checked date (empty when not verified, regular price rather than a temporary discount); owner-stated `free`; `included_in` bundles (for example Prompt to Sales inside Secret Sauce); `owned_aliases`.
-3. **A MAP adapter** that reads the feed on the server or at build time, applies `validateV3Catalog` and `v3Recommendability`, keeps the curated list as a fallback, and records the feed's review date. **Not built**, because no feed exists yet.
-4. **CAH reading v3 handoff fields:** `primary_stage` holds a v3 focus ID (for example `message`, `publishing`, `discover`) and `primary_stage_name` holds its label.
-5. **When Passive by Design gets a destination:** the paid-Claude question currently only appears for the AI services and client services interests, so it would also need to appear for digital products and affiliate respondents. Until then, the engine safely leaves it out.
-
-## Unresolved before publish
-- **Marketing consent:** the lead form has a separate, optional, unchecked marketing checkbox. The server stores `marketing_consent` with its own timestamp, source and wording version. New (v3) leads reach the CRM only when consent is `true`, and the payload carries `marketingConsent: true` plus its metadata; leads without consent are saved in the app only and never sent or retried. Old v1/v2 forwarding is unchanged. How the CRM's own workflows use the flag is unverified (the CRM was not inspected or changed), so no external marketing or email delivery is claimed.
-- Chromebook eligibility for Paid with AI ("laptop/PC with Chrome") is treated as not qualifying.
-- Device needs for AICA and the Faceless Amazon KDP Blueprint aren't documented, so phone users aren't excluded from them.
+## Still open
+- **CAH-side:** Passive by Design, Pin Prompt & Profit and After the Avatar aren't in the feed (not MAP-eligible in CAH). If the owner later makes them eligible in CAH, they also need adding to `V3_MAP_ALLOWLIST`, which is a deliberate MAP-side step. Passive by Design also needs the paid-Claude question shown to digital-products and affiliate respondents. Until then the engine leaves it out.
+- **4 Fig Days vs 4-Figure Clients:** the CAH snapshot has a sold-out "4-Figure Clients" row and no "4 Fig Days" row. The MAP blocks 4 Fig Days IDs and doesn't allowlist 4-Figure Clients, so neither can be suggested. The CAH-side labelling should be confirmed by the owner or the CAH investigation.
+- **Server feed read in production:** tests use fakes. The deployed `send-webhook` reading the feed from the server environment hasn't been exercised with a real submission, because no test leads are sent.
+- **Prices still unverified in the feed:** CFW, Faceless Launch, Secret Sauce, Paid with AI, Powerhorse Academy, Faceless Amazon KDP Blueprint and Prompt to Sales.
+- **CRM:** delivery is at least once (no verified idempotency). How CRM workflows use `marketingConsent` is unverified, and new v3 leads without consent are never forwarded.
+- **Device notes:** Chromebook doesn't count as Mac/Windows. Device needs for AICA and KDP aren't in the feed, so phone users aren't excluded from them.

@@ -8,9 +8,12 @@ const sendWebhook = vi.fn().mockResolvedValue(SAVED);
 const forwardToHQ = vi.fn();
 const handoffRpc = vi.fn();
 const fromTables: string[] = [];
+const loadCatalog = vi.fn();
 
 vi.mock("@/lib/webhook", () => ({ sendQuizResultsToWebhook: (p: unknown) => sendWebhook(p) }));
 vi.mock("@/lib/hqTracking", () => ({ forwardToHQ: (e: unknown) => forwardToHQ(e) }));
+// The CAH feed is never fetched in tests: a verbatim snapshot (or a failure) is served instead.
+vi.mock("@/lib/assessment/cahCatalog", () => ({ loadV3Catalog: () => loadCatalog(), resetV3CatalogCache: () => {} }));
 vi.mock("@/integrations/supabase/client", () => {
   const thenable = { then: (cb: (r: { error: null }) => void) => { cb({ error: null }); return Promise.resolve(); } };
   return {
@@ -32,7 +35,9 @@ class RO { observe() {} unobserve() {} disconnect() {} }
 (globalThis as unknown as { ResizeObserver: typeof RO }).ResizeObserver = RO;
 
 import { TheMapQuiz } from "./TheMapQuiz";
-import { getV3Question, V3_OWNER_LINKS, V3_RETIRED_URLS } from "@/lib/assessment/v3";
+import { adaptCahFeed, getV3Question, V3_OWNER_LINKS, V3_RETIRED_URLS } from "@/lib/assessment/v3";
+import { CAH_FEED_SNAPSHOT_2026_11_02 } from "../../../supabase/functions/_shared/map-v3/testdata/cahFeedSnapshot.ts";
+const LIVE = adaptCahFeed(CAH_FEED_SNAPSHOT_2026_11_02);
 import { DRAFT_KEY } from "@/lib/assessment/draft";
 
 type User = ReturnType<typeof userEvent.setup>;
@@ -81,6 +86,8 @@ describe("The MAP v3 flow", () => {
   beforeEach(() => {
     sendWebhook.mockReset();
     sendWebhook.mockResolvedValue(SAVED);
+    loadCatalog.mockReset();
+    loadCatalog.mockResolvedValue(LIVE);
     forwardToHQ.mockClear();
     handoffRpc.mockReset();
     fromTables.length = 0;
@@ -374,5 +381,39 @@ describe("The MAP v3 flow", () => {
     await submitLead(user, false);
     expect(await screen.findByText(/saved\. passing it on to our team is delayed/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /try saving again/i })).toBeNull();
+  });
+
+  it("feed unavailable (e.g. timeout): full free plan, no paid links, plain Hub browse link, and no stale products", async () => {
+    loadCatalog.mockResolvedValue({ status: "unavailable", reason: "timeout" });
+    handoffRpc.mockResolvedValue({ data: null, error: { message: "x" } });
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user, "budget_300p");
+    await submitLead(user, true);
+    expect(await screen.findByTestId("next-step")).not.toBeEmptyDOMElement();
+    expect(screen.getByTestId("resources-note")).toHaveTextContent(/couldn't load the Creator Access Hub's current resource list/);
+    const section = screen.getByRole("heading", { name: /optional resources/i }).closest("section")!;
+    expect(section.querySelectorAll("[data-resource-id]")).toHaveLength(0);
+    expect(within(section).getByTestId("resources-browse")).toHaveAttribute("href", "https://creatoraccesshub.diamonddigitaldiva.com");
+    // Only the free community (not an affiliate link) can remain, so no affiliate claim is shown.
+    expect(within(section).queryByTestId("affiliate-disclosure")).toBeNull();
+    const payload = sendWebhook.mock.calls[0][0];
+    expect(payload.result.resources).toEqual([]);
+    expect(payload.result.catalog).toEqual({ source: "unavailable", generatedAt: null });
+  });
+
+  it("live feed: resources come from the feed and the payload records its generation time", async () => {
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await answerBeginner(user, "budget_300p");
+    await submitLead(user, false);
+    await screen.findByTestId("primary-label");
+    const payload = sendWebhook.mock.calls[0][0];
+    expect(payload.result.catalog).toEqual({ source: "cah-feed", generatedAt: "2026-11-02T15:31:35Z" });
+    expect(payload.result.resources.length).toBeGreaterThan(0);
+    const feedIds = new Set(CAH_FEED_SNAPSHOT_2026_11_02.items.map((i) => i.id as string));
+    for (const r of payload.result.resources as { id: string }[]) expect(feedIds.has(r.id) || r.id === "monetize-what-you-know").toBe(true);
   });
 });

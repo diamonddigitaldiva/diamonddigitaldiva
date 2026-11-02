@@ -3,7 +3,9 @@ import { QuizScreen } from "@/components/quiz/QuizScreen";
 import { LeadScreen } from "@/components/quiz/LeadScreen";
 import { ResultScreen } from "@/components/quiz/ResultScreen";
 import { useAssessment } from "@/hooks/useAssessment";
-import { buildResultV3, type V3Answers } from "@/lib/assessment/v3";
+import { useEffect, useState } from "react";
+import { buildResultV3, CATALOG_NOT_LOADED, type V3Answers, type V3CatalogSource } from "@/lib/assessment/v3";
+import { loadV3Catalog } from "@/lib/assessment/cahCatalog";
 
 const SAMPLE_ANSWERS: V3Answers = {
   m3_where: "where_inconsistent",
@@ -29,6 +31,10 @@ const SAMPLE_ANSWERS: V3Answers = {
 
 export default function QuizPreview() {
   const { questions, isLoading } = useAssessment();
+  const [catalog, setCatalog] = useState<V3CatalogSource>(CATALOG_NOT_LOADED);
+  useEffect(() => {
+    void loadV3Catalog().then(setCatalog);
+  }, []);
 
   if (isLoading) {
     return (
@@ -38,7 +44,7 @@ export default function QuizPreview() {
     );
   }
 
-  const sample = buildResultV3(SAMPLE_ANSWERS);
+  const sample = buildResultV3(SAMPLE_ANSWERS, catalog);
   const matrix = questions.find((q) => q.kind === "matrix") ?? questions[0];
 
   return (
