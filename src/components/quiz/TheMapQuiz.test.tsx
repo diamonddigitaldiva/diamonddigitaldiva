@@ -396,6 +396,8 @@ describe("The MAP v3 flow", () => {
     const section = screen.getByRole("heading", { name: /optional resources/i }).closest("section")!;
     expect(section.querySelectorAll("[data-resource-id]")).toHaveLength(0);
     expect(within(section).getByTestId("resources-browse")).toHaveAttribute("href", "https://creatoraccesshub.diamonddigitaldiva.com");
+    // Only the free community (not an affiliate link) can remain, so no affiliate claim is shown.
+    expect(within(section).queryByTestId("affiliate-disclosure")).toBeNull();
     const payload = sendWebhook.mock.calls[0][0];
     expect(payload.result.resources).toEqual([]);
     expect(payload.result.catalog).toEqual({ source: "unavailable", generatedAt: null });

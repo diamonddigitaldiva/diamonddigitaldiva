@@ -357,7 +357,8 @@ export function ResultScreen({
         <p className="text-sm text-muted-foreground mb-5" data-testid="resources-note">
           {result.resourcesNote}
         </p>
-        {result.resources.length > 0 && (
+        {/* Shown before the cards whenever any of them is an affiliate link; never claimed for free/own links only. */}
+        {result.resources.some((r) => r.affiliate) && (
           <p className="text-[13px] text-charcoal/85 leading-relaxed mb-4" data-testid="affiliate-disclosure">
             {AFFILIATE_DISCLOSURE}
           </p>
@@ -390,7 +391,7 @@ export function ResultScreen({
           </div>
         )}
         {/* Without Hub sharing, the plain browse link is already shown above. */}
-        {result.resources.length === 0 && hubConsent && (
+        {(result.resources.length === 0 || result.catalogFallback) && hubConsent && (
           <a
             href={CREATOR_ACCESS_HUB_URL}
             target="_blank"
