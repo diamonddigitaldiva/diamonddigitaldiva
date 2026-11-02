@@ -1,6 +1,6 @@
 # Roadmap
 
-## MAP v3 (map-v3.0) — preview only, do not publish
+## MAP v3 (map-v3.0) — owner authorized finishing; owner deploys after review
 - [x] Shared v3 definition (questions, conditions, validation) usable by app and server
 - [x] v3 deterministic engine: start / improve / expand / pivot, ties reported, max one alternate
 - [x] v3 catalog: owner shortlist for owned-resource selector, conservative eligibility (devices, Claude plan, outreach, owned, budget, pending)
@@ -29,13 +29,21 @@
 - [x] Optional unchecked marketing checkbox; explicit consent stored with server time/source/version
 - [x] New v3 leads without consent saved in the app only, never sent to the CRM or retried; v1/v2 unchanged
 
+## Live CAH catalog + handoff verification (done, 2026-11-02)
+- [x] Public CAH feed adapter shared by browser and send-webhook; hardcoded product list removed
+- [x] MAP allowlist (no auto-eligibility), blocked IDs (4 Fig Days sold out, Offer Fix, pending, Decision Point), fail-closed validation
+- [x] Feed unavailable/invalid/timeout: free plan + plain Hub link, no stale purchase links
+- [x] Admin view of the live feed and what The MAP does with each item
+- [x] Handoff contract checked against CAH receiver (synthetic, rolled back); tests, desktop/phone browser checks
+
 ## Earlier (done)
 - [x] MAP v2 refresh, DWA owner correction, pop-up blocker note
 
 ## Blocked on owner
 - [ ] Sender name/address for result email
-- [ ] CAH per-offer MAP eligibility metadata + read-only catalog feed (CAH-side)
 - [ ] Decision Point waitlist link (no verified destination yet)
 - [ ] CRM-side handling of the new `marketingConsent` flag is unverified (CRM workflows not inspected or changed); configure the CRM to use it before publish
-- [ ] Production publish deferred until CAH integration
+- [ ] Production publish: owner deploys after review
+- [ ] Recommended: narrow get_handoff_session to focus fields (coordinate with CAH)
+- [ ] Confirm 4 Fig Days vs 4-Figure Clients labelling in CAH
 - [ ] Destinations for Passive by Design, Pin Prompt & Profit, After the Avatar (CAH); Quote Society / Insta Expand pending; Offer Fix scope
