@@ -410,6 +410,7 @@ describe("The MAP v3 flow", () => {
     await screen.findByTestId("primary-label");
     const payload = sendWebhook.mock.calls[0][0];
     expect(payload.result.catalog).toEqual({ source: "cah-feed", generatedAt: "2026-11-02T15:31:35Z" });
+    expect(payload.result.resources.length).toBeGreaterThan(0);
     const feedIds = new Set(CAH_FEED_SNAPSHOT_2026_11_02.items.map((i) => i.id as string));
     for (const r of payload.result.resources as { id: string }[]) expect(feedIds.has(r.id) || r.id === "monetize-what-you-know").toBe(true);
   });
