@@ -28,11 +28,22 @@ Updated 2026-11-02. Written from The MAP project only. Nothing in CAH (products,
   - A verbatim copy of CAH's receiver rules (`src/lib/__fixtures__/cahHandoffV3.snapshot.ts`) confirms that all 21 v3 focus IDs, their labels and their creator paths match.
   - A synthetic database check that was rolled back created a session, read it (`message`/`publishing`), consumed it, expired it (no row, consume returns false) and had an invalid stage rejected. No rows remain.
   - A read-only call to `get_handoff_session`, the same call CAH makes, with an unknown ID returned `[]` (CAH shows nothing). An invalid ID returned 400, and CAH validates IDs before calling.
-- **Remaining privacy note:** `get_handoff_session` still returns first name and email to anyone who holds a live session ID (2-hour window, unguessable UUID). CAH discards them. Narrowing that function to focus fields only is a recommended follow-up, timed with CAH, because CAH calls it.
+- **CAH receiver status (CAH read, 2026-11-02):** `MAP_HANDOFF_URL` and `MAP_HANDOFF_PUBLISHABLE_KEY` are not set in CAH yet, so CAH currently ignores `?session`. The MAP side needs no change.
+- **Shared functions (The MAP's database; `anon` and `authenticated` may run them):**
+  - `get_handoff_session(_session_id uuid)` is read-only. It returns a table (`id, first_name, email, primary_stage, primary_stage_name, primary_stage_url, secondary_stage, secondary_stage_name, secondary_stage_url, source, created_at, expires_at, consumed_at`) only while `expires_at > now()`; otherwise it returns zero rows. This is the only function CAH calls.
+  - `consume_handoff_session(_session_id uuid) → boolean` marks the session consumed (true only if unexpired). CAH doesn't use it, and it isn't needed.
+  - `create_handoff_session(...) → uuid` is used by The MAP only.
+- **CAH setup (server-side secrets only, never `VITE_`):**
+  - Set `MAP_HANDOFF_URL` to The MAP's public backend address (https, no trailing path).
+  - Set `MAP_HANDOFF_PUBLISHABLE_KEY` to The MAP's public `anon` key. It's the same key already shipped in The MAP's site, and it isn't a privileged key.
+  - CAH then POSTs `{base}/rest/v1/rpc/get_handoff_session` with `{"_session_id": "<uuid>"}`. The key is an older JWT-style key, not `sb_`, so CAH's code also sends it as Bearer.
+  - Expect `200 []` for an unknown or expired session (CAH shows nothing) and `400` for a malformed ID (CAH validates the ID first).
+  - Never give CAH a service-role key or the database password.
+ `get_handoff_session` still returns first name and email to anyone who holds a live session ID (2-hour window, unguessable UUID). CAH discards them. Narrowing that function to focus fields only is a recommended follow-up, timed with CAH, because CAH calls it.
 
 ## Still open
 - **CAH-side:** Passive by Design, Pin Prompt & Profit and After the Avatar aren't in the feed (not MAP-eligible in CAH). If the owner later makes them eligible in CAH, they also need adding to `V3_MAP_ALLOWLIST`, which is a deliberate MAP-side step. Passive by Design also needs the paid-Claude question shown to digital-products and affiliate respondents. Until then the engine leaves it out.
-- **4 Fig Days vs 4-Figure Clients:** the CAH snapshot has a sold-out "4-Figure Clients" row and no "4 Fig Days" row. The MAP blocks 4 Fig Days IDs and doesn't allowlist 4-Figure Clients, so neither can be suggested. The CAH-side labelling should be confirmed by the owner or the CAH investigation.
+- **4 Fig Days:** the CAH audit (2026-11-02) shows it as `sold_out = true`, a pending placeholder with no link or price, correctly hidden from the feed. The MAP also blocks its IDs and keeps the ownership answer. The missing link is an owner task, not a MAP blocker. 4-Figure Clients is a separate product and isn't on The MAP's list.
 - **Server feed read in production:** tests use fakes. The deployed `send-webhook` reading the feed from the server environment hasn't been exercised with a real submission, because no test leads are sent.
 - **Prices still unverified in the feed:** CFW, Faceless Launch, Secret Sauce, Paid with AI, Powerhorse Academy, Faceless Amazon KDP Blueprint and Prompt to Sales.
 - **CRM:** delivery is at least once (no verified idempotency). How CRM workflows use `marketingConsent` is unverified, and new v3 leads without consent are never forwarded.

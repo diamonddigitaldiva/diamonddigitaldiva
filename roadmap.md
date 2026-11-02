@@ -45,5 +45,5 @@
 - [ ] CRM-side handling of the new `marketingConsent` flag is unverified (CRM workflows not inspected or changed); configure the CRM to use it before publish
 - [ ] Production publish: owner deploys after review
 - [ ] Recommended: narrow get_handoff_session to focus fields (coordinate with CAH)
-- [ ] Confirm 4 Fig Days vs 4-Figure Clients labelling in CAH
+- [ ] CAH sets MAP_HANDOFF_URL / MAP_HANDOFF_PUBLISHABLE_KEY (CAH-side; values supplied)
 - [ ] Destinations for Passive by Design, Pin Prompt & Profit, After the Avatar (CAH); Quote Society / Insta Expand pending; Offer Fix scope
