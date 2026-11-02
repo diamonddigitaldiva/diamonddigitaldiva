@@ -27,7 +27,8 @@
 import type { Platform } from "./definition.ts";
 
 export const CAH_BASE = "https://creatoraccesshub.diamonddigitaldiva.com";
-export const cahResource = (id: string) => `${CAH_BASE}/resources/${encodeURIComponent(id)}`;
+export const cahResource = (id: string) =>
+  `${CAH_BASE}/resources/${encodeURIComponent(id === "casted-pivot-method" ? "casted-ai" : id)}`;
 
 export type PathId =
   | "digital_products"
@@ -164,7 +165,7 @@ export const DWA_URL =
 
 /** CAH listings that must never be routed to (mirrors v2 RETIRED_URLS; a test checks this). */
 export const V3_RETIRED_URLS: ReadonlySet<string> = new Set(
-  ["ata", "mpv", "tacm", "story-algorithm", "foc", "create-launch-sell", "dwa"].map(cahResource)
+  ["ata", "mpv", "tacm", "story-algorithm", "foc", "create-launch-sell", "dwa"].map(cahResource),
 );
 
 /** Exact owner-provided external links that may be routed to. */
@@ -221,7 +222,7 @@ export const V3_MAP_ALLOWLIST: readonly { id: string; kind: V3CatalogEntry["kind
   { id: "faceless-amazon-kdp-blueprint", kind: "training" },
   { id: "ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot", kind: "tool" },
   { id: "the-molly-x-rosie-archive", kind: "tool" },
-  { id: "prompt-to-sales", kind: "tool" },
+  { id: "prompt-to-sales", kind: "tool" }, // Owner-reviewed community recommendations, 2026-11-02. No auto-enrollment.  { id: "llynfay-inc-marketplace", kind: "community" },  { id: "obb1-skool-navigator", kind: "community" },  { id: "the-digital-plug", kind: "community" },  { id: "skool-scale-camp", kind: "community" },  { id: "leadership-skool", kind: "community" },  { id: "community-launch", kind: "community" },  { id: "prosperity-island-club", kind: "community" },  { id: "the-realism-collective", kind: "community" },  { id: "raki-ai-digital-den", kind: "community" },  { id: "influencer-growth-lab", kind: "community" },  { id: "promote-today", kind: "community" },  { id: "tech-mastery-for-entrepreneurs", kind: "community" },  { id: "the-skool-classifieds", kind: "community" },  { id: "elite-digital-hub", kind: "community" },  { id: "dfy-profit-vault", kind: "community" },  { id: "digital-business-after-40", kind: "community" },  { id: "the-blessed-academy", kind: "community" },  { id: "the-promo-lounge", kind: "community" },  { id: "beginner-builders-academy", kind: "community" },  { id: "ai-driven-business-community", kind: "community" },  { id: "scale-your-brand", kind: "community" },  { id: "baddie-creator-era-ai-content", kind: "community" },  { id: "reframe-rise-women", kind: "community" },  { id: "human-ai", kind: "community" },  { id: "the-brand-closet", kind: "community" },  { id: "digital-sellers-den", kind: "community" },  { id: "revenue-revolution", kind: "community" },  { id: "genx-creator-lab", kind: "community" },  { id: "casted-pivot-method", kind: "community" },  { id: "wild-muse-society", kind: "community" },  { id: "workwithsydney", kind: "community" },  { id: "nextgen-ai", kind: "community" },  { id: "quote-cash-club", kind: "community" },  { id: "make-money-online-collective", kind: "community" },  { id: "digital-profits-collective", kind: "community" },  { id: "lazy-sales-ai-closing-code-hub", kind: "community" },  { id: "the-ace-method", kind: "community" },  { id: "women-s-business-community", kind: "community" },  { id: "asmr-studio", kind: "community" },  { id: "elevate-publishers-community", kind: "community" },  { id: "kdp-publishing", kind: "community" },  { id: "spellbound-asmr-studio", kind: "community" },  { id: "skooligans", kind: "community" },  { id: "the-alchemist-playbook", kind: "community" },
 ];
 
 /**
@@ -259,16 +260,18 @@ const isHttps = (u: string) => {
 
 /** Answer-independent eligibility. */
 export function v3Recommendability(
-  e: V3CatalogEntry
+  e: V3CatalogEntry,
 ): { ok: true; reason?: undefined } | { ok: false; reason: V3NotRecommendable } {
   if (Object.prototype.hasOwnProperty.call(V3_MAP_BLOCKED, e.id)) return { ok: false, reason: "blocked" };
   if (e.status !== "active") return { ok: false, reason: "status-not-active" };
   const d = e.destination;
   if (!d || !isHttps(d.url)) return { ok: false, reason: "no-destination" };
-  if (V3_RETIRED_URLS.has(d.url) || (e.retiredUrls ?? []).includes(d.url)) return { ok: false, reason: "destination-retired" };
+  if (V3_RETIRED_URLS.has(d.url) || (e.retiredUrls ?? []).includes(d.url))
+    return { ok: false, reason: "destination-retired" };
   if (d.verification === "failed") return { ok: false, reason: "link-failed" };
   if (d.kind === "cah-resource" && d.url !== cahResource(e.id)) return { ok: false, reason: "no-destination" };
-  if (d.kind === "owner-provided" && !V3_OWNER_LINKS.has(d.url)) return { ok: false, reason: "external-link-not-approved" };
+  if (d.kind === "owner-provided" && !V3_OWNER_LINKS.has(d.url))
+    return { ok: false, reason: "external-link-not-approved" };
   if (!e.shortlist && e.price.state !== "free-owner-stated") return { ok: false, reason: "not-on-shortlist" };
   if (!e.matchable) return { ok: false, reason: "scope-not-established" };
   return { ok: true };
@@ -284,7 +287,15 @@ export function validateV3Catalog(entries: unknown): V3CatalogEntry[] {
   for (const raw of entries) {
     const e = raw as Partial<V3CatalogEntry> | null;
     if (!e || typeof e !== "object" || typeof e.id !== "string" || !ENTRY_ID.test(e.id) || seen.has(e.id)) continue;
-    if (typeof e.name !== "string" || !e.fits || !Array.isArray(e.fits.paths) || !Array.isArray(e.fits.gaps) || !Array.isArray(e.ownedVia) || !e.price) continue;
+    if (
+      typeof e.name !== "string" ||
+      !e.fits ||
+      !Array.isArray(e.fits.paths) ||
+      !Array.isArray(e.fits.gaps) ||
+      !Array.isArray(e.ownedVia) ||
+      !e.price
+    )
+      continue;
     seen.add(e.id);
     out.push(e as V3CatalogEntry);
   }
