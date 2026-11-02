@@ -389,7 +389,8 @@ export function ResultScreen({
             ))}
           </div>
         )}
-        {result.resources.length === 0 && (
+        {/* Without Hub sharing, the plain browse link is already shown above. */}
+        {result.resources.length === 0 && hubConsent && (
           <a
             href={CREATOR_ACCESS_HUB_URL}
             target="_blank"
