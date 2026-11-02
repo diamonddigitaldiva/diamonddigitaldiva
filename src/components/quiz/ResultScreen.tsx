@@ -12,13 +12,7 @@ import { AFFILIATE_DISCLOSURE, type V3Focus, type V3Result } from "@/lib/assessm
  * whether the CRM sends one is not verified from this app.
  */
 export type SaveStatus =
-  | "pending"
-  | "saved"
-  | "saved_private"
-  | "saved_queued"
-  | "saved_undelivered"
-  | "received"
-  | "failed";
+  "pending" | "saved" | "saved_private" | "saved_queued" | "saved_undelivered" | "received" | "failed";
 
 interface ResultScreenProps {
   result: V3Result;
@@ -39,11 +33,7 @@ const SAVE_MESSAGE: Record<Exclude<SaveStatus, "failed">, string> = {
   received: "Your result has been received.",
 };
 
-type HubStatus =
-  | { kind: "idle" }
-  | { kind: "attached" }
-  | { kind: "not_attached" }
-  | { kind: "blocked"; url: string };
+type HubStatus = { kind: "idle" } | { kind: "attached" } | { kind: "not_attached" } | { kind: "blocked"; url: string };
 
 const ROLE_HEADING: Record<V3Focus["role"], string> = {
   start: "Your strongest starting point",
@@ -69,6 +59,29 @@ export function ResultScreen({
   onRetrySave,
 }: ResultScreenProps) {
   const [hubLoading, setHubLoading] = useState(false);
+  const [offerLoading, setOfferLoading] = useState(false);
+  const [offerError, setOfferError] = useState("");
+  const openDecisionPoint = async () => {
+    if (offerLoading) return;
+    setOfferLoading(true);
+    setOfferError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-webhook", {
+        body: { mode: "decision_point_offer", answers: result.answers },
+      });
+      if (
+        error ||
+        !data?.url ||
+        !String(data.url).startsWith("https://thedecisionpoint.diamonddigitaldiva.com/?map_offer=")
+      )
+        throw new Error("offer");
+      window.location.assign(data.url);
+    } catch {
+      setOfferError("We couldn't prepare your $17 MAP offer. Please try again; no payment was taken.");
+    } finally {
+      setOfferLoading(false);
+    }
+  };
   const [hubStatus, setHubStatus] = useState<HubStatus>({ kind: "idle" });
   const { primary, alternate } = result;
 
@@ -249,7 +262,11 @@ export function ResultScreen({
         </section>
 
         {alternate && (
-          <section className="p-5 rounded-sm border border-border bg-ivory" aria-labelledby="alt-heading" data-testid="alternate">
+          <section
+            className="p-5 rounded-sm border border-border bg-ivory"
+            aria-labelledby="alt-heading"
+            data-testid="alternate"
+          >
             <h3 id="alt-heading" className="eyebrow text-amethyst mb-2">
               {ALT_HEADING[alternate.role]}
             </h3>
@@ -265,7 +282,10 @@ export function ResultScreen({
             <h3 id="consider-heading" className="eyebrow text-amethyst mb-2">
               Keep in mind
             </h3>
-            <ul className="space-y-2 text-[13px] text-charcoal/85 leading-relaxed list-disc pl-5" data-testid="considerations">
+            <ul
+              className="space-y-2 text-[13px] text-charcoal/85 leading-relaxed list-disc pl-5"
+              data-testid="considerations"
+            >
               {result.considerations.map((c) => (
                 <li key={c}>{c}</li>
               ))}
@@ -278,6 +298,19 @@ export function ResultScreen({
             {result.decisionPoint && (
               <p className="text-[13px] text-charcoal/80 leading-relaxed" data-testid="decision-point">
                 {result.decisionPoint}
+                <button
+                  type="button"
+                  onClick={openDecisionPoint}
+                  disabled={offerLoading}
+                  className="block mt-3 underline text-amethyst font-medium"
+                >
+                  {offerLoading ? "Preparing your offer…" : "Continue to The Decision Point — $17"}
+                </button>
+                {offerError && (
+                  <span role="alert" className="block mt-2">
+                    {offerError}
+                  </span>
+                )}
               </p>
             )}
             {result.userNoteAcknowledgement && (
@@ -406,7 +439,8 @@ export function ResultScreen({
       </section>
 
       <p className="text-xs text-muted-foreground mt-8 text-center">
-        This page is your full result. Save it or take a screenshot before you leave. Results are guidance, not a promise of income.
+        This page is your full result. Save it or take a screenshot before you leave. Results are guidance, not a
+        promise of income.
       </p>
 
       <FeedbackForm email={email} firstName={firstName} />
