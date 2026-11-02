@@ -223,6 +223,11 @@ export const V3_MAP_ALLOWLIST: readonly { id: string; kind: V3CatalogEntry["kind
   { id: "ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot", kind: "tool" },
   { id: "the-molly-x-rosie-archive", kind: "tool" },
   { id: "prompt-to-sales", kind: "tool" },
+  // Owner-approved restored offers, 2026-11-02. Tools remain task-specific.
+  { id: "brand-color-builder", kind: "tool" },
+  { id: "colorbot-studio", kind: "tool" },
+  { id: "the-quotes-code-bot", kind: "tool" },
+  { id: "millionaire-network", kind: "community" },
   // Owner-reviewed community recommendations, 2026-11-02. No auto-enrollment.
   { id: "llynfay-inc-marketplace", kind: "community" },
   { id: "obb1-skool-navigator", kind: "community" },
