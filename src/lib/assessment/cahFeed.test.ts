@@ -84,9 +84,9 @@ describe("CAH feed adapter (cah-map-catalog/v1)", () => {
 
   it("a product removed from the feed is no longer suggested", () => {
     const before = result(seller, live(SNAP));
-    expect(ids(before)).toContain("selling-made-simple");
-    const after = result(seller, live(feedWith((items) => items.filter((i) => i.id !== "selling-made-simple"))));
-    expect(ids(after)).not.toContain("selling-made-simple");
+    expect(ids(before)).toContain("faceless-launch");
+    const after = result(seller, live(feedWith((items) => items.filter((i) => i.id !== "faceless-launch"))));
+    expect(ids(after)).not.toContain("faceless-launch");
   });
 
   it("sold-out, coming-soon or being-updated items are dropped", () => {
