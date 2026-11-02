@@ -11,6 +11,7 @@
 import { sanitizeV2 } from "./v2.ts";
 import { isV3Version, sanitizeV3 } from "./v3.ts";
 import { MARKETING_CONSENT_SOURCE, MARKETING_CONSENT_VERSION } from "../_shared/map-v3/consent.ts";
+import { CATALOG_NOT_LOADED, type V3CatalogSource } from "../_shared/map-v3/feed.ts";
 
 export interface QuizPayload {
   firstName: string;
@@ -75,15 +76,22 @@ export type Versioned = { assessmentVersion: string; answers: unknown; result: u
  *   the result is re-derived server-side. Otherwise rejected.
  * - Any other explicitly provided version: rejected.
  */
-export function resolveVersion(
+export async function resolveVersion(
   raw: Record<string, unknown>,
-  payload: QuizPayload
-): { ok: true; payload: QuizPayload; versioned: Versioned } | { ok: false; error: string } {
+  payload: QuizPayload,
+  loadCatalog: () => Promise<V3CatalogSource> = async () => CATALOG_NOT_LOADED
+): Promise<{ ok: true; payload: QuizPayload; versioned: Versioned } | { ok: false; error: string }> {
   const v = raw.assessmentVersion;
   if (v === undefined) return { ok: true, payload, versioned: sanitizeV2(raw) };
   if (typeof v === "string" && /^map-v2\./.test(v)) return { ok: true, payload, versioned: sanitizeV2(raw) };
   if (isV3Version(v)) {
-    const v3 = sanitizeV3(raw);
+    let catalog: V3CatalogSource = CATALOG_NOT_LOADED;
+    try {
+      catalog = await loadCatalog();
+    } catch {
+      catalog = { status: "unavailable", reason: "network" };
+    }
+    const v3 = sanitizeV3(raw, catalog);
     if (!v3) return { ok: false, error: "Invalid or incomplete assessment answers" };
     return { ok: true, payload: { ...payload, ...v3.legacy }, versioned: v3.fields };
   }
@@ -101,6 +109,8 @@ export interface SubmissionDeps {
   /** Clock for the delivery lock (tests pass a fixed one). */
   now?: () => number;
   post: (url: string, body: string) => Promise<{ ok: boolean; status: number }>;
+  /** Server-side read of the public CAH feed (v3 only). Defaults to "unavailable". */
+  loadCatalog?: () => Promise<V3CatalogSource>;
   log?: (msg: string) => void;
 }
 
@@ -141,7 +151,7 @@ export async function handleSubmission(rawPayload: unknown, deps: SubmissionDeps
   if (!validation.valid) return { status: 400, body: { success: false, error: validation.error } };
 
   const raw = rawPayload as Record<string, unknown>;
-  const resolved = resolveVersion(raw, validation.data);
+  const resolved = await resolveVersion(raw, validation.data, deps.loadCatalog);
   if (!resolved.ok) return { status: 400, body: { success: false, error: resolved.error } };
   const { payload, versioned } = resolved;
 

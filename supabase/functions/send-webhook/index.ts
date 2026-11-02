@@ -1,6 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handleSubmission, WEBHOOK_TIMEOUT_MS } from "./submission.ts";
+import { fetchCahFeed, type V3CatalogSource } from "../_shared/map-v3/feed.ts";
+
+// Server-side read of the public CAH catalog feed (no key). A successful read
+// is reused for 60 seconds so removals/sold-out changes show up quickly; a
+// failed read is never cached and never replaced by an older list.
+const CATALOG_TTL_MS = 60_000;
+let catalogCache: { at: number; value: V3CatalogSource } | null = null;
+async function loadCatalog(): Promise<V3CatalogSource> {
+  const now = Date.now();
+  if (catalogCache && now - catalogCache.at < CATALOG_TTL_MS) return catalogCache.value;
+  const value = await fetchCahFeed((url, init) => fetch(url, init));
+  if (value.status === "live") catalogCache = { at: now, value };
+  else console.log(`CAH catalog feed unavailable (${value.reason}); no paid suggestions in this result`);
+  return value;
+}
 
 // CORS headers - allow all origins for public quiz
 const corsHeaders = {
@@ -150,6 +165,7 @@ serve(async (req) => {
           body: json,
           signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
         }),
+      loadCatalog,
       log: (m) => console.log(m),
     });
 
