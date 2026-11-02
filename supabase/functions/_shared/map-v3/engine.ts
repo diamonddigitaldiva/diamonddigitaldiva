@@ -32,8 +32,7 @@ import {
 import {
   CAH_BASE,
   CREATOR_PATH_BY_PATH,
-  V3_BLOCKED_IDS,
-  V3_CATALOG,
+  V3_LOCAL_ENTRIES,
   v3Recommendability,
   validateV3Catalog,
   type FocusRole,
@@ -41,6 +40,7 @@ import {
   type PathId,
   type V3CatalogEntry,
 } from "./catalog.ts";
+import { CATALOG_NOT_LOADED, type V3CatalogSource } from "./feed.ts";
 
 export interface V3CreatorPath {
   slug: string;
@@ -95,6 +95,8 @@ export interface V3Result {
   userNoteAcknowledgement: string | null;
   excluded: { id: string; reason: string }[];
   catalogFallback: boolean;
+  /** Where paid suggestions came from. "unavailable" => none were suggested. */
+  catalog: { source: "cah-feed" | "supplied" | "unavailable"; generatedAt: string | null };
 }
 
 export type V3Build =
@@ -633,7 +635,12 @@ function toResource(e: V3CatalogEntry, forFocus: "primary" | "alternate", claude
 
 // ---------------------------------------------------------------------------
 
-export function buildResultV3(input: unknown, catalog: unknown = V3_CATALOG): V3Build {
+/**
+ * `catalog` is the loaded CAH feed (V3CatalogSource). A plain entry list is
+ * accepted for tests. Without a live feed no paid product is suggested; the
+ * MAP-local free community may still be.
+ */
+export function buildResultV3(input: unknown, catalog: V3CatalogSource | V3CatalogEntry[] | unknown = CATALOG_NOT_LOADED): V3Build {
   const v = validateV3(input);
   if (!v.ok || !v.answers) return { ok: false, missing: v.missing ?? [], invalid: v.invalid ?? [] };
   const a = v.answers;
@@ -745,15 +752,30 @@ export function buildResultV3(input: unknown, catalog: unknown = V3_CATALOG): V3
   const ownedFits: string[] = [];
   let resources: V3Resource[] = [];
   let catalogFallback = false;
+  let catalogInfo: V3Result["catalog"] = { source: "unavailable", generatedAt: null };
   try {
-    const entries = validateV3Catalog(catalog);
+    let entries: V3CatalogEntry[];
+    const src = catalog as Partial<V3CatalogSource> | null;
+    if (Array.isArray(catalog)) {
+      entries = validateV3Catalog(catalog);
+      catalogInfo = { source: "supplied", generatedAt: null };
+    } else if (src && typeof src === "object" && src.status === "live" && Array.isArray((src as { entries?: unknown }).entries)) {
+      const live = src as Extract<V3CatalogSource, { status: "live" }>;
+      entries = [...V3_LOCAL_ENTRIES, ...validateV3Catalog(live.entries)];
+      catalogInfo = { source: "cah-feed", generatedAt: typeof live.generatedAt === "string" ? live.generatedAt : null };
+    } else if (src && typeof src === "object" && src.status === "unavailable") {
+      entries = V3_LOCAL_ENTRIES;
+      catalogFallback = true;
+    } else {
+      throw new Error("unusable catalog");
+    }
     const focuses: [V3Focus, "primary" | "alternate"][] = [[primary, "primary"]];
     if (alternate) focuses.push([alternate, "alternate"]);
     const pickFor = (f: V3Focus, slot: "primary" | "alternate", taken: Set<string>): V3Resource | null => {
       const cands: { e: V3CatalogEntry; score: number; order: number; consider: boolean }[] = [];
       entries.forEach((e, order) => {
         if (!fitsFocus(c, e, f)) return;
-        if (V3_BLOCKED_IDS.has(e.id) || !v3Recommendability(e).ok) {
+        if (!v3Recommendability(e).ok) {
           excluded.push({ id: e.id, reason: "not-recommendable" });
           return;
         }
@@ -787,7 +809,7 @@ export function buildResultV3(input: unknown, catalog: unknown = V3_CATALOG): V3
       uncertain || primary.kind === "discover" || c.support.some((s) => ["sup_community", "sup_decide", "sup_unsure"].includes(s));
     if (resources.length < MAX_V3_RESOURCES && unsureSignals && !taken.has("monetize-what-you-know")) {
       const mwyk = entries.find((e) => e.id === "monetize-what-you-know");
-      if (mwyk && v3Recommendability(mwyk).ok && !V3_BLOCKED_IDS.has(mwyk.id)) {
+      if (mwyk && v3Recommendability(mwyk).ok) {
         const chk = checkEntry(c, mwyk);
         if (chk.ok) resources.push(toResource(mwyk, "alternate", false));
       }
@@ -826,7 +848,9 @@ export function buildResultV3(input: unknown, catalog: unknown = V3_CATALOG): V3
   if (priceBlocked && resources.length > 0)
     considerations.push("Some other options that fit aren't shown because we couldn't confirm their current price for your spending range.");
   let resourcesNote: string;
-  if (catalogFallback) resourcesNote = "We couldn't load resource suggestions right now. Your result above doesn't depend on them.";
+  if (catalogFallback)
+    resourcesNote =
+      "We couldn't load the Creator Access Hub's current resource list, so no paid resources are suggested right now. Your result above doesn't depend on them, and you can browse the Hub directly.";
   else if (c.budget.spend === "free_only")
     resourcesNote = resources.length
       ? "You chose free resources and what you already own, so only free options are shown."
@@ -873,6 +897,7 @@ export function buildResultV3(input: unknown, catalog: unknown = V3_CATALOG): V3
         : null,
     excluded,
     catalogFallback,
+    catalog: catalogInfo,
   };
   return { ok: true, result };
 }
@@ -894,6 +919,7 @@ export function resultSnapshotV3(r: V3Result) {
     resources: r.resources.map((x) => ({ id: x.id, name: x.name, url: x.url })),
     creatorPath: r.primary.creatorPath,
     browseUrl: r.browse.url,
+    catalog: r.catalog,
   };
 }
 
