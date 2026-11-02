@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { forwardToHQ } from "@/lib/hqTracking";
 import { Mail, CheckCircle2, Loader2 } from "lucide-react";
 import { z } from "zod";
 
@@ -39,17 +38,13 @@ export default function Contact() {
     }
 
     setSubmitting(true);
-    const { data: inserted, error } = await supabase
-      .from("feedback")
-      .insert({
-        first_name: parsed.data.firstName,
-        email: parsed.data.email,
-        message: parsed.data.message,
-        rating: null,
-        entry_type: "contact",
-      })
-      .select("id")
-      .single();
+    const { error } = await supabase.from("feedback").insert({
+      first_name: parsed.data.firstName,
+      email: parsed.data.email,
+      message: parsed.data.message,
+      rating: null,
+      entry_type: "contact",
+    });
     setSubmitting(false);
 
     if (error) {
@@ -64,23 +59,15 @@ export default function Contact() {
     setSent(true);
     setMessage("");
 
-    // Fire-and-forget forward to HQ. If this fails, the retry-webhooks cron
-    // job will pick up the unsent row and try again automatically.
-    forwardToHQ({
-      type: "contact_message",
-      first_name: parsed.data.firstName,
-      email: parsed.data.email,
-      message: parsed.data.message,
-      feedback_id: inserted?.id,
-    });
+    // The existing retry-webhooks worker forwards saved contact rows to HQ.
+    // Guests may submit feedback but cannot read private rows back.
   };
 
   return (
-    <LegalPage eyebrow="Get in touch" title="Contact">
+    <LegalPage eyebrow="Get in touch" title="Feedback or Report an Issue">
       <p>
-        Have a question about your diagnostic, the Creator Access Hub, or a
-        privacy request? Send us a note below — a real human will reply,
-        usually within 2 business days.
+        Share feedback, report a broken link or describe a problem with The MAP. Include the page, what you expected,
+        and what happened. Please do not include passwords or payment details.
       </p>
 
       {sent ? (
@@ -88,12 +75,9 @@ export default function Contact() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-amethyst shrink-0 mt-0.5" />
             <div>
-              <div className="font-heading text-xl text-charcoal mb-1">
-                Message received
-              </div>
+              <div className="font-heading text-xl text-charcoal mb-1">Message received</div>
               <p className="text-[13px] text-charcoal/70 leading-relaxed">
-                Thank you, {firstName.split(" ")[0]}. We'll reply to{" "}
-                <strong>{email}</strong> within 2 business days.
+                Thank you, {firstName.split(" ")[0]}. We'll reply to <strong>{email}</strong> as soon as we can.
               </p>
               <button
                 type="button"
@@ -159,9 +143,7 @@ export default function Contact() {
               required
               maxLength={2000}
             />
-            <div className="text-[11px] text-charcoal/50 text-right">
-              {message.length}/2000
-            </div>
+            <div className="text-[11px] text-charcoal/50 text-right">{message.length}/2000</div>
           </div>
 
           <Button
@@ -195,10 +177,16 @@ export default function Contact() {
 
       <h2>Our information</h2>
       <ul>
-        <li><strong>Business:</strong> Diamond Digital Diva</li>
-        <li><strong>Email:</strong> {CONTACT_EMAIL}</li>
-        <li><strong>Replies within:</strong> 24–48 hours</li>
-        <li><strong>Jurisdiction:</strong> United States</li>
+        <li>
+          <strong>Business:</strong> Diamond Digital Diva
+        </li>
+        <li>
+          <strong>Email:</strong> {CONTACT_EMAIL}
+        </li>
+        <li>Messages are saved for the support team.</li>
+        <li>
+          <strong>Jurisdiction:</strong> United States
+        </li>
       </ul>
     </LegalPage>
   );
