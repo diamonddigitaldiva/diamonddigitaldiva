@@ -1,3 +1,4 @@
+import { buildResultV3 } from "../_shared/map-v3/engine.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handleSubmission, WEBHOOK_TIMEOUT_MS } from "./submission.ts";
@@ -19,8 +20,8 @@ async function loadCatalog(): Promise<V3CatalogSource> {
 
 // CORS headers - allow all origins for public quiz
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // Rate limiting configuration
@@ -64,33 +65,33 @@ const isRateLimited = (ip: string): { limited: boolean; remaining: number; reset
 // Get client IP from request headers
 const getClientIP = (req: Request): string => {
   // Check various headers for client IP (in order of preference)
-  const forwardedFor = req.headers.get('x-forwarded-for');
+  const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
+    return forwardedFor.split(",")[0].trim();
   }
-  const realIP = req.headers.get('x-real-ip');
+  const realIP = req.headers.get("x-real-ip");
   if (realIP) {
     return realIP;
   }
-  const cfConnectingIP = req.headers.get('cf-connecting-ip');
+  const cfConnectingIP = req.headers.get("cf-connecting-ip");
   if (cfConnectingIP) {
     return cfConnectingIP;
   }
-  return 'unknown';
+  return "unknown";
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   // Only allow POST requests
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ success: false, error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ success: false, error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   // Clean up old rate limit entries
@@ -99,35 +100,35 @@ serve(async (req) => {
   // Check rate limit
   const clientIP = getClientIP(req);
   const rateLimit = isRateLimited(clientIP);
-  
+
   if (rateLimit.limited) {
     console.log(`Rate limit exceeded for IP: ${clientIP.substring(0, 8)}...`);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'Too many submissions. Please wait a moment and try again.' 
+      JSON.stringify({
+        success: false,
+        error: "Too many submissions. Please wait a moment and try again.",
       }),
-      { 
-        status: 429, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'Retry-After': Math.ceil(rateLimit.resetIn / 1000).toString(),
-          'X-RateLimit-Limit': MAX_REQUESTS_PER_WINDOW.toString(),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': Math.ceil(rateLimit.resetIn / 1000).toString()
-        } 
-      }
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Retry-After": Math.ceil(rateLimit.resetIn / 1000).toString(),
+          "X-RateLimit-Limit": MAX_REQUESTS_PER_WINDOW.toString(),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": Math.ceil(rateLimit.resetIn / 1000).toString(),
+        },
+      },
     );
   }
 
   // Check content length to prevent oversized payloads (max 10KB)
-  const contentLength = req.headers.get('content-length');
+  const contentLength = req.headers.get("content-length");
   if (contentLength && parseInt(contentLength) > 10240) {
-    return new Response(
-      JSON.stringify({ success: false, error: 'Payload too large' }),
-      { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: false, error: "Payload too large" }), {
+      status: 413,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -135,27 +136,55 @@ serve(async (req) => {
 
     // Validation (including declared assessment version) happens before any
     // write or send. The result is saved first, then delivered to the CRM.
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // This mode issues a price entitlement only: no lead, PII or CRM write.
+    if (rawPayload?.mode === "decision_point_offer") {
+      const built = buildResultV3(rawPayload.answers, await loadCatalog());
+      if (!built.ok || !built.result.decisionPoint) {
+        return new Response(
+          JSON.stringify({ error: "This completed MAP result does not recommend The Decision Point." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const { data, error } = await supabase
+        .from("decision_point_offers")
+        .insert({
+          assessment_version: built.result.version,
+          primary_focus: built.result.primary.id,
+          offer_price: 1700,
+        })
+        .select("token")
+        .single();
+      if (error || !data?.token) throw new Error("Could not prepare your MAP offer.");
+      return new Response(
+        JSON.stringify({
+          url: "https://thedecisionpoint.diamonddigitaldiva.com/?map_offer=" + encodeURIComponent(data.token),
+          amount: 1700,
+          regularAmount: 2700,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     const { status, body } = await handleSubmission(rawPayload, {
-      webhookUrl: Deno.env.get('LEADCONNECTOR_WEBHOOK_URL') || undefined,
+      webhookUrl: Deno.env.get("LEADCONNECTOR_WEBHOOK_URL") || undefined,
       save: async (row) => {
-        const { data, error } = await supabase.from('quiz_submissions').insert(row).select('id').single();
+        const { data, error } = await supabase.from("quiz_submissions").insert(row).select("id").single();
         if (error) console.error("Database insert error:", error.message);
         return error || !data?.id ? null : String(data.id);
       },
       markSent: async (id) => {
         const { error } = await supabase
-          .from('quiz_submissions')
+          .from("quiz_submissions")
           .update({ webhook_sent: true, webhook_sent_at: new Date().toISOString(), webhook_inflight_until: null })
-          .eq('id', id);
+          .eq("id", id);
         if (error) console.error("Failed to update webhook status:", error.message);
       },
       release: async (id) => {
         const { error } = await supabase
-          .from('quiz_submissions')
+          .from("quiz_submissions")
           .update({ webhook_inflight_until: null })
-          .eq('id', id)
-          .eq('webhook_sent', false);
+          .eq("id", id)
+          .eq("webhook_sent", false);
         if (error) console.error("Failed to release delivery lock:", error.message);
       },
       post: (url, json) =>
@@ -171,23 +200,22 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(body), {
       status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error: unknown) {
     // Log detailed error server-side only
     console.error("Error in send-webhook function:", error);
-    
+
     // Return generic error to client
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: "An unexpected error occurred. Please try again."
+      JSON.stringify({
+        success: false,
+        error: "An unexpected error occurred. Please try again.",
       }),
-      { 
+      {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
