@@ -389,6 +389,18 @@ export function ResultScreen({
             ))}
           </div>
         )}
+        {result.resources.length === 0 && (
+          <a
+            href={CREATOR_ACCESS_HUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackClick("cah_browse_resources", CREATOR_ACCESS_HUB_URL)}
+            className="inline-block text-[13px] underline text-amethyst"
+            data-testid="resources-browse"
+          >
+            Browse the Creator Access Hub
+          </a>
+        )}
       </section>
 
       <p className="text-xs text-muted-foreground mt-8 text-center">

@@ -19,6 +19,7 @@ import {
   type V3Result,
 } from "@/lib/assessment/v3";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/assessment/draft";
+import { loadV3Catalog } from "@/lib/assessment/cahCatalog";
 
 type Screen = "intro" | "quiz" | "lead" | "result";
 
@@ -39,6 +40,13 @@ export function TheMapQuiz() {
   const [retriesLeft, setRetriesLeft] = useState(MAX_SAVE_RETRIES);
   const payloadRef = useRef<QuizResultPayload | null>(null);
   const inFlight = useRef(false);
+  const preparingRef = useRef(false);
+  const [preparing, setPreparing] = useState(false);
+
+  // Read the public CAH catalog early so the result doesn't wait for it.
+  useEffect(() => {
+    void loadV3Catalog();
+  }, []);
 
   /** One send at a time. The draft (answers only) is kept until the result is saved. */
   const submitResult = useCallback(async () => {
@@ -130,11 +138,12 @@ export function TheMapQuiz() {
     setCurrentId(visible[visible.length - 1].id);
   };
 
-  const handleLeadSubmit = (firstName: string, email: string, hubConsent: boolean, marketingConsent = false) => {
-    // Ignore repeat presses while a submission is already being sent.
-    if (inFlight.current || payloadRef.current) return;
-    const built = buildResultV3(answers);
-    if (!built.ok) {
+  const handleLeadSubmit = async (firstName: string, email: string, hubConsent: boolean, marketingConsent = false) => {
+    // Ignore repeat presses while a submission is already being prepared or sent.
+    if (inFlight.current || payloadRef.current || preparingRef.current) return;
+    const check = buildResultV3(answers);
+    if (!check.ok) {
+      const built = check;
       // Never show a result from incomplete answers. Send them back to the first gap.
       const gaps = new Set([...built.missing, ...built.invalid]);
       const first = visible.find((q) => gaps.has(q.id) || (q.sideText && gaps.has(q.sideText.key)));
@@ -148,6 +157,15 @@ export function TheMapQuiz() {
       return;
     }
 
+    // Recommendations come only from the live CAH feed (bounded wait). If it is
+    // unavailable, the result has its full free plan and a plain Hub link.
+    preparingRef.current = true;
+    setPreparing(true);
+    const catalog = await loadV3Catalog();
+    const built = buildResultV3(answers, catalog);
+    preparingRef.current = false;
+    setPreparing(false);
+    if (!built.ok) return;
     const r = built.result;
     setLeadData({ firstName, email, hubConsent });
     setResult(r);
@@ -232,7 +250,14 @@ export function TheMapQuiz() {
                 onStartOver={handleStartOver}
               />
             )}
-            {screen === "lead" && <LeadScreen onBack={handleLeadBack} onSubmit={handleLeadSubmit} />}
+            {screen === "lead" &&
+              (preparing ? (
+                <p role="status" className="text-center text-[14px] text-charcoal/80 py-10">
+                  Preparing your result…
+                </p>
+              ) : (
+                <LeadScreen onBack={handleLeadBack} onSubmit={(...a) => void handleLeadSubmit(...a)} />
+              ))}
             {screen === "result" && result && (
               <ResultScreen
                 result={result}
