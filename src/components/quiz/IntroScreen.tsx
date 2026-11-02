@@ -1,5 +1,3 @@
-import { Signet } from "@/components/brand/Signet";
-
 interface IntroScreenProps {
   onStart: () => void;
 }
@@ -8,23 +6,13 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
   return (
     <div className="intro-scroll w-full">
       {/* SECTION 2 — Hero */}
-      <section
-        className="text-center mx-auto hero-section intro-snap"
-        style={{ maxWidth: 880 }}
-      >
-        <div className="flex justify-center animate-fade-up" style={{ animationDelay: "0s" }}>
-          <Signet size={88} animate />
-        </div>
-
+      <section className="text-center mx-auto hero-section intro-snap" style={{ maxWidth: 880 }}>
         <div
           className="flex items-center justify-center gap-4 animate-fade-up"
           style={{ marginTop: 40, marginBottom: 28, animationDelay: "0.2s" }}
         >
           <span className="block bg-amethyst" style={{ width: 40, height: 1 }} />
-          <span
-            className="text-amethyst font-semibold uppercase"
-            style={{ fontSize: 10, letterSpacing: "0.4em" }}
-          >
+          <span className="text-amethyst font-semibold uppercase" style={{ fontSize: 10, letterSpacing: "0.4em" }}>
             The Creator Assessment
           </span>
           <span className="block bg-amethyst" style={{ width: 40, height: 1 }} />
@@ -41,10 +29,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
           }}
         >
           The <em className="not-italic md:italic text-amethyst font-medium">MAP</em>
-          <sup
-            className="text-gold align-super font-normal"
-            style={{ fontSize: "0.25em", marginLeft: "0.05em" }}
-          >
+          <sup className="text-gold align-super font-normal" style={{ fontSize: "0.25em", marginLeft: "0.05em" }}>
             ™
           </sup>
         </h1>
@@ -72,8 +57,8 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             animationDelay: "0.5s",
           }}
         >
-          Whether you’re exploring online income or already building something, The MAP helps you identify
-          what fits, what may be missing and a practical next step.
+          Whether you’re exploring online income or already building something, The MAP helps you identify what fits,
+          what may be missing and a practical next step.
         </p>
       </section>
 
@@ -106,10 +91,46 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
           }}
         >
           {/* Gold corner brackets */}
-          <span aria-hidden className="absolute top-0 left-0" style={{ width: 32, height: 32, borderTop: "2px solid hsl(var(--gold))", borderLeft: "2px solid hsl(var(--gold))" }} />
-          <span aria-hidden className="absolute top-0 right-0" style={{ width: 32, height: 32, borderTop: "2px solid hsl(var(--gold))", borderRight: "2px solid hsl(var(--gold))" }} />
-          <span aria-hidden className="absolute bottom-0 left-0" style={{ width: 32, height: 32, borderBottom: "2px solid hsl(var(--gold))", borderLeft: "2px solid hsl(var(--gold))" }} />
-          <span aria-hidden className="absolute bottom-0 right-0" style={{ width: 32, height: 32, borderBottom: "2px solid hsl(var(--gold))", borderRight: "2px solid hsl(var(--gold))" }} />
+          <span
+            aria-hidden
+            className="absolute top-0 left-0"
+            style={{
+              width: 32,
+              height: 32,
+              borderTop: "2px solid hsl(var(--gold))",
+              borderLeft: "2px solid hsl(var(--gold))",
+            }}
+          />
+          <span
+            aria-hidden
+            className="absolute top-0 right-0"
+            style={{
+              width: 32,
+              height: 32,
+              borderTop: "2px solid hsl(var(--gold))",
+              borderRight: "2px solid hsl(var(--gold))",
+            }}
+          />
+          <span
+            aria-hidden
+            className="absolute bottom-0 left-0"
+            style={{
+              width: 32,
+              height: 32,
+              borderBottom: "2px solid hsl(var(--gold))",
+              borderLeft: "2px solid hsl(var(--gold))",
+            }}
+          />
+          <span
+            aria-hidden
+            className="absolute bottom-0 right-0"
+            style={{
+              width: 32,
+              height: 32,
+              borderBottom: "2px solid hsl(var(--gold))",
+              borderRight: "2px solid hsl(var(--gold))",
+            }}
+          />
 
           <div
             className="text-amethyst font-semibold uppercase"
@@ -165,10 +186,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
               { n: "1", l: "Next Step" },
             ].map((s) => (
               <div key={s.l} className="text-center" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div
-                  className="font-heading text-amethyst"
-                  style={{ fontSize: 36, lineHeight: 1, fontWeight: 500 }}
-                >
+                <div className="font-heading text-amethyst" style={{ fontSize: 36, lineHeight: 1, fontWeight: 500 }}>
                   {s.n}
                 </div>
                 <div
@@ -202,10 +220,7 @@ export function IntroScreen({ onStart }: IntroScreenProps) {
             </button>
           </div>
 
-          <div
-            className="uppercase text-charcoal"
-            style={{ fontSize: 10, letterSpacing: "0.2em" }}
-          >
+          <div className="uppercase text-charcoal" style={{ fontSize: 10, letterSpacing: "0.2em" }}>
             <span className="font-semibold" style={{ color: "hsl(var(--gold-deep, var(--gold)))" }}>
               About 5 Min
             </span>{" "}
