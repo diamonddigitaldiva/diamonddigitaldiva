@@ -239,3 +239,25 @@ Deno.test("legacy and v2 forwarding is unchanged by consent: still posted, no co
   assertEquals(calls.save[0].crm_forwarding_status, null);
   assertEquals("marketingConsent" in JSON.parse(calls.post[0]), false);
 });
+
+Deno.test("server reads the CAH feed itself; if it fails the submission is still saved, with no paid suggestions", async () => {
+  const { deps, calls } = fakes();
+  deps.loadCatalog = () => Promise.reject(new Error("offline"));
+  const r = await handleSubmission({ ...legacy(), assessmentVersion: "map-v3.0", answers: v3Answers(), marketingConsent: true }, deps);
+  assertEquals(r.status, 200);
+  assertEquals(calls.save.length, 1);
+  const stored = calls.save[0].result as { resources: { id: string }[]; catalog: { source: string } };
+  assertEquals(stored.catalog.source, "unavailable");
+  assertEquals(stored.resources.filter((x) => x.id !== "monetize-what-you-know"), []);
+});
+
+Deno.test("legacy v1 submissions never read the CAH feed", async () => {
+  const { deps } = fakes();
+  let reads = 0;
+  deps.loadCatalog = () => {
+    reads++;
+    return Promise.resolve({ status: "unavailable", reason: "not-loaded" });
+  };
+  await handleSubmission(legacy(), deps);
+  assertEquals(reads, 0);
+});

@@ -1,6 +1,10 @@
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { sanitizeV3, isV3Version } from "./v3.ts";
 import { sanitizeV2 } from "./v2.ts";
+import { adaptCahFeed, fetchCahFeed, type FetchLike } from "../_shared/map-v3/index.ts";
+import { CAH_FEED_SNAPSHOT_2026_11_02 } from "../_shared/map-v3/testdata/cahFeedSnapshot.ts";
+
+const LIVE = adaptCahFeed(CAH_FEED_SNAPSHOT_2026_11_02);
 
 // These tests never call the CRM webhook or HQ. They exercise v3 validation
 // and server-side re-derivation only.
@@ -22,10 +26,12 @@ const answers = () => ({
 });
 const payload = (extra: Record<string, unknown> = {}) => ({ assessmentVersion: "map-v3.0", answers: answers(), ...extra });
 
-Deno.test("v3 result is re-derived on the server; a tampered client result is ignored", () => {
-  const out = sanitizeV3(payload({ result: { primary: { label: "Buy everything" }, resources: [{ id: "x", url: "https://evil.example.com" }] } }));
+Deno.test("v3 result is re-derived on the server from the CAH feed; a tampered client result is ignored", () => {
+  const out = sanitizeV3(payload({ result: { primary: { label: "Buy everything" }, resources: [{ id: "x", url: "https://evil.example.com" }] } }), LIVE);
   assert(out);
-  const r = out.fields.result as { primary: { id: string; label: string }; resources: { url: string }[] };
+  const r = out.fields.result as { primary: { id: string; label: string }; resources: { url: string }[]; catalog: { source: string } };
+  assert(r.resources.length > 0);
+  assertEquals(r.catalog.source, "cah-feed");
   assertEquals(r.primary.id, "message");
   assertEquals(out.legacy.primaryStage, "Explaining your offer's value");
   assert(r.resources.every((x) => x.url.startsWith("https://creatoraccesshub.diamonddigitaldiva.com/resources/")));
@@ -55,7 +61,7 @@ Deno.test("hidden answers and unknown keys are not stored", () => {
 Deno.test("phone-only answers never get a computer-only recommendation server-side", () => {
   const out = sanitizeV3(payload({
     answers: { ...answers(), m3_where: "where_new", m3_bring: ["bring_clients"], m3_interests: ["int_ai_services"], m3_device: "dev_phone", m3_working_on: undefined, m3_obstacle: undefined, m3_working: undefined },
-  }));
+  }), LIVE);
   assert(out);
   const ids = (out.fields.result.resources as { id: string }[]).map((x) => x.id);
   assertEquals(ids.includes("paid-with-ai"), false);
@@ -80,4 +86,27 @@ Deno.test("stored v3 snapshot stays well under the request size limit", () => {
   const out = sanitizeV3(payload({ answers: { ...answers(), m3_notes: "n".repeat(1000), m3_owned_other: "o".repeat(300) } }));
   assert(out);
   assert(JSON.stringify(out.fields).length < 9000);
+});
+
+Deno.test("feed unavailable on the server: answers still validate and the stored result has no paid suggestions", async () => {
+  const never: FetchLike = () => new Promise(() => {});
+  const catalog = await fetchCahFeed(never, 20);
+  assertEquals(catalog, { status: "unavailable", reason: "timeout" });
+  const out = sanitizeV3(payload({ result: { resources: [{ id: "dwa", url: "https://www.fanbasis.com/x" }] } }), catalog);
+  assert(out);
+  const r = out.fields.result as { resources: { id: string }[]; catalog: { source: string } };
+  assertEquals(r.resources.filter((x) => x.id !== "monetize-what-you-know"), []);
+  assertEquals(r.catalog.source, "unavailable");
+});
+
+Deno.test("a product removed from the feed is not in the server-side result", () => {
+  const without = adaptCahFeed({
+    ...CAH_FEED_SNAPSHOT_2026_11_02,
+    count: CAH_FEED_SNAPSHOT_2026_11_02.items.length - 1,
+    items: CAH_FEED_SNAPSHOT_2026_11_02.items.filter((i) => i.id !== "faceless-launch"),
+  });
+  const before = (sanitizeV3(payload(), LIVE)!.fields.result.resources as { id: string }[]).map((x) => x.id);
+  const after = (sanitizeV3(payload(), without)!.fields.result.resources as { id: string }[]).map((x) => x.id);
+  assert(before.includes("faceless-launch"));
+  assertEquals(after.includes("faceless-launch"), false);
 });
