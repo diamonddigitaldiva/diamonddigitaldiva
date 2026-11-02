@@ -6,7 +6,6 @@ import { ResultScreen, type SaveStatus } from "./ResultScreen";
 import { useAssessment } from "@/hooks/useAssessment";
 import { sendQuizResultsToWebhook, type QuizResultPayload } from "@/lib/webhook";
 import { forwardToHQ } from "@/lib/hqTracking";
-import { Signet } from "@/components/brand/Signet";
 import { useToast } from "@/hooks/use-toast";
 import {
   buildResultV3,
@@ -58,7 +57,13 @@ export function TheMapQuiz() {
     inFlight.current = false;
     if (outcome.saved) {
       setSaveStatus(
-        outcome.keptPrivate ? "saved_private" : outcome.delivered ? "saved" : outcome.queued ? "saved_queued" : "saved_undelivered"
+        outcome.keptPrivate
+          ? "saved_private"
+          : outcome.delivered
+            ? "saved"
+            : outcome.queued
+              ? "saved_queued"
+              : "saved_undelivered",
       );
     } else if (outcome.delivered) {
       setSaveStatus("received");
@@ -213,7 +218,7 @@ export function TheMapQuiz() {
       <nav className="w-full border-b border-border/60 bg-pearl/70 backdrop-blur-sm">
         <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Signet size={44} />
+            <span className="font-heading text-lg text-amethyst">The MAP</span>
             <span className="wordmark text-[12px] hidden sm:inline">Diamond Digital Diva</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
@@ -275,7 +280,6 @@ export function TheMapQuiz() {
 
       <footer className="border-t border-border/60 py-8">
         <div className="flex flex-col items-center gap-3">
-          <Signet size={32} withShadow={false} />
           <span className="wordmark text-[10px] text-charcoal/70">Diamond Digital Diva</span>
         </div>
       </footer>
