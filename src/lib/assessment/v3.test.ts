@@ -334,7 +334,7 @@ describe("device and plan prerequisites", () => {
     expect(no.considerations.some((c) => c.includes("paid Claude plan"))).toBe(true);
     const maybe = ok({ ...aiSvc, m3_device: "dev_mac", m3_claude: "claude_consider" });
     const pwa = maybe.resources.find((x) => x.id === "paid-with-ai")!;
-    expect(pwa.requirementNote).toMatch(/Claude Pro/);
+    expect(pwa.requirementNote).toMatch(/paid Claude plan/);
     expect(pwa.requirementNote).toMatch(/consider/);
   });
 
@@ -348,7 +348,7 @@ describe("ownership, budget and catalog safety", () => {
   it("never recommends something they already own, and points to it instead", () => {
     const r = ok({ ...seller, m3_owned: ["res_faceless_launch_formula"] });
     expect(ids(r)).not.toContain("faceless-launch");
-    expect(r.ownedFits).toContain("Faceless Launch Formula");
+    expect(r.ownedFits).toContain("The Faceless Launch Formula");
     expect(r.considerations.some((c) => c.includes("already own"))).toBe(true);
   });
 
@@ -369,8 +369,10 @@ describe("ownership, budget and catalog safety", () => {
   it("a capped budget only takes free items or verified prices within the cap", () => {
     const r = ok({ ...seller, m3_budget: "budget_50" });
     expect(ids(r)).toContain("selling-made-simple"); // verified $37
-    expect(ids(r)).not.toContain("faceless-launch"); // verified $77
-    expect(r.excluded.some((x) => x.id === "faceless-launch" && x.reason === "over-budget")).toBe(true);
+    expect(ids(r)).not.toContain("faceless-launch"); // CAH feed: price conflict, so unverified
+    expect(r.excluded.some((x) => x.id === "faceless-launch" && x.reason === "price-unverified")).toBe(true);
+    const over = ok({ ...seller, m3_budget: "budget_50", m3_interests: ["int_ai_avatar"], m3_working_on: ["work_ai"], m3_obstacle: "obst_convert" });
+    expect(over.excluded.some((x) => x.id === "ai-to-sales" && x.reason === "ok")).toBe(false);
     expect(r.excluded.some((x) => x.id === "tss" && x.reason === "price-unverified")).toBe(true);
     for (const x of r.resources) expect(x.priceNote).toMatch(/^(Free|About \$\d+ )/);
     expect(r.considerations.some((c) => c.includes("couldn't confirm their current price"))).toBe(true);
@@ -410,27 +412,18 @@ describe("ownership, budget and catalog safety", () => {
     expect(r.resources.some((x) => x.priceNote.startsWith("Price not confirmed")) || ids(r).length > 0).toBe(true);
   });
 
-  it("pending, unscoped, being-updated or unlinked products are never recommendable", () => {
-    const reason = (id: string) => {
-      const r = v3Recommendability(V3_CATALOG.find((x) => x.id === id)!);
-      return r.ok ? "ok" : r.reason;
-    };
-    expect(reason("insta-expand")).toBe("status-not-active");
-    expect(reason("quote-society")).toBe("status-not-active");
-    expect(reason("the-decision-point")).toBe("status-not-active");
-    // Known scope, missing destination only:
-    expect(reason("passive-by-design")).toBe("no-destination");
-    expect(reason("pin-prompt-profit")).toBe("no-destination");
-    expect(reason("ata")).toBe("no-destination");
-    expect(reason("the-offer-fix")).toBe("scope-not-established");
+  it("only reviewed CAH feed items are used; blocked, pending and missing products are never recommendable", () => {
+    // Every allowlisted CAH product in today's feed survives, with its own CAH page.
     for (const id of ["aifluencer-studio", "faceless-launch", "daily-sales-rhythm", "100k-threads-challenge", "0-first-sale-challenge", "ai-to-sales", "selling-made-simple", "the-molly-x-rosie-archive", "prompt-to-sales", "ai-podcast-kit-10-min-workflow-x-chatbots-x-100-viral-quot"]) {
       const e = V3_CATALOG.find((x) => x.id === id)!;
-      expect(reason(id)).toBe("ok");
+      expect(v3Recommendability(e).ok).toBe(true);
       expect(e.destination!.url).toBe(`${CAH_BASE}/resources/${id}`);
     }
-    const ata = V3_CATALOG.find((x) => x.id === "ata")!;
-    expect(ata.status).toBe("active");
-    expect(ata.retiredUrls).toContain(`${CAH_BASE}/resources/ata`);
+    // Not in the feed => not in the catalog at all (no hardcoded fallback).
+    for (const id of ["passive-by-design", "pin-prompt-profit", "ata", "quote-society", "the-offer-fix", "insta-expand", "the-decision-point"]) {
+      expect(V3_CATALOG.find((x) => x.id === id)).toBeUndefined();
+    }
+    expect(LIVE.dropped).toEqual([]);
   });
 
   it("DWA stays an active candidate via its owner link, never the retired CAH page", () => {
@@ -445,11 +438,11 @@ describe("ownership, budget and catalog safety", () => {
 
   it("retired list matches v2 and a supplied catalog can't re-enable blocked items", () => {
     expect([...V3_RETIRED_URLS].sort()).toEqual([...RETIRED_URLS].sort());
-    const smuggled = V3_CATALOG.map((e) =>
-      e.id === "insta-expand"
-        ? { ...e, status: "active" as const, matchable: true, destination: { ...V3_CATALOG[1].destination!, url: `${CAH_BASE}/resources/insta-expand` }, fits: { paths: ["social" as const], gaps: [] } }
-        : e
-    );
+    const base = V3_CATALOG.find((e) => e.id === "100k-threads-challenge")!;
+    const smuggled = [
+      ...V3_CATALOG,
+      { ...base, id: "insta-expand", name: "Insta Expand", requires: undefined, destination: { ...base.destination!, url: `${CAH_BASE}/resources/insta-expand` }, fits: { paths: ["social" as const], gaps: [], roles: ["start" as const] } },
+    ];
     const r = buildResultV3({ ...beginner, m3_interests: ["int_social"], m3_platforms: ["plat_instagram"] }, smuggled);
     expect(r.result!.resources.map((x) => x.id)).not.toContain("insta-expand");
   });
@@ -554,11 +547,11 @@ describe("owner-supplied profiles: platform, avatar and bundle rules", () => {
     expect(ids(r)).not.toContain("aifluencer-studio");
   });
 
-  it("discounts aren't relied on: AICA and CFW use their regular prices for budget checks", () => {
+  it("prices come from the CAH feed: AICA verified regular price, CFW unverified (price conflict)", () => {
     const aica = V3_CATALOG.find((e) => e.id === "aica")!;
     const cfw = V3_CATALOG.find((e) => e.id === "cfw")!;
     expect(aica.price).toMatchObject({ state: "verified", usd: 247 });
-    expect(cfw.price).toMatchObject({ state: "verified", usd: 487 });
+    expect(cfw.price).toEqual({ state: "unverified" });
     expect(ids(ok({ ...beginner, m3_interests: ["int_ai_avatar"], m3_budget: "budget_200" }))).not.toContain("aica");
   });
 
