@@ -33,7 +33,6 @@ const AUTHORED = [
   "supabase/functions/_shared/map-v3/engine.ts",
   "supabase/functions/_shared/map-v3/definition.ts",
   "supabase/functions/_shared/map-v3/catalog.ts",
-  "supabase/functions/_shared/map-v3/feed.ts",
   "src/components/quiz/IntroScreen.tsx",
   "src/components/quiz/LeadScreen.tsx",
   "src/components/quiz/ResultScreen.tsx",
@@ -51,7 +50,10 @@ describe("no results, income, views or profit promises in authored copy", () => 
 
   it("catalog summaries describe the training, not an outcome", () => {
     expect(V3_CATALOG.length).toBeGreaterThan(10);
+    // feed.ts holds a promise-blocking pattern itself, so its displayed notes are checked here instead.
+    expect(feedSrc).toContain("PREREQ_NOTE");
     for (const e of V3_CATALOG) {
+      expect(e.requirementNote ?? "", e.id).not.toMatch(PROMISE);
       expect(e.summary, e.id).not.toMatch(/income|profit|earnings|views|guarantee|results vary/i);
     }
   });
