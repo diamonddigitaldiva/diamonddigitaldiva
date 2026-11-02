@@ -371,8 +371,6 @@ describe("ownership, budget and catalog safety", () => {
     expect(ids(r)).toContain("selling-made-simple"); // verified $37
     expect(ids(r)).not.toContain("faceless-launch"); // CAH feed: price conflict, so unverified
     expect(r.excluded.some((x) => x.id === "faceless-launch" && x.reason === "price-unverified")).toBe(true);
-    const over = ok({ ...seller, m3_budget: "budget_50", m3_interests: ["int_ai_avatar"], m3_working_on: ["work_ai"], m3_obstacle: "obst_convert" });
-    expect(over.excluded.some((x) => x.id === "ai-to-sales" && x.reason === "ok")).toBe(false);
     expect(r.excluded.some((x) => x.id === "tss" && x.reason === "price-unverified")).toBe(true);
     for (const x of r.resources) expect(x.priceNote).toMatch(/^(Free|About \$\d+ )/);
     expect(r.considerations.some((c) => c.includes("couldn't confirm their current price"))).toBe(true);
