@@ -219,7 +219,6 @@ export function TheMapQuiz() {
         <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="font-heading text-lg text-amethyst">The MAP</span>
-            <span className="wordmark text-[12px] hidden sm:inline">Diamond Digital Diva</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a
