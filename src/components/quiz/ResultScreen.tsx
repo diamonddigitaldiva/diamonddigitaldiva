@@ -439,8 +439,7 @@ export function ResultScreen({
       </section>
 
       <p className="text-xs text-muted-foreground mt-8 text-center">
-        This page is your full result. Save it or take a screenshot before you leave. Results are guidance, not a
-        promise of income.
+        This page is your full result. Save it or take a screenshot before you leave. Results are guidance, not a promise of income.
       </p>
 
       <FeedbackForm email={email} firstName={firstName} />

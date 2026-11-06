@@ -258,13 +258,15 @@ describe("results", () => {
     expect(d.uncertain).toBe(true);
   });
 
-  it("someone unsure what fits gets a useful discover result, the free community and the Decision Point note (no link)", () => {
+  it("someone unsure what fits gets a useful discover result, the free community and the Decision Point $17 offer note (no link)", () => {
     const r = ok({ ...beginner, m3_interests: ["int_discover"], m3_bring: ["bring_unsure"] });
     expect(r.primary.kind).toBe("discover");
     expect(r.primary.nextStep.length).toBeGreaterThan(40);
     expect(ids(r)).toEqual(["monetize-what-you-know"]);
     expect(r.resources[0].url).toBe(MWYK_URL);
-    expect(r.decisionPoint).toMatch(/waitlist/);
+    expect(r.decisionPoint).toContain("$17");
+    expect(r.decisionPoint).toContain("$27");
+    // The offer URL is issued by the server at click time; the result itself carries no link.
     expect(JSON.stringify(r)).not.toMatch(/decision-?point\.|the-decision-point/);
   });
 

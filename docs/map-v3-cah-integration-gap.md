@@ -41,6 +41,14 @@ Updated 2026-11-02. Written from The MAP project only. Nothing in CAH (products,
   - Never give CAH a service-role key or the database password.
  `get_handoff_session` still returns first name and email to anyone who holds a live session ID (2-hour window, unguessable UUID). CAH discards them. Narrowing that function to focus fields only is a recommended follow-up, timed with CAH, because CAH calls it.
 
+## Offer: MAP → The Decision Point (verified 2026-11-06)
+- When a v3 result carries the Decision Point note (discover/focus-gap/unsure, not a free-only budget), the result page shows "Continue to The Decision Point — $17". The click calls `send-webhook` with mode `decision_point_offer` and the answers only — no name or email.
+- The server rebuilds the result from the answers against the live feed. Only if the rebuilt result still recommends The Decision Point does it insert a `decision_point_offers` row (opaque token, assessment version, primary focus, price 1700) and return `https://thedecisionpoint.diamonddigitaldiva.com/?map_offer=<token>` with amount 1700 / regular 2700. Otherwise it returns 400. The browser accepts only that exact URL prefix.
+- `get_decision_point_offer(_token uuid)` (SECURITY DEFINER; `anon` may run it) returns `{eligible: true, amount: 1700, currency: "usd", regular_amount: 2700}` for a known token, else `eligible: false` at the full 2700. Tokens do not expire.
+- **Checks (2026-11-06, no personal data, no checkout):** qualifying answers → 200 + offer URL; free-only budget → 400; real token → `eligible: true`; unknown token → `eligible: false`. The test token row was deleted afterwards.
+- The earlier "table does not exist" failure is resolved: `decision_point_offers` exists in the live database with RLS on and no public policies; only the server (service role) writes it.
+- **Decision Point side (not verified from here):** it must read `map_offer` from the URL and call `get_decision_point_offer` with The MAP's publishable key to apply the $17 price.
+
 ## Still open
 - **CAH-side:** Passive by Design, Pin Prompt & Profit and After the Avatar aren't in the feed (not MAP-eligible in CAH). If the owner later makes them eligible in CAH, they also need adding to `V3_MAP_ALLOWLIST`, which is a deliberate MAP-side step. Passive by Design also needs the paid-Claude question shown to digital-products and affiliate respondents. Until then the engine leaves it out.
 - **4 Fig Days:** the CAH audit (2026-11-02) shows it as `sold_out = true`, a pending placeholder with no link or price, correctly hidden from the feed. The MAP also blocks its IDs and keeps the ownership answer. The missing link is an owner task, not a MAP blocker. 4-Figure Clients is a separate product and isn't on The MAP's list.

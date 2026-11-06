@@ -36,12 +36,18 @@
 - [x] Admin view of the live feed and what The MAP does with each item
 - [x] Handoff contract checked against CAH receiver (synthetic, rolled back); tests, desktop/phone browser checks
 
+## Decision Point $17 offer (verified 2026-11-06)
+- [x] decision_point_offers table exists live; earlier nonexistent-table failure resolved
+- [x] Live checks: qualifying answers → token + $17 URL; free-only → 400; token lookup eligible true/false; test row deleted
+- [x] CAH handoff contract re-verified (signatures, grants, unknown-session []); no guest SELECT on handoff_sessions
+- [x] Stale tests updated after owner edits (waitlist note → $17 offer note; guidance line rejoined)
+
 ## Earlier (done)
 - [x] MAP v2 refresh, DWA owner correction, pop-up blocker note
 
 ## Blocked on owner
 - [ ] Sender name/address for result email
-- [ ] Decision Point waitlist link (no verified destination yet)
+- [ ] Decision Point must read `map_offer` from the URL and call `get_decision_point_offer` to apply the $17 price (DP-side, not verified from MAP)
 - [ ] CRM-side handling of the new `marketingConsent` flag is unverified (CRM workflows not inspected or changed); configure the CRM to use it before publish
 - [ ] Production publish: owner deploys after review
 - [ ] Recommended: narrow get_handoff_session to focus fields (coordinate with CAH)
