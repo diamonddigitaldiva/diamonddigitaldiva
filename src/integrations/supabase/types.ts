@@ -41,6 +41,30 @@ export type Database = {
         }
         Relationships: []
       }
+      decision_point_offers: {
+        Row: {
+          assessment_version: string
+          created_at: string
+          offer_price: number
+          primary_focus: string
+          token: string
+        }
+        Insert: {
+          assessment_version: string
+          created_at?: string
+          offer_price?: number
+          primary_focus: string
+          token?: string
+        }
+        Update: {
+          assessment_version?: string
+          created_at?: string
+          offer_price?: number
+          primary_focus?: string
+          token?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           created_at: string
@@ -417,6 +441,7 @@ export type Database = {
         Args: { _delivered: boolean; _id: string }
         Returns: undefined
       }
+      get_decision_point_offer: { Args: { _token: string }; Returns: Json }
       get_handoff_session: {
         Args: { _session_id: string }
         Returns: {
