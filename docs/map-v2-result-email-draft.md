@@ -67,7 +67,7 @@ These matched your answers. They're optional, and your plan works without them.
 
 If something in your result doesn't sound like you, reply and tell me. I read these.
 
-💜 Elleni
+💜 Diamond Digital Diva
 The MAP by Diamond Digital Diva
 
 ---
