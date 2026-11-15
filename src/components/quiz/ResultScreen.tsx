@@ -304,7 +304,7 @@ export function ResultScreen({
                   disabled={offerLoading}
                   className="block mt-3 underline text-amethyst font-medium"
                 >
-                  {offerLoading ? "Preparing your offer…" : "Continue to The Decision Point — $17"}
+                  {offerLoading ? "Preparing your offer…" : "Continue to The Decision Point for $17"}
                 </button>
                 {offerError && (
                   <span role="alert" className="block mt-2">

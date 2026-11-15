@@ -102,6 +102,28 @@ describe("The MAP v3 flow", () => {
     expect(screen.getByRole("button", { name: /^next$/i })).toBeDisabled();
   });
 
+  it("the Decision Point button reads 'for $17' with no em dash", async () => {
+    const user = userEvent.setup();
+    render(<TheMapQuiz />);
+    await begin(user);
+    await radio(user, "m3_where", "where_learning"); await next(user);
+    await check(user, "m3_help", "help_realistic"); await next(user);
+    await check(user, "m3_interests", "int_publishing"); await next(user);
+    await check(user, "m3_bring", "bring_skill"); await next(user);
+    await comfort(user); await next(user);
+    await radio(user, "m3_time", "time3_3_5"); await next(user);
+    await radio(user, "m3_device", "dev_windows"); await next(user);
+    await next(user); // owned (optional) -> Skip
+    await radio(user, "m3_budget", "budget_100"); await next(user);
+    await check(user, "m3_support", "sup_decide"); await next(user);
+    await next(user); // notes (optional) -> Finish
+    await submitLead(user, false);
+
+    expect(await screen.findByTestId("decision-point")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue to The Decision Point for \$17/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Decision Point — \$17/ })).toBeNull();
+  });
+
   it("a learner skips the existing-creator questions; result, browse link and payload are safe", async () => {
     const user = userEvent.setup();
     render(<TheMapQuiz />);

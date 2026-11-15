@@ -93,9 +93,19 @@ describe("v3 definition", () => {
     expect(getV3Question("m3_comfort")!.rows).toHaveLength(6);
   });
 
-  it("offers all 34 shortlisted resources in the owned selector", () => {
+  it("keeps all 34 shortlisted resources but offers only the un-retired ones", () => {
     expect(OWNED_RESOURCES).toHaveLength(34);
     expect(new Set(OWNED_RESOURCES.map((r) => r.id)).size).toBe(34);
+    const offered = getV3Question("m3_owned")!.options.map((o) => o.id);
+    expect(offered.filter((id) => id.startsWith("res_"))).toHaveLength(32);
+    expect(offered).not.toContain("res_aifluencer_studio");
+    expect(offered).not.toContain("res_after_the_avatar");
+  });
+
+  it("still accepts archived resources in answers saved under those IDs", () => {
+    const r = validateV3({ ...seller, m3_owned: ["res_after_the_avatar", "res_aifluencer_studio"] });
+    expect(r.ok).toBe(true);
+    expect(r.answers!.m3_owned).toEqual(["res_aifluencer_studio", "res_after_the_avatar"]);
   });
 });
 

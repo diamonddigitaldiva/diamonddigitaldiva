@@ -59,6 +59,12 @@ export interface OwnedResource {
   catalogId?: string;
   /** Extra exact names used for conservative free-text matching. */
   aliases?: string[];
+  /**
+   * Archived resources: hidden from the owned selector, but kept in the list so
+   * answers already stored under the same ID still validate and typed names still
+   * resolve. Never reuse or rename the ID.
+   */
+  retired?: boolean;
 }
 
 export const OWNED_RESOURCES: OwnedResource[] = [
@@ -70,10 +76,10 @@ export const OWNED_RESOURCES: OwnedResource[] = [
   { id: "res_powerhorse", name: "Powerhorse Academy", group: "main", catalogId: "powerhorse-academy", aliases: ["The Powerhorse Academy"] },
   { id: "res_cfw", name: "CFW", group: "main", catalogId: "cfw", aliases: ["Create Faceless Wealth"] },
   { id: "res_faceless_launch_formula", name: "Faceless Launch Formula", group: "middle", catalogId: "faceless-launch", aliases: ["Faceless Launch"] },
-  { id: "res_aifluencer_studio", name: "AIFluencer Studio", group: "middle", catalogId: "aifluencer-studio" },
+  { id: "res_aifluencer_studio", name: "AIFluencer Studio", group: "middle", catalogId: "aifluencer-studio", retired: true },
   { id: "res_quote_society", name: "Quote Society", group: "middle", catalogId: "quote-society" },
   { id: "res_pin_prompt_profit", name: "Pin Prompt & Profit", group: "middle", catalogId: "pin-prompt-profit", aliases: ["Pin Prompt and Profit"] },
-  { id: "res_after_the_avatar", name: "After the Avatar", group: "middle", catalogId: "ata" },
+  { id: "res_after_the_avatar", name: "After the Avatar", group: "middle", catalogId: "ata", retired: true },
   { id: "res_insta_expand", name: "Insta Expand", group: "middle", catalogId: "insta-expand" },
   { id: "res_list_to_pinterest", name: "List to Pinterest", group: "low" },
   { id: "res_4_fig_days", name: "4 Fig Days", group: "low" },
@@ -104,6 +110,8 @@ export const OWNED_STATUS_OPTIONS: V3Option[] = [
 ];
 
 const OWNED_IDS = new Set(OWNED_RESOURCES.map((r) => r.id));
+/** Archived resources: never offered, but stored answers may still carry them. */
+const RETIRED_OWNED_IDS = OWNED_RESOURCES.filter((r) => r.retired).map((r) => r.id);
 
 // ---------------------------------------------------------------------------
 // Derived visibility helpers (use only earlier answers).
@@ -385,7 +393,7 @@ export const V3_QUESTIONS: V3Question[] = [
     required: false,
     text: "What resources do you already have?",
     helper: "Select any courses or tools you own, or type their names.",
-    options: [...OWNED_STATUS_OPTIONS, ...OWNED_RESOURCES.map((r) => ({ id: r.id, label: r.name }))],
+    options: [...OWNED_STATUS_OPTIONS, ...OWNED_RESOURCES.filter((r) => !r.retired).map((r) => ({ id: r.id, label: r.name }))],
     sideText: { key: "m3_owned_other", label: "Other resources you own (optional)", maxLength: 300 },
   },
   {
@@ -572,8 +580,12 @@ function validateValue(q: V3Question, v: unknown): V3AnswerValue | null {
       return typeof v === "string" && ids.has(v) ? v : null;
     case "multi":
     case "owned": {
+      // Archived resources are no longer offered, but answers already stored
+      // under their IDs must still validate and keep those IDs.
+      const retired = q.kind === "owned" ? RETIRED_OWNED_IDS : [];
+      const allowed = new Set([...ids, ...retired]);
       if (!Array.isArray(v) || v.length > 40) return null;
-      if (!v.every((x) => typeof x === "string" && ids.has(x))) return null;
+      if (!v.every((x) => typeof x === "string" && allowed.has(x))) return null;
       const arr = v as string[];
       if (new Set(arr).size !== arr.length) return null;
       const excl = q.options.filter((o) => o.exclusive).map((o) => o.id);
@@ -581,7 +593,7 @@ function validateValue(q: V3Question, v: unknown): V3AnswerValue | null {
       if (q.maxSelections && arr.length > q.maxSelections) return null;
       if (q.kind === "owned" && !arr.every((x) => OWNED_IDS.has(x) || OWNED_STATUS_OPTIONS.some((o) => o.id === x))) return null;
       // Canonical order (question order) so stored answers and results are order-independent.
-      return q.options.map((o) => o.id).filter((id) => arr.includes(id));
+      return [...q.options.map((o) => o.id), ...retired].filter((id) => arr.includes(id));
     }
     case "matrix": {
       if (!v || typeof v !== "object" || Array.isArray(v)) return null;
